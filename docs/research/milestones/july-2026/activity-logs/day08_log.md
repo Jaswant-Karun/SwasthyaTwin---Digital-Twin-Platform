@@ -22,3 +22,6 @@ Measured: emerald, Derived: sky, Predicted: purple, Simulated: amber.
 ### Transition Matrix
 Observations never silently mutate between provenance tiers.
 
+### Day 8 Summary
+Complete 5-tier architecture formalized.
+
