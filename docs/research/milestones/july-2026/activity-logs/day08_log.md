@@ -19,3 +19,6 @@ Every observation persists source_device and operator identity.
 ### Theme Tokens
 Measured: emerald, Derived: sky, Predicted: purple, Simulated: amber.
 
+### Transition Matrix
+Observations never silently mutate between provenance tiers.
+
