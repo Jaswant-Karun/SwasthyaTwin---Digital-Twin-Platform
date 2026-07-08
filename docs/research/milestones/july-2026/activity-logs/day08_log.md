@@ -13,3 +13,6 @@ Projections bounded by physiological viability envelopes.
 ### Synthetic Tier
 Synthetic fixtures explicitly marked to avoid production pollution.
 
+### Audit Trail
+Every observation persists source_device and operator identity.
+
