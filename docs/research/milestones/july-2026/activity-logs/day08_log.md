@@ -16,3 +16,6 @@ Synthetic fixtures explicitly marked to avoid production pollution.
 ### Audit Trail
 Every observation persists source_device and operator identity.
 
+### Theme Tokens
+Measured: emerald, Derived: sky, Predicted: purple, Simulated: amber.
+
