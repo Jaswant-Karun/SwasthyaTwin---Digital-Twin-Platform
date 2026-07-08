@@ -10,3 +10,6 @@ BiDSleep classifications must exceed 0.50 softmax margin.
 ### Simulated Tier
 Projections bounded by physiological viability envelopes.
 
+### Synthetic Tier
+Synthetic fixtures explicitly marked to avoid production pollution.
+
