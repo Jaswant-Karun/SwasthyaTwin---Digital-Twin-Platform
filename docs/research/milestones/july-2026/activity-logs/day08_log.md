@@ -4,3 +4,6 @@ Sensors must provide signal quality index (SQI) >= 0.85.
 ### Derived Metrics
 Daily step aggregations apply mean and rolling sum algorithms.
 
+### Model Predicted
+BiDSleep classifications must exceed 0.50 softmax margin.
+
