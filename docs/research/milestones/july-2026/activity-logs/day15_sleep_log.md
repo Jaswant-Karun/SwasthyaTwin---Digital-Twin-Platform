@@ -4,3 +4,6 @@ Initial state transition matrix calibrated across normal sleep.
 ### Wake Stage
 Characterized by high frequency pulse oscillations and elevated LF/HF.
 
+### Stage N1
+Initial alpha attenuation with subtle slowing of median heart rate.
+
