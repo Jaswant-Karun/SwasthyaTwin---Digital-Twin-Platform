@@ -19,3 +19,6 @@ Desynchronized phasic bursts of sympathetic activity resembling wakefulness.
 ### Smoothing Filter
 Isolated 30s spikes smoothed using 3-epoch majority voting.
 
+### Sleep Efficiency
+Ratio of Total Sleep Time (TST) to Total Bed Time (TBT).
+
