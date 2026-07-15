@@ -13,3 +13,6 @@ Stable parasympathetic maintenance with regular respiratory coupling.
 ### Stage N3 Slow Wave
 Marked by profound cardiovascular slowing (nadir) and high RMSSD.
 
+### REM Sleep
+Desynchronized phasic bursts of sympathetic activity resembling wakefulness.
+
