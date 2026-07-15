@@ -10,3 +10,6 @@ Initial alpha attenuation with subtle slowing of median heart rate.
 ### Stage N2
 Stable parasympathetic maintenance with regular respiratory coupling.
 
+### Stage N3 Slow Wave
+Marked by profound cardiovascular slowing (nadir) and high RMSSD.
+
