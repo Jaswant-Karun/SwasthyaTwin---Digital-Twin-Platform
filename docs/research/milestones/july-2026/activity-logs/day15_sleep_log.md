@@ -31,3 +31,6 @@ Explicit notice that wearable PPG is an investigational estimation tool.
 ### Export Schema
 Epoch-by-epoch JSON payloads with softmax probability vectors.
 
+### Day 15 Summary
+AASM sleep staging engine blueprint completed.
+
