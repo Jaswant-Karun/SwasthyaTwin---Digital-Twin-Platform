@@ -7,3 +7,6 @@ Characterized by high frequency pulse oscillations and elevated LF/HF.
 ### Stage N1
 Initial alpha attenuation with subtle slowing of median heart rate.
 
+### Stage N2
+Stable parasympathetic maintenance with regular respiratory coupling.
+
