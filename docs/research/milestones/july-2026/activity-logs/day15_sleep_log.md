@@ -25,3 +25,6 @@ Ratio of Total Sleep Time (TST) to Total Bed Time (TBT).
 ### Benchmark Targets
 Overall macro F1 objective >= 0.70 across participant splits.
 
+### Clinical Boundary
+Explicit notice that wearable PPG is an investigational estimation tool.
+
