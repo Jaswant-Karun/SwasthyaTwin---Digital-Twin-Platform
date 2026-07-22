@@ -22,3 +22,6 @@ Every data read recorded in audit collection with timestamp.
 ### In-Transit Encryption
 Strict TLS 1.3 with forward secrecy ciphers mandated.
 
+### Rest Encryption
+WiredTiger database engine encrypted with AES-256-CBC.
+
