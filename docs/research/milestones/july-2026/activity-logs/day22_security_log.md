@@ -7,3 +7,6 @@ Decorators enforce tenancy checking on database operations.
 ### Leakage Prevention
 Tests verify patient A cannot inspect patient B telemetry.
 
+### Hashing Standards
+Sensitive identity fields hashed using modern salting protocols.
+
