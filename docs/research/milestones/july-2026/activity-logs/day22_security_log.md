@@ -28,3 +28,6 @@ WiredTiger database engine encrypted with AES-256-CBC.
 ### Erasure Protocol
 Deleting patient profile cascades to all linked observations.
 
+### Isolation Fixture
+Pytest fixture spins up twin patients to verify data boundaries.
+
