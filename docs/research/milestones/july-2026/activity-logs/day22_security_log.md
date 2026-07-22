@@ -10,3 +10,6 @@ Tests verify patient A cannot inspect patient B telemetry.
 ### Hashing Standards
 Sensitive identity fields hashed using modern salting protocols.
 
+### Auth Claims
+Bearer tokens carry subject tenant context validated by middleware.
+
