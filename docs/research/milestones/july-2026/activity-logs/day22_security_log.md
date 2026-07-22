@@ -34,3 +34,6 @@ Pytest fixture spins up twin patients to verify data boundaries.
 ### Inactivity Timeout
 UI sessions automatically lock after 15 minutes of idle time.
 
+### HIPAA Safeguards
+Section 164.312 access controls and transmission security review.
+
