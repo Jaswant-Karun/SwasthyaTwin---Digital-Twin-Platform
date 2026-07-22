@@ -19,3 +19,6 @@ Patient, Clinician, Researcher distinct capability definitions.
 ### Access Logging
 Every data read recorded in audit collection with timestamp.
 
+### In-Transit Encryption
+Strict TLS 1.3 with forward secrecy ciphers mandated.
+
