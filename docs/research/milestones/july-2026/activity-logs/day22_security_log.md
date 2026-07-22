@@ -16,3 +16,6 @@ Bearer tokens carry subject tenant context validated by middleware.
 ### RBAC Matrix
 Patient, Clinician, Researcher distinct capability definitions.
 
+### Access Logging
+Every data read recorded in audit collection with timestamp.
+
