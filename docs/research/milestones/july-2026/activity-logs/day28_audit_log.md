@@ -13,3 +13,6 @@ Clear visual tags: oscillometric_cuff, optical_ppg, pedometer.
 ### Status Alerts
 Partial-day entries present amber notice regarding midnight completion.
 
+### Blood Pressure Audit Note
+Non-inferred status explicitly confirmed in modal UI.
+
