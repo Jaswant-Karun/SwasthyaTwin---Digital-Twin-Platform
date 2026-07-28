@@ -16,3 +16,6 @@ Partial-day entries present amber notice regarding midnight completion.
 ### Blood Pressure Audit Note
 Non-inferred status explicitly confirmed in modal UI.
 
+### Audit JSON Export
+Clinicians can export verifiable JSON event payloads.
+
