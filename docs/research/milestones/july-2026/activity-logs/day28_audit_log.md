@@ -10,3 +10,6 @@ Modal verifies raw sensor unit against internal standard.
 ### Measurement Method
 Clear visual tags: oscillometric_cuff, optical_ppg, pedometer.
 
+### Status Alerts
+Partial-day entries present amber notice regarding midnight completion.
+
