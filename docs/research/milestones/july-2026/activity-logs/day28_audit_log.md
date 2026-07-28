@@ -7,3 +7,6 @@ ISO timestamps rendered in user local time with explicit offset.
 ### Canonical Conversion Display
 Modal verifies raw sensor unit against internal standard.
 
+### Measurement Method
+Clear visual tags: oscillometric_cuff, optical_ppg, pedometer.
+
