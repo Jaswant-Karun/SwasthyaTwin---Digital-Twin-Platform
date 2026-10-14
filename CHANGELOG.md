@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Organ-specific health index computation formulas.
 - Counterfactual what-if simulation state transition architecture.
 - Analytical performance benchmarks and latency targets.
+- CGM glycemic anomaly detection rules and validation protocols.
 
 ## [0.1.0] - 2026-10-13
 ### Added
