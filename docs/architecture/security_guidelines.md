@@ -1,9 +1,6 @@
 # Security & Authentication Guidelines
 
-## Role-Based Access Control (RBAC) Matrix
-| Resource | Clinician | Researcher (De-identified) | Patient |
-| :--- | :--- | :--- | :--- |
-| Identified Patient Profile | Read / Write | Denied | Read Own |
-| Aggregate Cohort Stats | Read | Read | Denied |
-| Simulation Playground | Read / Execute | Read / Execute | Read / Execute |
-| Model Retraining Trigger | Denied | Admin Only | Denied |
+## Key Rotation Procedure
+- Support for dual-active JWT keys to enable zero-downtime key rotation.
+- Key identifiers (`kid`) embedded in token headers.
+- Automated secret rotation scheduled every 90 days.
