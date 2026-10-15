@@ -1,7 +1,9 @@
 # Security & Authentication Guidelines
 
-## Authentication Architecture
-- **Stateless Bearer Tokens**: JSON Web Tokens (JWT) signed via HMAC-SHA256.
-- **Short Expiry Windows**: Access tokens valid for 60 minutes.
-- **Role-Based Access Control (RBAC)**: Distinct permissions for `clinician`, `researcher`, and `admin` roles.
-- **Data Minimization**: API responses sanitize unnecessary identifiable attributes.
+## Role-Based Access Control (RBAC) Matrix
+| Resource | Clinician | Researcher (De-identified) | Patient |
+| :--- | :--- | :--- | :--- |
+| Identified Patient Profile | Read / Write | Denied | Read Own |
+| Aggregate Cohort Stats | Read | Read | Denied |
+| Simulation Playground | Read / Execute | Read / Execute | Read / Execute |
+| Model Retraining Trigger | Denied | Admin Only | Denied |
