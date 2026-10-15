@@ -9,7 +9,4 @@ All notable changes to this project will be documented in this file.
 - Role-Based Access Control (RBAC) security matrix and token lifecycle.
 - Prometheus observability metrics and readiness probes.
 - HIPAA/GDPR compliance guidelines for health data handling.
-
-## [0.2.0] - 2026-10-14
-### Added
-- Machine learning pipeline lifecycle and model persistence specifications.
+- Structured audit logging and RFC-7807 error format specifications.
