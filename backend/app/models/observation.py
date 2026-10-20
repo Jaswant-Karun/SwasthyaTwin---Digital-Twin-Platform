@@ -26,6 +26,8 @@ class ObservationBase(BaseModel):
     observed_at: datetime
     source: str = Field(default="wearable_continuous")
     data_kind: DataKind = Field(default="measured")
+    demo_data: bool = Field(default=False, description="Flag indicating synthetic demonstration record")
+    is_synthetic: bool = Field(default=False, description="Explicit synthetic provenance indicator")
     metadata: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

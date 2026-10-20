@@ -21,6 +21,7 @@ class PatientBase(BaseModel):
     primary_physician: Optional[str] = None
     lifestyle_profile: LifestyleProfile = Field(default_factory=LifestyleProfile)
     demo_data: bool = Field(default=False, description="Flag indicating synthetic demonstration record")
+    is_synthetic: bool = Field(default=False, description="Explicit synthetic provenance indicator")
 
     # Compatibility alias so frontend reading 'full_name' or 'biological_sex' works cleanly
     @property
@@ -43,6 +44,7 @@ class PatientCreate(BaseModel):
     primary_physician: Optional[str] = None
     lifestyle_profile: Optional[LifestyleProfile] = Field(default_factory=LifestyleProfile)
     demo_data: bool = Field(default=False)
+    is_synthetic: bool = Field(default=False)
 
     @field_validator("display_name", mode="before")
     @classmethod
@@ -52,6 +54,7 @@ class PatientCreate(BaseModel):
     def to_patient_base(self) -> PatientBase:
         resolved_name = self.display_name or self.full_name or "Anonymous Patient"
         resolved_gender = self.gender or self.biological_sex or "unspecified"
+        is_syn = self.is_synthetic or self.demo_data
         return PatientBase(
             patient_id=self.patient_id,
             display_name=resolved_name,
@@ -61,7 +64,8 @@ class PatientCreate(BaseModel):
             chronic_conditions=self.chronic_conditions,
             primary_physician=self.primary_physician,
             lifestyle_profile=self.lifestyle_profile or LifestyleProfile(),
-            demo_data=self.demo_data
+            demo_data=self.demo_data or is_syn,
+            is_synthetic=is_syn
         )
 
 class PatientUpdate(BaseModel):
@@ -78,6 +82,7 @@ class PatientUpdate(BaseModel):
 class PatientResponse(PatientBase):
     full_name: str
     biological_sex: str
+    is_synthetic: bool = False
     created_at: datetime
     updated_at: datetime
     active_alerts_count: int = 0
