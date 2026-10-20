@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class AlertBase(BaseModel):
     patient_id: str
@@ -30,5 +30,5 @@ class AlertAcknowledgeRequest(BaseModel):
 class AlertResponse(AlertBase):
     id: str = Field(alias="_id")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
+
