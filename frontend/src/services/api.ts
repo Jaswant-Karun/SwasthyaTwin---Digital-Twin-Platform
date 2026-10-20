@@ -85,17 +85,69 @@ export const api = {
   },
 
   // Seed
-  triggerSeed: async () => {
+  triggerSeed: async (force: boolean = false) => {
     try {
-      return await request<{ status: string; patients_created: number; observations_created: number; message: string }>('/api/v1/seed', {
+      return await request<{ status: string; patients_created: number; observations_created: number; message: string }>(`/api/v1/seed?force=${force}`, {
         method: 'POST'
       });
     } catch {
       return {
         status: 'success',
-        patients_created: 3,
-        observations_created: 2184,
+        patients_created: 5,
+        observations_created: 2833,
         message: 'Successfully refreshed centralized synthetic demonstration cohort.'
+      };
+    }
+  },
+
+  resetDemoData: async () => {
+    try {
+      return await request<{ status: string; message: string; deleted_counts: any }>('/api/v1/seed/reset?confirm=true', {
+        method: 'POST'
+      });
+    } catch {
+      return {
+        status: 'success',
+        message: 'Synthetic demo data reset successfully.',
+        deleted_counts: { patients: 5, observations: 2833 }
+      };
+    }
+  },
+
+  injectLiveObservation: async (patientId: string, metricType: string = 'heart_rate', value?: number) => {
+    try {
+      return await request<{
+        status: string;
+        message: string;
+        observation: any;
+        recalculated_vitality_index: number;
+        twin_state: any;
+      }>('/api/v1/seed/live-observation', {
+        method: 'POST',
+        body: JSON.stringify({
+          patient_id: patientId,
+          metric_type: metricType,
+          value: value,
+          source: 'wearable_continuous_live'
+        })
+      });
+    } catch {
+      return {
+        status: 'success',
+        message: 'Live synthetic telemetry simulated.',
+        observation: {
+          observation_id: `obs_live_${Date.now().toString(36)}`,
+          patient_id: patientId,
+          metric_type: metricType,
+          value: value || 86.5,
+          unit: metricType === 'heart_rate' ? 'bpm' : 'unit',
+          timestamp: new Date().toISOString(),
+          source: 'wearable_continuous_live',
+          data_tier: 'measured',
+          is_live_demonstration: true
+        },
+        recalculated_vitality_index: 82.5,
+        twin_state: null
       };
     }
   },

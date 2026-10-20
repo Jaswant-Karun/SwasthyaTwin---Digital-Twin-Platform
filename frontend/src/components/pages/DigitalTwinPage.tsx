@@ -15,7 +15,7 @@ import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
 
 export const DigitalTwinPage: React.FC = () => {
-  const { currentPatient, twinState, assessment } = useTwin();
+  const { currentPatient, twinState, assessment, latestUpdateInfo } = useTwin();
 
   if (!currentPatient || !twinState) {
     return (
@@ -108,9 +108,17 @@ export const DigitalTwinPage: React.FC = () => {
         <div className="card-surface rounded-xl p-4 flex items-center gap-3">
           <Clock className="w-5 h-5 text-teal-600 shrink-0" />
           <div className="text-xs">
-            <h4 className="font-bold text-slate-900">Telemetry Freshness Check</h4>
+            <h4 className="font-bold text-slate-900">Telemetry Freshness & Provenance</h4>
             <p className="text-slate-500 text-[11px]">
-              Continuous telemetry synced from wearable stream. Last packet received 42 minutes ago. Zero missing data gaps in the last 72 hours.
+              {latestUpdateInfo ? (
+                <>
+                  Latest observation: <strong className="text-teal-700 font-semibold">{latestUpdateInfo.metric.replace(/_/g, ' ')} = {latestUpdateInfo.value} {latestUpdateInfo.unit}</strong> received at {new Date(latestUpdateInfo.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} via <strong className="font-mono text-slate-700">{latestUpdateInfo.source}</strong>.
+                </>
+              ) : (
+                <>
+                  Continuous longitudinal telemetry synced via wearable stream. Last packet received within active baseline window. Zero unhandled gaps.
+                </>
+              )}
             </p>
           </div>
         </div>

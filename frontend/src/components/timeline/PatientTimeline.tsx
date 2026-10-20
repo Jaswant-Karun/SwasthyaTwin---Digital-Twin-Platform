@@ -9,14 +9,16 @@ import {
   Calendar,
   Filter,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Wind,
+  Sparkles
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { api } from '../../services/api';
 import { Observation } from '../../types';
 
 export const PatientTimeline: React.FC = () => {
-  const { currentPatient, refreshData } = useTwin();
+  const { currentPatient, refreshData, newlyAddedObservationId } = useTwin();
   const [observations, setObservations] = useState<Observation[]>([]);
   const [metricFilter, setMetricFilter] = useState<string>('all');
   const [isAdding, setIsAdding] = useState<boolean>(false);
@@ -71,6 +73,7 @@ export const PatientTimeline: React.FC = () => {
     if (metric.includes('heart')) return <Heart className="w-3.5 h-3.5 text-rose-400" />;
     if (metric.includes('sleep')) return <Moon className="w-3.5 h-3.5 text-cyan-400" />;
     if (metric.includes('step')) return <Footprints className="w-3.5 h-3.5 text-emerald-400" />;
+    if (metric.includes('respiratory')) return <Wind className="w-3.5 h-3.5 text-sky-400" />;
     return <Activity className="w-3.5 h-3.5 text-teal-400" />;
   };
 
@@ -100,6 +103,7 @@ export const PatientTimeline: React.FC = () => {
             <option value="hrv_rmssd">Heart Rate Variability</option>
             <option value="sleep_duration_hours">Sleep Duration</option>
             <option value="daily_steps">Daily Activity</option>
+            <option value="respiratory_rate">Respiratory Rate</option>
           </select>
 
           <button
@@ -201,33 +205,55 @@ export const PatientTimeline: React.FC = () => {
             No telemetry records found.
           </div>
         ) : (
-          observations.slice(0, 50).map((obs) => (
-            <div key={obs._id} className="p-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors text-xs">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-slate-800 text-slate-300">
-                  {getMetricIcon(obs.metric_type)}
-                </div>
-                <div>
-                  <h4 className="font-bold text-white capitalize">{obs.metric_type.replace(/_/g, ' ')}</h4>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
-                    <span>{new Date(obs.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(obs.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span>•</span>
-                    <span className="font-mono text-slate-500">Source: {obs.source}</span>
+          observations.slice(0, 50).map((obs) => {
+            const isNewlyAdded =
+              obs._id === newlyAddedObservationId ||
+              (obs as any).observation_id === newlyAddedObservationId ||
+              obs.source?.includes('live');
+
+            return (
+              <div
+                key={obs._id || (obs as any).observation_id}
+                className={`p-4 flex items-center justify-between transition-colors text-xs ${
+                  isNewlyAdded
+                    ? 'bg-teal-950/40 border-l-4 border-l-teal-400 shadow-sm shadow-teal-500/10'
+                    : 'hover:bg-slate-800/30'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${isNewlyAdded ? 'bg-teal-500/20 text-teal-300' : 'bg-slate-800 text-slate-300'}`}>
+                    {getMetricIcon(obs.metric_type)}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-white capitalize">{obs.metric_type.replace(/_/g, ' ')}</h4>
+                      {isNewlyAdded && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-teal-400 text-slate-950 animate-pulse">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          JUST INGESTED
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                      <span>{new Date(obs.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(obs.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>•</span>
+                      <span className="font-mono text-slate-500">Source: {obs.source}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="text-right">
-                <span className="text-base font-extrabold text-white font-mono">
-                  {obs.metric_type === 'daily_steps' ? Math.round(obs.value).toLocaleString() : obs.value}
-                  <span className="text-xs font-normal text-slate-400 ml-1">{obs.unit}</span>
-                </span>
-                <span className="block text-[10px] uppercase font-mono tracking-wider font-semibold text-teal-400">
-                  {obs.data_tier}
-                </span>
+                <div className="text-right">
+                  <span className={`text-base font-extrabold font-mono ${isNewlyAdded ? 'text-teal-300' : 'text-white'}`}>
+                    {obs.metric_type === 'daily_steps' ? Math.round(obs.value).toLocaleString() : obs.value}
+                    <span className="text-xs font-normal text-slate-400 ml-1">{obs.unit}</span>
+                  </span>
+                  <span className="block text-[10px] uppercase font-mono tracking-wider font-semibold text-teal-400">
+                    {obs.data_tier}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

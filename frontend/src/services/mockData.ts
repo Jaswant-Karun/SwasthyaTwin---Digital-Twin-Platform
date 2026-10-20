@@ -80,6 +80,54 @@ export const MOCK_PATIENTS: Patient[] = [
     total_observations_count: 720,
     latest_vitality_index: 76.2,
     stability_status: "moderate_drift"
+  },
+  {
+    patient_id: "PT-1004",
+    full_name: "Sunita Rao",
+    age: 67,
+    biological_sex: "female",
+    baseline_window_days: 30,
+    chronic_conditions: ["Healthy Aging Baseline Monitoring"],
+    primary_physician: "Dr. Meenakshi Iyer, MD (Geriatric Medicine)",
+    lifestyle_profile: {
+      baseline_sleep_hours: 7.2,
+      baseline_daily_steps: 5800,
+      activity_level: "light_moderate",
+      diet_pattern: "Plant-forward Traditional",
+      smoking_status: "non_smoker",
+      alcohol_consumption: "none",
+      stress_level: "low"
+    },
+    created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
+    updated_at: new Date().toISOString(),
+    active_alerts_count: 0,
+    total_observations_count: 540,
+    latest_vitality_index: 96.5,
+    stability_status: "optimal"
+  },
+  {
+    patient_id: "PT-1005",
+    full_name: "Kabir Sen",
+    age: 44,
+    biological_sex: "male",
+    baseline_window_days: 30,
+    chronic_conditions: ["Sedentary Desk Ergonomics & Weekend Exertion"],
+    primary_physician: "Dr. Vikram Joshi, MD (Occupational Health)",
+    lifestyle_profile: {
+      baseline_sleep_hours: 6.9,
+      baseline_daily_steps: 4500,
+      activity_level: "bimodal_weekend_warrior",
+      diet_pattern: "Standard Urban",
+      smoking_status: "non_smoker",
+      alcohol_consumption: "occasional",
+      stress_level: "moderate"
+    },
+    created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
+    updated_at: new Date().toISOString(),
+    active_alerts_count: 1,
+    total_observations_count: 520,
+    latest_vitality_index: 87.0,
+    stability_status: "optimal"
   }
 ];
 

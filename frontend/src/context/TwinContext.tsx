@@ -17,12 +17,17 @@ interface TwinContextType {
   systemHealth: SystemHealth | null;
   isLoading: boolean;
   isSeeding: boolean;
+  isLiveInjecting: boolean;
+  newlyAddedObservationId: string | null;
+  latestUpdateInfo: { time: string; source: string; metric: string; value: number; unit: string } | null;
   errorMessage: string | null;
   isDarkMode: boolean;
   setCurrentPatientId: (id: string) => void;
   refreshData: () => Promise<void>;
   acknowledgeAlert: (alertId: string, notes?: string) => Promise<void>;
-  seedDemoData: () => Promise<void>;
+  seedDemoData: (force?: boolean) => Promise<void>;
+  resetDemoCohort: () => Promise<void>;
+  injectLiveDemoObservation: (metricType?: string, value?: number) => Promise<any>;
   toggleDarkMode: () => void;
 }
 
@@ -37,6 +42,15 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSeeding, setIsSeeding] = useState<boolean>(false);
+  const [isLiveInjecting, setIsLiveInjecting] = useState<boolean>(false);
+  const [newlyAddedObservationId, setNewlyAddedObservationId] = useState<string | null>(null);
+  const [latestUpdateInfo, setLatestUpdateInfo] = useState<{
+    time: string;
+    source: string;
+    metric: string;
+    value: number;
+    unit: string;
+  } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
@@ -138,16 +152,64 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const seedDemoData = async () => {
+  const seedDemoData = async (force: boolean = true) => {
     setIsSeeding(true);
     setErrorMessage(null);
     try {
-      await api.triggerSeed();
+      await api.triggerSeed(force);
       await initApp();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to seed synthetic data.');
     } finally {
       setIsSeeding(false);
+    }
+  };
+
+  const resetDemoCohort = async () => {
+    setIsSeeding(true);
+    setErrorMessage(null);
+    try {
+      await api.resetDemoData();
+      await initApp();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to reset synthetic demo data.');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const injectLiveDemoObservation = async (metricType?: string, value?: number) => {
+    if (!currentPatient) return;
+    setIsLiveInjecting(true);
+    setErrorMessage(null);
+    try {
+      const res = await api.injectLiveObservation(
+        currentPatient.patient_id,
+        metricType || 'heart_rate',
+        value
+      );
+
+      if (res && res.observation) {
+        setNewlyAddedObservationId(res.observation.observation_id);
+        setLatestUpdateInfo({
+          time: res.observation.timestamp || new Date().toISOString(),
+          source: res.observation.source || 'wearable_continuous_live',
+          metric: res.observation.metric_type,
+          value: res.observation.value,
+          unit: res.observation.unit
+        });
+      }
+
+      // Immediately refresh the current patient's digital twin state & assessment
+      await loadPatientData(currentPatient.patient_id);
+      const patientList = await api.getPatients();
+      setPatients(patientList);
+      return res;
+    } catch (err: any) {
+      console.error('Error during live telemetry injection:', err);
+      setErrorMessage(err.message || 'Failed to simulate live telemetry packet.');
+    } finally {
+      setIsLiveInjecting(false);
     }
   };
 
@@ -162,12 +224,17 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         systemHealth,
         isLoading,
         isSeeding,
+        isLiveInjecting,
+        newlyAddedObservationId,
+        latestUpdateInfo,
         errorMessage,
         isDarkMode,
         setCurrentPatientId,
         refreshData,
         acknowledgeAlert,
         seedDemoData,
+        resetDemoCohort,
+        injectLiveDemoObservation,
         toggleDarkMode
       }}
     >
