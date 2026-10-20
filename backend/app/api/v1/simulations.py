@@ -7,6 +7,7 @@ from app.services.simulation_service import SimulationService
 
 router = APIRouter(prefix="/patients/{patient_id}/simulations", tags=["Simulations"])
 
+@router.post("", response_model=SimulationResponse, status_code=201)
 @router.post("/run", response_model=SimulationResponse, status_code=201)
 def run_simulation(
     patient_id: str,
