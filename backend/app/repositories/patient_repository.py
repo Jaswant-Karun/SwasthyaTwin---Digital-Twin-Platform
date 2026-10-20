@@ -51,6 +51,10 @@ class PatientRepository:
     def create(self, patient_dict: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a validated patient record with UTC timestamps."""
         try:
+            pid = patient_dict.get("patient_id")
+            if pid and self.collection.find_one({"patient_id": pid}):
+                raise ValueError(f"Patient with ID '{pid}' already exists.")
+
             now = datetime.now(timezone.utc)
             if "created_at" not in patient_dict or not patient_dict["created_at"]:
                 patient_dict["created_at"] = now
@@ -70,6 +74,7 @@ class PatientRepository:
         except PyMongoError as e:
             logger.error(f"Failed to insert patient: {e}")
             raise
+
 
     def update(self, patient_id: str, update_dict: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Update patient fields and touch updated_at timestamp."""
