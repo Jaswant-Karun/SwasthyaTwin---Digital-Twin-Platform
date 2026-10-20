@@ -15,12 +15,11 @@ import { StatusBadge } from '../common/StatusBadge';
 import type { Alert } from '../../types';
 
 export const AlertCenter: React.FC = () => {
-  const { alerts, currentPatient, acknowledgeAlert } = useTwin();
+  const { alerts, currentPatient, acknowledgeAlert, isLoadingPatientData, patientDataError, retryLoadPatient } = useTwin();
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterAcknowledged, setFilterAcknowledged] = useState<string>('unacknowledged');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
   const filteredAlerts = alerts.filter(a => {
     if (filterSeverity !== 'all' && a.severity !== filterSeverity) return false;
@@ -34,8 +33,13 @@ export const AlertCenter: React.FC = () => {
 
   const handleAcknowledge = async (id: string) => {
     setAcknowledgingId(id);
-    await acknowledgeAlert(id, 'Reviewed and acknowledged in Clinical Alert Center');
-    setAcknowledgingId(null);
+    try {
+      await acknowledgeAlert(id, 'Reviewed and acknowledged in Clinical Alert Center');
+    } catch (err) {
+      console.error('Failed to acknowledge alert:', err);
+    } finally {
+      setAcknowledgingId(null);
+    }
   };
 
   return (
@@ -97,7 +101,20 @@ export const AlertCenter: React.FC = () => {
 
       {/* Alert Items */}
       <div className="space-y-3">
-        {filteredAlerts.length === 0 ? (
+        {isLoadingPatientData ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="card-surface rounded-xl p-5 animate-pulse space-y-3">
+                <div className="flex justify-between">
+                  <div className="w-48 h-5 bg-slate-200 rounded" />
+                  <div className="w-24 h-4 bg-slate-200 rounded" />
+                </div>
+                <div className="w-full h-8 bg-slate-100 rounded" />
+                <div className="w-64 h-4 bg-slate-200 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : filteredAlerts.length === 0 ? (
           <div className="card-surface rounded-xl p-8 text-center space-y-2">
             <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
             <h4 className="text-sm font-bold text-slate-800">No Alerts Found</h4>

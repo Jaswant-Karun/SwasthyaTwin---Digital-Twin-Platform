@@ -34,12 +34,23 @@ export const TopNav: React.FC<TopNavProps> = ({
     setCurrentPatientId,
     alerts,
     systemHealth,
+    dbReadiness,
+    isOfflineDemo,
+    selectedRangeDays,
+    setSelectedRangeDays,
     refreshData,
     isLoading
   } = useTwin();
 
   const [showNotifications, setShowNotifications] = useState(false);
   const unreadAlerts = alerts.filter(a => !a.is_acknowledged);
+
+  const effectiveRange = selectedRangeDays || selectedRange;
+
+  const handleRangeChange = (days: number) => {
+    setSelectedRange(days);
+    setSelectedRangeDays(days);
+  };
 
   const getBreadcrumbLabel = (tab: string) => {
     switch (tab) {
@@ -107,9 +118,9 @@ export const TopNav: React.FC<TopNavProps> = ({
           {[7, 14, 30, 90].map((days) => (
             <button
               key={days}
-              onClick={() => setSelectedRange(days)}
+              onClick={() => handleRangeChange(days)}
               className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors ${
-                selectedRange === days
+                effectiveRange === days
                   ? 'bg-white text-slate-900 shadow-xs font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
@@ -185,11 +196,23 @@ export const TopNav: React.FC<TopNavProps> = ({
           )}
         </div>
 
-        {/* Database & Connection Indicator */}
-        <div className="hidden xl:flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200">
-          <Database className="w-3.5 h-3.5 text-teal-600" />
-          <span className="font-mono text-[10px]">
-            {systemHealth?.database.status === 'connected' ? 'MongoDB' : 'Demo Store'}
+        {/* Database & Real Connection Indicator */}
+        <div className={`hidden xl:flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border font-mono transition-colors ${
+          dbReadiness?.ready
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : isOfflineDemo
+            ? 'bg-amber-50 text-amber-800 border-amber-200'
+            : 'bg-rose-50 text-rose-800 border-rose-200 animate-pulse'
+        }`}>
+          <Database className={`w-3.5 h-3.5 ${
+            dbReadiness?.ready ? 'text-emerald-600' : isOfflineDemo ? 'text-amber-600' : 'text-rose-600'
+          }`} />
+          <span className="text-[10px] font-semibold">
+            {dbReadiness?.ready
+              ? `MongoDB (${dbReadiness.ping_ms}ms)`
+              : isOfflineDemo
+              ? 'Demo Mode (Offline)'
+              : 'DB Connecting...'}
           </span>
         </div>
 

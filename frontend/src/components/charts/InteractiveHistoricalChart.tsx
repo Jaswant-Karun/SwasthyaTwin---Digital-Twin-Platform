@@ -24,33 +24,48 @@ interface ChartPoint {
 }
 
 export const InteractiveHistoricalChart: React.FC<{ initialDays?: number }> = ({ initialDays = 30 }) => {
-  const { currentPatient, twinState } = useTwin();
+  const { currentPatient, twinState, selectedRangeDays } = useTwin();
   const [selectedMetric, setSelectedMetric] = useState<string>('heart_rate');
-  const [windowRange, setWindowRange] = useState<number>(initialDays);
+  const [windowRange, setWindowRange] = useState<number>(selectedRangeDays || initialDays);
   const [observations, setObservations] = useState<Observation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const reqIdRef = React.useRef<number>(0);
+
+  // Sync with global range if initialDays changes or global range changes
+  useEffect(() => {
+    if (selectedRangeDays) {
+      setWindowRange(selectedRangeDays);
+    }
+  }, [selectedRangeDays]);
 
   useEffect(() => {
     if (!currentPatient) return;
+    const currentReq = ++reqIdRef.current;
     const fetchObs = async () => {
       setIsLoading(true);
       try {
         const res = await api.getObservations(currentPatient.patient_id, {
           metric_type: selectedMetric,
-          limit: 300
+          limit: 500
         });
-        const sorted = [...res.items].sort(
-          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
-        setObservations(sorted);
+        if (currentReq === reqIdRef.current) {
+          const sorted = [...res.items].sort(
+            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+          setObservations(sorted);
+        }
       } catch (err) {
-        console.error('Failed to fetch observations for chart:', err);
+        if (currentReq === reqIdRef.current) {
+          console.error('Failed to fetch observations for chart:', err);
+        }
       } finally {
-        setIsLoading(false);
+        if (currentReq === reqIdRef.current) {
+          setIsLoading(false);
+        }
       }
     };
     fetchObs();
-  }, [currentPatient, selectedMetric]);
+  }, [currentPatient?.patient_id, selectedMetric]);
 
   const activeDeviation = twinState?.metrics[selectedMetric];
   const baselineMean = activeDeviation?.baseline_mean || 68;
@@ -59,8 +74,13 @@ export const InteractiveHistoricalChart: React.FC<{ initialDays?: number }> = ({
   const upperSigma = baselineMean + 1.5 * baselineStd;
   const lowerSigma = Math.max(0, baselineMean - 1.5 * baselineStd);
 
-  const now = new Date().getTime();
-  const cutoffTime = now - windowRange * 24 * 60 * 60 * 1000;
+  // Anchor window to either now or the latest available observation timestamp
+  const latestTimestamp = observations.length > 0
+    ? Math.max(...observations.map(o => new Date(o.timestamp).getTime()))
+    : Date.now();
+  const anchorTime = Math.max(Date.now(), latestTimestamp);
+  const cutoffTime = anchorTime - windowRange * 24 * 60 * 60 * 1000;
+
   const filteredData: ChartPoint[] = observations
     .filter(o => new Date(o.timestamp).getTime() >= cutoffTime)
     .map(o => ({
@@ -74,9 +94,11 @@ export const InteractiveHistoricalChart: React.FC<{ initialDays?: number }> = ({
   const metricTabs = [
     { id: 'heart_rate', label: 'Resting HR', unit: 'bpm' },
     { id: 'blood_pressure_systolic', label: 'Blood Pressure', unit: 'mmHg' },
+    { id: 'respiratory_rate', label: 'Respiratory Rate', unit: 'breaths/min' },
     { id: 'sleep_duration_hours', label: 'Sleep Duration', unit: 'hrs' },
     { id: 'daily_steps', label: 'Activity Steps', unit: 'steps' },
     { id: 'hrv_rmssd', label: 'HRV (RMSSD)', unit: 'ms' },
+    { id: 'fasting_blood_glucose', label: 'Blood Glucose', unit: 'mg/dL' }
   ];
 
   return (
@@ -131,12 +153,14 @@ export const InteractiveHistoricalChart: React.FC<{ initialDays?: number }> = ({
       {/* Chart Canvas */}
       <div className="h-72 w-full pt-1">
         {isLoading ? (
-          <div className="h-full flex items-center justify-center text-slate-400 text-xs animate-pulse">
-            Loading longitudinal records...
+          <div className="h-full flex flex-col items-center justify-center space-y-2 bg-slate-50/50 rounded-lg animate-pulse">
+            <Activity className="w-6 h-6 text-teal-600/40 animate-spin" />
+            <span className="text-slate-500 text-xs font-medium">Loading longitudinal observations...</span>
           </div>
         ) : filteredData.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-slate-400 text-xs">
-            No observations recorded in this timeframe.
+          <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs space-y-1">
+            <Activity className="w-5 h-5 text-slate-300" />
+            <span>No observations recorded for this metric within the selected {windowRange}-day window.</span>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
