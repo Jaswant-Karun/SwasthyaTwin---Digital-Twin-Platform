@@ -1,6 +1,4 @@
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class LifestyleProfile(BaseModel):
     baseline_sleep_hours: float = Field(default=7.5, ge=3.0, le=14.0)
