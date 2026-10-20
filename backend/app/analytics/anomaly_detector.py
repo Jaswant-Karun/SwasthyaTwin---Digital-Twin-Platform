@@ -72,6 +72,14 @@ METRIC_CLINICAL_PROPERTIES = {
         "warning_threshold_z": 1.8,
         "critical_threshold_z": 3.0,
         "explanation": "Elevated fasting blood sugar relative to baseline suggests altered glycemic regulation or acute counter-regulatory hormone response."
+    },
+    "respiratory_rate": {
+        "directionality": "higher_worse",
+        "label": "Respiratory Rate",
+        "unit": "breaths/min",
+        "warning_threshold_z": 1.8,
+        "critical_threshold_z": 2.8,
+        "explanation": "Elevated resting breathing rate can indicate physiological distress, metabolic demand, or subclinical respiratory strain."
     }
 }
 
