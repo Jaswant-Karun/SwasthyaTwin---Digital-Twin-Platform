@@ -592,6 +592,6 @@ def inject_live_observation(
             "data_tier": kind,
             "is_live_demonstration": True
         },
-        "recalculated_vitality_index": latest_assess.indicator_value if latest_assess else None,
+        "recalculated_vitality_index": latest_assess.get("indicator_value") if isinstance(latest_assess, dict) else (getattr(latest_assess, "indicator_value", None) if latest_assess else None),
         "twin_state": twin_state.model_dump() if twin_state and hasattr(twin_state, "model_dump") else twin_state
     }
