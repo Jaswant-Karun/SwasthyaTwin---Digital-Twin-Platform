@@ -18,6 +18,10 @@ class MetricBaseline(BaseModel):
     window_days: int
     window_start: datetime
     window_end: datetime
+    outlier_count: int = 0
+    is_sufficient: bool = True
+    iqr_lower_fence: Optional[float] = None
+    iqr_upper_fence: Optional[float] = None
 
 class MetricDeviation(BaseModel):
     metric_type: str
@@ -31,6 +35,10 @@ class MetricDeviation(BaseModel):
     status: str
     direction: str
     data_tier: str
+    iqr_distance: Optional[float] = None
+    freshness_hours: Optional[float] = None
+    is_stale: bool = False
+    contributing_observation_id: Optional[str] = None
 
 class ExplainabilityFactor(BaseModel):
     metric_type: str
@@ -38,6 +46,8 @@ class ExplainabilityFactor(BaseModel):
     rule_name: str
     rationale: str
     severity: str
+    rule_version: str = "v1.3.0-heuristic"
+    contributing_observation_id: Optional[str] = None
 
 class HealthAssessmentRecord(BaseModel):
     assessment_id: str = Field(default_factory=lambda: f"asmt_{uuid.uuid4().hex[:12]}")
@@ -46,10 +56,10 @@ class HealthAssessmentRecord(BaseModel):
     baseline_window: int = 30
     indicator_type: str = "vitality_stability_index"
     indicator_value: float = 100.0
-    methodology: str = "Z-Score distance deduction against personal historical baseline distribution"
+    methodology: str = "Standardized baseline Euclidean distance deduction against personal historical distribution"
     evidence: Dict[str, Any] = Field(default_factory=dict)
     limitations: str = "Non-diagnostic heuristic research indicator; not calibrated for acute emergency triage"
-    model_version: str = "v1.2.0"
+    model_version: str = "v1.3.0"
 
 class HealthAssessmentResponse(BaseModel):
     assessment_id: Optional[str] = None
@@ -61,16 +71,41 @@ class HealthAssessmentResponse(BaseModel):
     explainability_factors: List[ExplainabilityFactor]
     summary_message: str
     safety_disclaimer: str
+    missing_inputs: List[str] = Field(default_factory=list)
+    component_contributions: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    data_freshness: Dict[str, Any] = Field(default_factory=dict)
+    model_version: str = "v1.3.0-heuristic"
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+class MetricTrendSummary(BaseModel):
+    metric_type: str
+    unit: str
+    current_value: float
+    baseline_median: float
+    baseline_iqr: float
+    delta_from_baseline: float
+    slope_7d: float
+    direction: str
+    volatility: float
+    sample_count_30d: int
+    freshness_hours: float
+    is_stale: bool
 
 class DigitalTwinStateResponse(BaseModel):
     patient_id: str
     snapshot_time: datetime
     baseline_window_days: int
     metrics: Dict[str, MetricDeviation]
+    baselines: Dict[str, MetricBaseline] = Field(default_factory=dict)
+    trends: Dict[str, MetricTrendSummary] = Field(default_factory=dict)
     overall_vitality: float
     stability_status: str
     active_alert_count: int
+    missing_inputs: List[str] = Field(default_factory=list)
+    missing_data_warnings: List[str] = Field(default_factory=list)
+    data_quality: Dict[str, Any] = Field(default_factory=dict)
+    data_freshness_hours: Optional[float] = None
+    is_data_stale: bool = False
 
     model_config = ConfigDict(from_attributes=True)

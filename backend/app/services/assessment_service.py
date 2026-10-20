@@ -1,13 +1,21 @@
 import uuid
+import numpy as np
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional
 from pymongo.database import Database
 from app.analytics.baseline_calculator import compute_all_baselines
 from app.analytics.anomaly_detector import detect_deviations, evaluate_alerts
-from app.analytics.trend_indicator import calculate_health_stability_index
-from app.models.assessment import HealthAssessmentResponse, DigitalTwinStateResponse
+from app.analytics.trend_indicator import calculate_health_stability_index, CANONICAL_METRIC_WEIGHTS
+from app.analytics.predictor import train_and_forecast_metric
+from app.models.assessment import (
+    HealthAssessmentResponse,
+    DigitalTwinStateResponse,
+    MetricTrendSummary,
+    MetricBaseline
+)
 from app.repositories.assessment_repository import AssessmentRepository
 from app.services.alert_service import AlertService
+from app.core.config import settings
 
 class AssessmentService:
     @staticmethod
@@ -16,7 +24,7 @@ class AssessmentService:
         if not patient:
             return {}
 
-        days = window_days or patient.get("baseline_window_days", 30)
+        days = window_days or patient.get("baseline_window_days", settings.DEFAULT_BASELINE_DAYS)
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
         observations = list(db.observations.find({
@@ -27,29 +35,48 @@ class AssessmentService:
             ]
         }, {"_id": 0}))
 
-        baselines = compute_all_baselines(observations, window_days=days)
+        baselines = compute_all_baselines(
+            observations,
+            window_days=days,
+            min_observations=settings.MIN_OBSERVATIONS_FOR_BASELINE
+        )
         return {k: v.model_dump() for k, v in baselines.items()}
 
     @staticmethod
     def evaluate_twin_state(db: Database, patient_id: str) -> Optional[DigitalTwinStateResponse]:
+        """
+        Dynamically computes the complete digital twin state combining:
+        - Latest available observations
+        - Personal historical baselines
+        - Recent trend slopes and volatility
+        - Data freshness and quality metrics
+        - Explainable stability indicators
+        - Explicit missing-data warnings
+        """
         patient = db.patients.find_one({"patient_id": patient_id})
         if not patient:
             return None
 
-        window_days = patient.get("baseline_window_days", 30)
-        baseline_cutoff = datetime.now(timezone.utc) - timedelta(days=window_days)
+        window_days = patient.get("baseline_window_days", settings.DEFAULT_BASELINE_DAYS)
+        now = datetime.now(timezone.utc)
+        baseline_cutoff = now - timedelta(days=window_days)
 
-        # Baseline observations (30 days)
-        baseline_obs = list(db.observations.find({
+        # 1. Fetch observations within baseline window
+        all_window_obs = list(db.observations.find({
             "patient_id": patient_id,
             "$or": [
                 {"observed_at": {"$gte": baseline_cutoff}},
                 {"timestamp": {"$gte": baseline_cutoff}}
             ]
         }, {"_id": 0}))
-        baselines = compute_all_baselines(baseline_obs, window_days=window_days)
 
-        # Current snapshot (latest measurement per metric type)
+        baselines = compute_all_baselines(
+            all_window_obs,
+            window_days=window_days,
+            min_observations=settings.MIN_OBSERVATIONS_FOR_BASELINE
+        )
+
+        # 2. Extract latest observation per distinct metric type
         distinct_types = db.observations.distinct("measurement_type", {"patient_id": patient_id})
         if not distinct_types:
             distinct_types = db.observations.distinct("metric_type", {"patient_id": patient_id})
@@ -65,17 +92,93 @@ class AssessmentService:
                 sort=[("observed_at", -1), ("timestamp", -1)]
             )
             if latest:
-                # normalize field name for anomaly detector
                 m_key = latest.get("measurement_type") or latest.get("metric_type")
                 current_metrics[m_key] = latest
 
-        deviations = detect_deviations(current_metrics, baselines)
+        # 3. Detect deviations against personal baselines
+        deviations = detect_deviations(
+            current_metrics=current_metrics,
+            baselines=baselines,
+            freshness_threshold_hours=settings.DATA_STALENESS_WARNING_HOURS
+        )
+
+        # 4. Compute composite & domain stability indicators
         assessment = calculate_health_stability_index(patient_id, deviations)
 
-        now = datetime.now(timezone.utc)
-        asmt_id = f"asmt_{uuid.uuid4().hex[:12]}"
+        # 5. Compute recent trends (slopes, volatility)
+        trends_map: Dict[str, MetricTrendSummary] = {}
+        for m in distinct_types:
+            m_obs = [
+                o for o in all_window_obs
+                if (o.get("measurement_type") == m or o.get("metric_type") == m) and o.get("value") is not None
+            ]
+            if len(m_obs) >= 2:
+                # Sort chronologically
+                m_obs.sort(key=lambda x: x.get("observed_at") or x.get("timestamp") or now)
+                values = [float(o["value"]) for o in m_obs]
+                # Calculate 7-day trend slope if recent readings exist
+                recent_vals = values[-7:] if len(values) >= 7 else values
+                x = np.arange(len(recent_vals))
+                slope, _ = np.polyfit(x, recent_vals, 1) if len(recent_vals) > 1 else (0.0, 0.0)
+                volatility = float(np.std(values)) if len(values) > 1 else 0.0
 
-        # Record assessment in repository with required fields
+                base_m = baselines.get(m)
+                cur_dev = deviations.get(m)
+                cur_val = cur_dev.current_value if cur_dev else values[-1]
+                unit = cur_dev.unit if cur_dev else (m_obs[-1].get("unit", ""))
+
+                trends_map[m] = MetricTrendSummary(
+                    metric_type=m,
+                    unit=unit,
+                    current_value=round(cur_val, 1),
+                    baseline_median=base_m.median if base_m else round(cur_val, 1),
+                    baseline_iqr=base_m.iqr if base_m else 0.0,
+                    delta_from_baseline=cur_dev.delta_absolute if cur_dev else 0.0,
+                    slope_7d=round(float(slope), 3),
+                    direction="improving" if (slope < 0 and m in ["heart_rate", "blood_pressure_systolic"]) or (slope > 0 and m in ["hrv_rmssd", "sleep_duration_hours"]) else ("worsening" if abs(slope) > 0.05 else "stable"),
+                    volatility=round(volatility, 2),
+                    sample_count_30d=len(values),
+                    freshness_hours=cur_dev.freshness_hours if cur_dev and cur_dev.freshness_hours is not None else 0.0,
+                    is_stale=cur_dev.is_stale if cur_dev else False
+                )
+
+        # 6. Data Quality & Missing Data Warnings
+        missing_inputs = assessment.missing_inputs
+        missing_warnings = []
+        for m in missing_inputs:
+            label = m.replace('_', ' ').title()
+            missing_warnings.append(
+                f"Missing {label}: No observations recorded in the past {window_days} days. "
+                f"Excluded from stability index without penalizing baseline."
+            )
+
+        total_obs_count = len(all_window_obs)
+        total_outliers = sum(b.outlier_count for b in baselines.values())
+        outlier_pct = round((total_outliers / total_obs_count * 100.0), 1) if total_obs_count > 0 else 0.0
+
+        # Overall freshness: min freshness hours across active metrics
+        active_freshness = [d.freshness_hours for d in deviations.values() if d.freshness_hours is not None]
+        overall_freshness_h = min(active_freshness) if active_freshness else None
+        is_overall_stale = overall_freshness_h > settings.DATA_STALENESS_WARNING_HOURS if overall_freshness_h is not None else True
+
+        if is_overall_stale:
+            missing_warnings.append(
+                f"Data Staleness Warning: Most recent telemetry is {overall_freshness_h:.0f} hours old "
+                f"(exceeds {settings.DATA_STALENESS_WARNING_HOURS}h threshold)."
+            )
+
+        data_quality = {
+            "window_observations_count": total_obs_count,
+            "tracked_metrics_count": len(deviations),
+            "canonical_coverage_pct": round((len(deviations) / len(CANONICAL_METRIC_WEIGHTS)) * 100.0, 1),
+            "outlier_reading_count": total_outliers,
+            "outlier_rate_pct": outlier_pct,
+            "sufficient_baseline_count": sum(1 for b in baselines.values() if b.is_sufficient),
+            "freshness_status": "fresh" if not is_overall_stale else "stale"
+        }
+
+        # 7. Persist assessment record
+        asmt_id = f"asmt_{uuid.uuid4().hex[:12]}"
         repo = AssessmentRepository(db)
         assess_doc = {
             "assessment_id": asmt_id,
@@ -87,21 +190,23 @@ class AssessmentService:
             "indicator_value": round(assessment.vitality_index, 1),
             "vitality_index": round(assessment.vitality_index, 1),
             "stability_status": assessment.stability_status,
-            "methodology": "Z-score Euclidean distance penalty against personalized 30-day baseline distribution",
+            "methodology": "Normalized baseline Euclidean distance deduction against personal historical distribution",
             "evidence": {
-                "metric_count": len(deviations),
+                "active_metrics_count": len(deviations),
                 "z_scores": {k: round(v.z_score, 2) for k, v in deviations.items()}
             },
             "limitations": "Non-diagnostic heuristic research indicator; not calibrated for acute emergency triage",
-            "model_version": "v1.2.0",
+            "model_version": settings.RULE_ENGINE_VERSION,
             "deviations": {k: v.model_dump() for k, v in deviations.items()},
             "explainability_factors": [f.model_dump() for f in assessment.explainability_factors],
             "summary_message": assessment.summary_message,
-            "safety_disclaimer": assessment.safety_disclaimer
+            "safety_disclaimer": assessment.safety_disclaimer,
+            "missing_inputs": missing_inputs,
+            "component_contributions": assessment.component_contributions
         }
         repo.save_assessment(assess_doc)
 
-        # Check and persist new alerts if any
+        # 8. Check and persist alerts
         new_alerts = evaluate_alerts(patient_id, deviations)
         for al in new_alerts:
             recent = db.alerts.find_one({
@@ -122,14 +227,20 @@ class AssessmentService:
             snapshot_time=now,
             baseline_window_days=window_days,
             metrics=deviations,
+            baselines=baselines,
+            trends=trends_map,
             overall_vitality=assessment.vitality_index,
             stability_status=assessment.stability_status,
-            active_alert_count=active_alert_count
+            active_alert_count=active_alert_count,
+            missing_inputs=missing_inputs,
+            missing_data_warnings=missing_warnings,
+            data_quality=data_quality,
+            data_freshness_hours=overall_freshness_h,
+            is_data_stale=is_overall_stale
         )
 
     @staticmethod
     def get_latest_assessment(db: Database, patient_id: str) -> Optional[Dict[str, Any]]:
-        # Evaluate fresh state to reflect latest incoming telemetry
         state = AssessmentService.evaluate_twin_state(db, patient_id)
         if not state:
             return None
@@ -139,3 +250,65 @@ class AssessmentService:
         if latest_doc:
             latest_doc["_id"] = latest_doc.get("assessment_id", "")
         return latest_doc
+
+    @staticmethod
+    def get_patient_trends(db: Database, patient_id: str) -> Dict[str, Any]:
+        """Returns structured trends, baseline corridors, and trajectories for visualization."""
+        state = AssessmentService.evaluate_twin_state(db, patient_id)
+        if not state:
+            return {}
+
+        return {
+            "patient_id": patient_id,
+            "evaluated_at": state.snapshot_time,
+            "trends": {k: v.model_dump() for k, v in state.trends.items()},
+            "baselines": {k: v.model_dump() for k, v in state.baselines.items()},
+            "data_quality": state.data_quality,
+            "missing_inputs": state.missing_inputs
+        }
+
+    @staticmethod
+    def get_patient_predictions(
+        db: Database,
+        patient_id: str,
+        metrics: Optional[List[str]] = None,
+        horizon_days: int = 7
+    ) -> Dict[str, Any]:
+        """
+        Executes time-series autoregressive forecasting with temporal leakage prevention
+        and held-out validation against persistence baselines.
+        """
+        target_metrics = metrics or ["heart_rate", "blood_pressure_systolic", "sleep_duration_hours"]
+        cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+
+        results: Dict[str, Any] = {}
+        for m in target_metrics:
+            obs = list(db.observations.find({
+                "patient_id": patient_id,
+                "$or": [{"measurement_type": m}, {"metric_type": m}],
+                "$or": [{"observed_at": {"$gte": cutoff}}, {"timestamp": {"$gte": cutoff}}]
+            }, {"_id": 0}).sort("observed_at", 1))
+
+            if not obs:
+                # Fallback to general query if timestamp format varies
+                obs = list(db.observations.find({
+                    "patient_id": patient_id,
+                    "$or": [{"measurement_type": m}, {"metric_type": m}]
+                }, {"_id": 0}).sort("observed_at", 1))
+
+            unit = obs[0].get("unit", "") if obs else ""
+            forecast = train_and_forecast_metric(
+                metric_type=m,
+                unit=unit,
+                observations=obs,
+                horizon_days=horizon_days
+            )
+            if forecast:
+                results[m] = forecast.model_dump()
+
+        return {
+            "patient_id": patient_id,
+            "horizon_days": horizon_days,
+            "generated_at": datetime.now(timezone.utc),
+            "forecasts": results
+        }
