@@ -281,3 +281,10 @@ def test_patient_not_found_handling(client):
     res = client.get("/api/v1/patients/PT-NONEXISTENT")
     assert res.status_code == 404
     assert "not found" in res.json()["detail"].lower()
+
+def test_database_indexes_structure(mock_db):
+    """Verify that create_indexes creates expected index patterns on collections."""
+    create_indexes(mock_db)
+    obs_indexes = mock_db.observations.index_information()
+    assert any("patient_id" in idx.get("key", [("", 0)])[0][0] for idx in obs_indexes.values())
+
