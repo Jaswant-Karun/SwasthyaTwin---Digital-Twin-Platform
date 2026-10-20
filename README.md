@@ -143,34 +143,75 @@ npm run test
 
 ---
 
-## 👥 Pre-Configured Synthetic Cohorts
+## 👥 Pre-Configured Synthetic Cohorts (5 Profiles • 2,800+ Observations)
 
-SwasthyaTwin auto-seeds 3 distinct demonstration cohorts upon startup (90 days of daily continuous telemetry each):
+SwasthyaTwin comes equipped with 5 clinically differentiated demonstration cohorts (90 days of continuous multi-modal telemetry each, generated with deterministic seed `42`):
 
-1. **Aarav Mehta (`PT-1001`)** — 38M, Corporate Professional
-   - *Clinical Scenario:* Acute work-crunch sleep deprivation. Sleep hours drop from 7.5h to 5.1h over the last 15 days, resulting in resting HR elevation and autonomic strain.
-2. **Priya Sharma (`PT-1002`)** — 54F, Hypertensive Recovery
-   - *Clinical Scenario:* Adopting DASH low-sodium diet and daily walking. Systolic BP steadily improves from 144 to 128 mmHg over 90 days.
-3. **Devan Nair (`PT-1003`)** — 28M, Marathon Athlete
-   - *Clinical Scenario:* High-performance runner experiencing autonomic fatigue/overtraining drift (normally resting HR 48 bpm; drifts to 62 bpm with depressed HRV).
-
-*You can trigger a fresh re-seed anytime from the header button or via `POST /api/v1/seed`.*
+1. **Aarav Mehta (`PT-1001`)** — 38M, Corporate Professional (Acute Work-Crunch Sleep Deprivation)
+   - Baseline: Sleep 7.5h, Resting HR 64 bpm.
+   - Deviation: Sleep drops to 5.1h over the last 15 days, producing elevated resting HR (+18.4%) and autonomic strain.
+2. **Priya Sharma (`PT-1002`)** — 54F, Post-Hypertensive Recovery (Lifestyle Modification)
+   - Baseline: Systolic BP 142 mmHg, Steps 4,200.
+   - Deviation: Adopting DASH low-sodium nutrition and +3,500 daily steps; systolic BP steadily recovers to 124 mmHg over 90 days.
+3. **Vikram Patel (`PT-1003`)** — 46M, Shift-Worker Autonomic Circadian Disruption
+   - Baseline: Sleep 7.2h, Resting HR 66 bpm, Steps 7,800.
+   - Deviation: Rotating 12-hour night shifts induce circadian fragmentation, suppressed HRV (RMSSD), and mild blood pressure elevation.
+4. **Meera Nambiar (`PT-1004`)** — 31F, Respiratory Recovery Post-Viral Syndrome
+   - Baseline: Respiratory Rate 14.2 breaths/min, SpO2 98.8%.
+   - Deviation: Mild post-viral tachypnea (respiratory rate elevated to 19.5 breaths/min) with normal cardiovascular metrics.
+5. **Devan Nair (`PT-1005`)** — 28M, Competitive Endurance Triathlete (Autonomic Overtraining Drift)
+   - Baseline: Resting HR 46 bpm, HRV RMSSD 78 ms.
+   - Deviation: High-volume training load without adequate recovery causes parasympathetic saturation and resting HR drift to 61 bpm (+32.6%).
 
 ---
 
-## 📖 System Architecture & Endpoints
+## 🛠️ CLI Seeding & Management Script
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for full algorithmic formulations.
+You can reset, inspect, or inject live demo telemetry from the command line:
+
+```bash
+# Deterministically seed synthetic demo cohort (idempotent, skips if already present)
+python backend/scripts/seed_demo.py
+
+# Force re-seed (overwrites only synthetic records tagged demo_data: true)
+python backend/scripts/seed_demo.py --force
+
+# Safely reset synthetic demo cohort (never touches real patient records)
+python backend/scripts/seed_demo.py --reset
+
+# Inject a live telemetry packet to test real-time twin reactivity
+python backend/scripts/seed_demo.py --live-inject --patient PT-1001 --metric heart_rate --value 84.5
+```
+
+---
+
+## 📖 System Documentation & Reports
+
+- **Technical Project Report:** [docs/project-report.md](docs/project-report.md)
+- **Hackathon Presentation Outline:** [docs/presentation.md](docs/presentation.md)
+- **3-Minute Demonstration Script:** [docs/demo-script.md](docs/demo-script.md)
+- **MongoDB Configuration & Schema Guide:** [docs/MONGODB_SETUP.md](docs/MONGODB_SETUP.md)
+- **Mathematical Methodology & Algorithms:** [docs/METHODOLOGY.md](docs/METHODOLOGY.md)
+- **Synthetic Cohort Statistical Report:** [docs/synthetic_dataset_report.md](docs/synthetic_dataset_report.md)
+- **System Architecture & Dataflow:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Complete REST API Specification:** [docs/API_SPEC.md](docs/API_SPEC.md)
+
+---
+
+## 🌐 API Endpoints Reference
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/health` | Server and database connection readiness check |
+| `GET` | `/health/ready` | Active database ping and round-trip latency probe |
 | `GET` | `/api/v1/patients` | List patients with pagination and search |
 | `GET` | `/api/v1/patients/{id}` | Get patient demographic and baseline settings |
 | `GET` | `/api/v1/patients/{id}/twin/state` | Dynamic digital twin state & Z-score deviations |
 | `GET` | `/api/v1/patients/{id}/twin/baseline` | Calculated personalized baseline distributions |
 | `GET` | `/api/v1/patients/{id}/twin/assessment` | Explainable Vitality Index and deduction factors |
 | `POST` | `/api/v1/patients/{id}/simulations/run` | Execute counterfactual What-If projection |
+| `GET` | `/api/v1/patients/{id}/simulations` | List historical simulation runs for patient |
 | `GET` | `/api/v1/patients/{id}/alerts` | Active and historical deviation alerts |
-| `POST` | `/api/v1/alerts/{id}/acknowledge` | Mark alert as acknowledged with clinician notes |
+| `PATCH` | `/api/v1/alerts/{id}/acknowledge` | Mark alert as acknowledged with clinician notes |
 | `POST` | `/api/v1/seed` | Seed deterministic synthetic 90-day cohorts |
+| `POST` | `/api/v1/seed/reset` | Safely remove synthetic demonstration data |
