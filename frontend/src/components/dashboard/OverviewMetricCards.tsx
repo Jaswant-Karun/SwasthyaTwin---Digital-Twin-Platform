@@ -39,9 +39,10 @@ export const OverviewMetricCards: React.FC = () => {
         baseline_mean: 64.2,
         baseline_std: 3.1,
         delta_percentage: 18.4,
-        direction: 'elevated',
-        status: 'significant_deviation',
-        data_tier: 'measured'
+        z_score: 3.81,
+        direction: 'elevated' as const,
+        status: 'significant_deviation' as const,
+        data_tier: 'measured' as const
       }
     },
     {
@@ -55,9 +56,10 @@ export const OverviewMetricCards: React.FC = () => {
         baseline_mean: 118.4,
         baseline_std: 4.2,
         delta_percentage: 6.4,
-        direction: 'elevated',
-        status: 'mild_deviation',
-        data_tier: 'measured'
+        z_score: 1.81,
+        direction: 'elevated' as const,
+        status: 'mild_deviation' as const,
+        data_tier: 'measured' as const
       }
     },
     {
@@ -71,9 +73,10 @@ export const OverviewMetricCards: React.FC = () => {
         baseline_mean: 7.4,
         baseline_std: 0.6,
         delta_percentage: -29.7,
-        direction: 'suppressed',
-        status: 'significant_deviation',
-        data_tier: 'measured'
+        z_score: -3.67,
+        direction: 'suppressed' as const,
+        status: 'significant_deviation' as const,
+        data_tier: 'measured' as const
       }
     },
     {
@@ -87,10 +90,12 @@ export const OverviewMetricCards: React.FC = () => {
         baseline_mean: 7640,
         baseline_std: 950,
         delta_percentage: -31.9,
-        direction: 'suppressed',
-        status: 'moderate_drift',
-        data_tier: 'measured'
+        z_score: -2.57,
+        direction: 'suppressed' as const,
+        status: 'moderate_drift' as const,
+        data_tier: 'measured' as const
       }
+
     }
   ];
 

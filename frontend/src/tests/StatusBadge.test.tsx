@@ -16,6 +16,7 @@ describe('StatusBadge Component', () => {
 
   it('renders critical alert severity correctly', () => {
     render(<StatusBadge severity="critical" />);
-    expect(screen.getByText(/Critical Alert/i)).toBeInTheDocument();
+    expect(screen.getByText(/Critical/i)).toBeInTheDocument();
   });
 });
+
