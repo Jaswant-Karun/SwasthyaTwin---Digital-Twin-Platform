@@ -14,7 +14,7 @@ class AssessmentRepository:
 
     @property
     def collection(self):
-        db = self._db or get_db()
+        db = self._db if self._db is not None else get_db()
         return db.health_assessments
 
     def save_assessment(self, assessment_dict: Dict[str, Any]) -> Dict[str, Any]:

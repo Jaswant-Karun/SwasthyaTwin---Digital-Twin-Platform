@@ -14,7 +14,7 @@ class ObservationRepository:
 
     @property
     def collection(self):
-        db = self._db or get_db()
+        db = self._db if self._db is not None else get_db()
         return db.observations
 
     def create(self, obs_dict: Dict[str, Any]) -> Dict[str, Any]:
