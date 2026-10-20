@@ -62,6 +62,7 @@ export const TopNav: React.FC<TopNavProps> = ({
       case 'what-if': return 'What-if Simulator';
       case 'timeline': return 'Patient Timeline';
       case 'alerts': return 'Alert Center';
+      case 'methodology': return 'Calculation Methodology & Transparency';
       case 'data-sources': return 'Data Sources & Governance';
       case 'settings': return 'Platform Settings';
       default: return 'Overview';
@@ -95,8 +96,21 @@ export const TopNav: React.FC<TopNavProps> = ({
         </nav>
       </div>
 
-      {/* Right Controls: Patient Selector + Date Range + Notifications + Profile */}
+      {/* Right Controls: Methodology Button + Patient Selector + Date Range + Notifications + Profile */}
       <div className="flex items-center gap-3">
+        {/* Prominent Methodology Button for Users & Judges */}
+        <button
+          onClick={() => setActiveTab('methodology')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+            activeTab === 'methodology'
+              ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+              : 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100 hover:border-teal-300'
+          }`}
+          title="Inspect calculation methodology, formulas, and rules"
+        >
+          <BookOpen className="w-3.5 h-3.5 text-teal-600" />
+          <span>Methodology</span>
+        </button>
         {/* Patient Selector */}
         <div className="relative">
           <select

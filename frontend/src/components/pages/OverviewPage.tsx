@@ -5,7 +5,7 @@ import { OverviewMetricCards } from '../dashboard/OverviewMetricCards';
 import { InteractiveHistoricalChart } from '../charts/InteractiveHistoricalChart';
 import { OverviewBaselinePanel } from '../dashboard/OverviewBaselinePanel';
 import { OverviewTrendAndAlerts } from '../dashboard/OverviewTrendAndAlerts';
-import { User, Activity, Clock, ShieldCheck, Stethoscope } from 'lucide-react';
+import { User, Activity, Clock, ShieldCheck, Stethoscope, BookOpen } from 'lucide-react';
 
 interface OverviewPageProps {
   onNavigate: (tab: string) => void;
@@ -42,14 +42,25 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate, selected
           </p>
         </div>
 
-        {currentPatient && (
-          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs shadow-2xs">
-            <Stethoscope className="w-4 h-4 text-teal-600" />
-            <span className="text-slate-600">
-              Physician: <strong className="text-slate-900">{currentPatient.primary_physician || 'Preventive Medicine'}</strong>
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onNavigate('methodology')}
+            className="flex items-center gap-1.5 bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-800 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-teal-300 text-xs font-semibold shadow-2xs transition-all"
+            title="Inspect calculation methodology and formulas"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-teal-600" />
+            <span>Methodology</span>
+          </button>
+
+          {currentPatient && (
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs shadow-2xs">
+              <Stethoscope className="w-4 h-4 text-teal-600" />
+              <span className="text-slate-600">
+                Physician: <strong className="text-slate-900">{currentPatient.primary_physician || 'Preventive Medicine'}</strong>
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 2. Compact Digital Twin Status Panel (last updated time & data freshness) */}
