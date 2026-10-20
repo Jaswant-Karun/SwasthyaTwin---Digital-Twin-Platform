@@ -248,9 +248,9 @@ def test_seeding_is_repeatable_and_non_destructive(mock_db):
     assert user_check is not None
     assert user_check["display_name"] == "Real User Patient"
 
-    # Verify demo patients exist
+    # Verify demo patients exist (5 synthetic profiles)
     demo_count = mock_db.patients.count_documents({"demo_data": True})
-    assert demo_count == 3
+    assert demo_count == 5
 
     # 3. Run seed again without force -> should detect existing and skip
     re_seed = seed_synthetic_patients(mock_db, force=False)
@@ -258,6 +258,59 @@ def test_seeding_is_repeatable_and_non_destructive(mock_db):
 
     # User record STILL untouched!
     assert mock_db.patients.find_one({"patient_id": "PT-USER-REAL"}) is not None
+
+def test_reset_demo_data_safety_and_explicit_confirmation(mock_db):
+    """Verify that reset_demo_data requires explicit confirmation and never deletes real user records."""
+    from app.database.seed import reset_demo_data, inject_live_observation
+
+    # 1. Insert real user patient record
+    user_patient = {
+        "patient_id": "PT-REAL-VIP",
+        "display_name": "Dr. Real Clinician",
+        "demo_data": False,
+        "created_at": datetime.now(timezone.utc)
+    }
+    mock_db.patients.insert_one(user_patient)
+
+    # 2. Seeding
+    seed_synthetic_patients(mock_db, force=True)
+    assert mock_db.patients.count_documents({"demo_data": True}) == 5
+
+    # 3. Refuse reset without confirmation
+    refused = reset_demo_data(mock_db, confirm=False)
+    assert refused["status"] == "confirmation_required"
+    assert mock_db.patients.count_documents({"demo_data": True}) == 5
+
+    # 4. Confirm reset
+    res = reset_demo_data(mock_db, confirm=True)
+    assert res["status"] == "success"
+    assert mock_db.patients.count_documents({"demo_data": True}) == 0
+
+    # 5. Real user record is STILL preserved
+    real_user = mock_db.patients.find_one({"patient_id": "PT-REAL-VIP"})
+    assert real_user is not None
+    assert real_user["display_name"] == "Dr. Real Clinician"
+
+def test_live_observation_injection_and_recalculation(mock_db):
+    """Verify that live observation injection adds a tagged record and recalculates twin state."""
+    from app.database.seed import inject_live_observation
+
+    # Seed cohort first
+    seed_synthetic_patients(mock_db, force=True)
+
+    # Inject acute live observation
+    inject_res = inject_live_observation(
+        db=mock_db,
+        patient_id="PT-1001",
+        metric_type="heart_rate",
+        value=89.0
+    )
+    assert inject_res["status"] == "success"
+    assert inject_res["observation"]["value"] == 89.0
+    assert inject_res["observation"]["metric_type"] == "heart_rate"
+    assert inject_res["observation"]["is_live_demonstration"] is True
+    assert inject_res["recalculated_vitality_index"] is not None
+    assert inject_res["twin_state"] is not None
 
 # ==========================================
 # 4. API & Readiness Checks
