@@ -10,7 +10,8 @@ import {
   Database,
   Settings,
   ChevronRight,
-  HeartPulse
+  HeartPulse,
+  BookOpen
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'what-if', label: 'What-if Simulator', icon: Sliders },
     { id: 'timeline', label: 'Patient Timeline', icon: Clock },
     { id: 'alerts', label: 'Alerts', icon: AlertCircle, badge: unreadAlerts },
+    { id: 'methodology', label: 'Methodology', icon: BookOpen },
     { id: 'data-sources', label: 'Data Sources', icon: Database },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];

@@ -9,7 +9,8 @@ import {
   Database,
   Menu,
   ShieldCheck,
-  Check
+  Check,
+  BookOpen
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 

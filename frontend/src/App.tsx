@@ -14,6 +14,7 @@ import { PatientTimeline } from './components/timeline/PatientTimeline';
 import { AlertCenter } from './components/alerts/AlertCenter';
 import { DataSourcesPage } from './components/pages/DataSourcesPage';
 import { SettingsPage } from './components/pages/SettingsPage';
+import { MethodologyPage } from './components/pages/MethodologyPage';
 import { AlertCircle, X } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -100,6 +101,7 @@ const AppContent: React.FC = () => {
             {activeTab === 'what-if' && <WhatIfSimulator />}
             {activeTab === 'timeline' && <PatientTimeline />}
             {activeTab === 'alerts' && <AlertCenter />}
+            {activeTab === 'methodology' && <MethodologyPage />}
             {activeTab === 'data-sources' && <DataSourcesPage />}
             {activeTab === 'settings' && <SettingsPage />}
           </main>
