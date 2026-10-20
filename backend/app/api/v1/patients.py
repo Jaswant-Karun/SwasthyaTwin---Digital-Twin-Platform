@@ -12,10 +12,24 @@ def get_patients(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     search: Optional[str] = Query(None, description="Search by name, ID, or chronic condition"),
+    mode: Optional[str] = Query(None, description="Filter mode: 'demo' (synthetic only) or 'live' (real only)"),
+    demo_data: Optional[bool] = Query(None, description="Explicit boolean filter for synthetic demo records"),
     db: Database = Depends(get_database)
 ):
-    """Retrieve list of patients with search and pagination."""
-    return PatientService.list_patients(db=db, skip=skip, limit=limit, search=search)
+    """Retrieve list of patients with search, pagination, and demo vs live provenance filtering."""
+    resolved_demo: Optional[bool] = demo_data
+    if mode == "demo":
+        resolved_demo = True
+    elif mode == "live":
+        resolved_demo = False
+
+    return PatientService.list_patients(
+        db=db,
+        skip=skip,
+        limit=limit,
+        search=search,
+        demo_data=resolved_demo
+    )
 
 @router.post("", response_model=PatientResponse, status_code=201)
 def create_patient(
