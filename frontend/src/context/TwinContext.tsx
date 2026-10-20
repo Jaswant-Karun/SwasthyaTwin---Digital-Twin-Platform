@@ -403,6 +403,7 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         seedDemoData,
         resetDemoCohort,
         injectLiveDemoObservation,
+        isDarkMode,
         toggleDarkMode
       }}
     >
