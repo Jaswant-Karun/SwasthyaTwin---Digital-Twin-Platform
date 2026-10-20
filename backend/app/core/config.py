@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     ENABLE_SYNTHETIC_AUTOSEED: bool = False # Do not delete or overwrite user data automatically during startup
 
     @property
+    def ENVIRONMENT(self) -> str:
+        return self.APP_ENV
+
+    @property
     def cors_origin_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
