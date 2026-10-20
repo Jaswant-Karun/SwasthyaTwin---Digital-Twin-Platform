@@ -18,9 +18,8 @@ import { AlertCircle, X } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
-  const [selectedRange, setSelectedRange] = useState<number>(30);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const { errorMessage, refreshData } = useTwin();
+  const { errorMessage, refreshData, selectedRangeDays, setSelectedRangeDays } = useTwin();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-teal-500 selection:text-white">
@@ -67,8 +66,8 @@ const AppContent: React.FC = () => {
           <TopNav
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            selectedRange={selectedRange}
-            setSelectedRange={setSelectedRange}
+            selectedRange={selectedRangeDays}
+            setSelectedRange={setSelectedRangeDays}
             onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
           />
 
@@ -93,7 +92,7 @@ const AppContent: React.FC = () => {
           {/* Active Page Canvas */}
           <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
             {activeTab === 'overview' && (
-              <OverviewPage onNavigate={setActiveTab} selectedRange={selectedRange} />
+              <OverviewPage onNavigate={setActiveTab} selectedRange={selectedRangeDays} />
             )}
             {activeTab === 'digital-twin' && <DigitalTwinPage />}
             {activeTab === 'health-trends' && <HealthTrendsPage />}
