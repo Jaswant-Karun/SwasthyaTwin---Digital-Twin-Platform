@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class InterventionParams(BaseModel):
     delta_sleep_hours: float = Field(default=0.0, ge=-4.0, le=4.0, description="Change in sleep hours per night")
@@ -39,5 +39,5 @@ class SimulationResponse(BaseModel):
     model_assumptions: List[str]
     disclaimer: str
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
+

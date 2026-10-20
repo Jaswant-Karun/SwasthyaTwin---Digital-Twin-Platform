@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class ObservationBase(BaseModel):
     patient_id: str
@@ -29,8 +29,8 @@ class BatchObservationCreate(BaseModel):
 class ObservationResponse(ObservationBase):
     id: str = Field(alias="_id")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
+
 
 class ObservationFilterParams(BaseModel):
     metric_type: Optional[str] = None
