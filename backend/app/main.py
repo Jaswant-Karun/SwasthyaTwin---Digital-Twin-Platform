@@ -15,6 +15,7 @@ from app.api.v1.twin import router as twin_router
 from app.api.v1.simulations import router as simulations_router
 from app.api.v1.alerts import router as alerts_router
 from app.api.v1.seed import router as seed_router
+from app.api.v1.audit import router as audit_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,13 +33,13 @@ async def lifespan(app: FastAPI):
             db = db_manager.get_database()
             create_indexes(db)
 
-            # Auto-seed if patient collection is empty and enabled
+            # Auto-seed demo cohort only if no demo patients exist and enabled
             if settings.ENABLE_SYNTHETIC_AUTOSEED:
-                count = db.patients.count_documents({})
-                if count == 0:
-                    logger.info("Patient database is empty. Auto-seeding synthetic demonstration cohort...")
-                    seed_synthetic_patients(db)
-                    logger.info("Auto-seeding complete.")
+                demo_count = db.patients.count_documents({"demo_data": True})
+                if demo_count == 0:
+                    logger.info("No demo records found. Seeding synthetic demonstration cohort...")
+                    seed_synthetic_patients(db, force=False)
+                    logger.info("Synthetic demo seeding complete.")
         except Exception as e:
             logger.warning(f"Startup initialization warning: {e}")
 
@@ -82,3 +83,5 @@ app.include_router(twin_router, prefix=settings.API_V1_STR)
 app.include_router(simulations_router, prefix=settings.API_V1_STR)
 app.include_router(alerts_router, prefix=settings.API_V1_STR)
 app.include_router(seed_router, prefix=settings.API_V1_STR)
+app.include_router(audit_router, prefix=settings.API_V1_STR)
+

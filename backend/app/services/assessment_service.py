@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional
 from pymongo.database import Database
@@ -5,6 +6,7 @@ from app.analytics.baseline_calculator import compute_all_baselines
 from app.analytics.anomaly_detector import detect_deviations, evaluate_alerts
 from app.analytics.trend_indicator import calculate_health_stability_index
 from app.models.assessment import HealthAssessmentResponse, DigitalTwinStateResponse
+from app.repositories.assessment_repository import AssessmentRepository
 from app.services.alert_service import AlertService
 
 class AssessmentService:
@@ -19,8 +21,11 @@ class AssessmentService:
 
         observations = list(db.observations.find({
             "patient_id": patient_id,
-            "timestamp": {"$gte": cutoff}
-        }))
+            "$or": [
+                {"observed_at": {"$gte": cutoff}},
+                {"timestamp": {"$gte": cutoff}}
+            ]
+        }, {"_id": 0}))
 
         baselines = compute_all_baselines(observations, window_days=days)
         return {k: v.model_dump() for k, v in baselines.items()}
@@ -37,34 +42,68 @@ class AssessmentService:
         # Baseline observations (30 days)
         baseline_obs = list(db.observations.find({
             "patient_id": patient_id,
-            "timestamp": {"$gte": baseline_cutoff}
-        }))
+            "$or": [
+                {"observed_at": {"$gte": baseline_cutoff}},
+                {"timestamp": {"$gte": baseline_cutoff}}
+            ]
+        }, {"_id": 0}))
         baselines = compute_all_baselines(baseline_obs, window_days=window_days)
 
         # Current snapshot (latest measurement per metric type)
-        distinct_metrics = db.observations.distinct("metric_type", {"patient_id": patient_id})
+        distinct_types = db.observations.distinct("measurement_type", {"patient_id": patient_id})
+        if not distinct_types:
+            distinct_types = db.observations.distinct("metric_type", {"patient_id": patient_id})
+
         current_metrics: Dict[str, Dict[str, Any]] = {}
-        for m in distinct_metrics:
+        for m in distinct_types:
             latest = db.observations.find_one(
-                {"patient_id": patient_id, "metric_type": m},
-                sort=[("timestamp", -1)]
+                {
+                    "patient_id": patient_id,
+                    "$or": [{"measurement_type": m}, {"metric_type": m}]
+                },
+                {"_id": 0},
+                sort=[("observed_at", -1), ("timestamp", -1)]
             )
             if latest:
-                current_metrics[m] = latest
+                # normalize field name for anomaly detector
+                m_key = latest.get("measurement_type") or latest.get("metric_type")
+                current_metrics[m_key] = latest
 
         deviations = detect_deviations(current_metrics, baselines)
         assessment = calculate_health_stability_index(patient_id, deviations)
 
-        # Record assessment in history
-        assess_doc = assessment.model_dump()
-        assess_doc["deviations"] = {k: v.model_dump() for k, v in deviations.items()}
-        assess_doc["explainability_factors"] = [f.model_dump() for f in assessment.explainability_factors]
-        db.health_assessments.insert_one(assess_doc)
+        now = datetime.now(timezone.utc)
+        asmt_id = f"asmt_{uuid.uuid4().hex[:12]}"
+
+        # Record assessment in repository with required fields
+        repo = AssessmentRepository(db)
+        assess_doc = {
+            "assessment_id": asmt_id,
+            "patient_id": patient_id,
+            "assessed_at": now,
+            "calculated_at": now,
+            "baseline_window": window_days,
+            "indicator_type": "vitality_stability_index",
+            "indicator_value": round(assessment.vitality_index, 1),
+            "vitality_index": round(assessment.vitality_index, 1),
+            "stability_status": assessment.stability_status,
+            "methodology": "Z-score Euclidean distance penalty against personalized 30-day baseline distribution",
+            "evidence": {
+                "metric_count": len(deviations),
+                "z_scores": {k: round(v.z_score, 2) for k, v in deviations.items()}
+            },
+            "limitations": "Non-diagnostic heuristic research indicator; not calibrated for acute emergency triage",
+            "model_version": "v1.2.0",
+            "deviations": {k: v.model_dump() for k, v in deviations.items()},
+            "explainability_factors": [f.model_dump() for f in assessment.explainability_factors],
+            "summary_message": assessment.summary_message,
+            "safety_disclaimer": assessment.safety_disclaimer
+        }
+        repo.save_assessment(assess_doc)
 
         # Check and persist new alerts if any
         new_alerts = evaluate_alerts(patient_id, deviations)
         for al in new_alerts:
-            # Avoid duplicate unacknowledged alert for same metric within 24h
             recent = db.alerts.find_one({
                 "patient_id": patient_id,
                 "metric_type": al.metric_type,
@@ -80,7 +119,7 @@ class AssessmentService:
 
         return DigitalTwinStateResponse(
             patient_id=patient_id,
-            snapshot_time=datetime.now(timezone.utc),
+            snapshot_time=now,
             baseline_window_days=window_days,
             metrics=deviations,
             overall_vitality=assessment.vitality_index,
@@ -95,10 +134,8 @@ class AssessmentService:
         if not state:
             return None
 
-        latest_doc = db.health_assessments.find_one(
-            {"patient_id": patient_id},
-            sort=[("calculated_at", -1)]
-        )
+        repo = AssessmentRepository(db)
+        latest_doc = repo.get_latest_for_patient(patient_id)
         if latest_doc:
-            latest_doc["_id"] = str(latest_doc["_id"])
+            latest_doc["_id"] = latest_doc.get("assessment_id", "")
         return latest_doc

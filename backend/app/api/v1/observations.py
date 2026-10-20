@@ -17,22 +17,26 @@ router = APIRouter(prefix="/patients/{patient_id}/observations", tags=["Observat
 @router.get("", response_model=PaginatedObservationsResponse)
 def get_patient_observations(
     patient_id: str,
-    metric_type: Optional[str] = Query(None, description="Filter by metric (e.g. heart_rate, hrv_rmssd)"),
+    measurement_type: Optional[str] = Query(None, description="Filter by measurement type (e.g. heart_rate, hrv_rmssd)"),
+    metric_type: Optional[str] = Query(None, description="Alias for measurement_type"),
     start_date: Optional[datetime] = Query(None, description="Start date ISO timestamp"),
     end_date: Optional[datetime] = Query(None, description="End date ISO timestamp"),
-    data_tier: Optional[str] = Query(None, description="Filter by tier: measured, user_reported, simulated"),
+    data_kind: Optional[str] = Query(None, description="Filter by kind: measured, user_entered, simulated"),
+    data_tier: Optional[str] = Query(None, description="Alias for data_kind"),
     skip: int = Query(0, ge=0),
     limit: int = Query(200, ge=1, le=2000),
     db: Database = Depends(get_database)
 ):
-    """Retrieve historical observations with time-window, metric, and data tier filters."""
+    """Retrieve historical observations with time-window, metric, and data kind filters."""
+    m_type = measurement_type or metric_type
+    kind = data_kind or data_tier
     return ObservationService.query_observations(
         db=db,
         patient_id=patient_id,
-        metric_type=metric_type,
+        metric_type=m_type,
         start_date=start_date,
         end_date=end_date,
-        data_tier=data_tier,
+        data_tier=kind,
         skip=skip,
         limit=limit
     )
@@ -47,13 +51,18 @@ def add_observation(
     if observation.patient_id != patient_id:
         observation.patient_id = patient_id
 
-    result = ObservationService.add_observation(db=db, obs_in=observation)
+    try:
+        result = ObservationService.add_observation(db=db, obs_in=observation)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     # Trigger twin state re-assessment
     try:
         AssessmentService.evaluate_twin_state(db=db, patient_id=patient_id)
     except Exception:
         pass
     return result
+
 
 @router.post("/batch", status_code=201)
 def batch_add_observations(
