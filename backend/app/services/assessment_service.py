@@ -19,7 +19,12 @@ from app.core.config import settings
 
 class AssessmentService:
     @staticmethod
-    def get_patient_baselines(db: Database, patient_id: str, window_days: Optional[int] = None) -> Dict[str, Any]:
+    def get_patient_baselines(
+        db: Database,
+        patient_id: str,
+        window_days: Optional[int] = None,
+        include_simulated: bool = False
+    ) -> Dict[str, Any]:
         patient = db.patients.find_one({"patient_id": patient_id})
         if not patient:
             return {}
@@ -27,20 +32,45 @@ class AssessmentService:
         days = window_days or patient.get("baseline_window_days", settings.DEFAULT_BASELINE_DAYS)
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
-        observations = list(db.observations.find({
+        query: Dict[str, Any] = {
             "patient_id": patient_id,
             "$or": [
                 {"observed_at": {"$gte": cutoff}},
                 {"timestamp": {"$gte": cutoff}}
             ]
-        }, {"_id": 0}))
+        }
+        if not include_simulated:
+            query["$and"] = [
+                {"data_kind": {"$ne": "simulated"}},
+                {"data_tier": {"$ne": "simulated"}},
+                {"is_synthetic": {"$ne": True}}
+            ]
+
+        observations = list(db.observations.find(query, {"_id": 0}))
 
         baselines = compute_all_baselines(
             observations,
             window_days=days,
-            min_observations=settings.MIN_OBSERVATIONS_FOR_BASELINE
+            min_observations=settings.MIN_OBSERVATIONS_FOR_BASELINE,
+            include_simulated=include_simulated
         )
         return {k: v.model_dump() for k, v in baselines.items()}
+
+    @staticmethod
+    def get_measurement_assessments(
+        db: Database,
+        patient_id: str,
+        window_days: Optional[int] = None,
+        include_simulated: bool = False
+    ) -> List[Dict[str, Any]]:
+        from app.services.analytics_service import AnalyticsService
+        assessments = AnalyticsService.get_measurement_assessments(
+            db=db,
+            patient_id=patient_id,
+            window_days=window_days,
+            include_simulated=include_simulated
+        )
+        return [a.model_dump() for a in assessments]
 
     @staticmethod
     def evaluate_twin_state(db: Database, patient_id: str) -> Optional[DigitalTwinStateResponse]:
