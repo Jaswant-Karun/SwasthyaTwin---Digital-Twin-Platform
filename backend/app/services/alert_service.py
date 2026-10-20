@@ -23,10 +23,12 @@ class AlertService:
         for doc in cursor:
             # Map id cleanly
             pub_id = doc.get("alert_id") or str(doc.get("_id"))
+            doc["alert_id"] = pub_id
             doc["id"] = pub_id
             doc["_id"] = pub_id
             items.append(doc)
         return items
+
 
     @staticmethod
     def create_alert(db: Database, alert_in: AlertBase) -> Dict[str, Any]:
