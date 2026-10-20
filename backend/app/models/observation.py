@@ -115,6 +115,8 @@ class ObservationResponse(ObservationBase):
     metric_type: str
     timestamp: datetime
     data_tier: str
+    demo_data: bool = False
+    is_synthetic: bool = False
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 

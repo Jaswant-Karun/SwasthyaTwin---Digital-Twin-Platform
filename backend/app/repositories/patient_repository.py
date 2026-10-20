@@ -27,8 +27,14 @@ class PatientRepository:
             logger.error(f"Failed to query patient {patient_id}: {e}")
             raise
 
-    def list_patients(self, skip: int = 0, limit: int = 50, search: Optional[str] = None) -> Tuple[List[Dict[str, Any]], int]:
-        """List patients with pagination and optional search filter, sorted by updated_at desc."""
+    def list_patients(
+        self,
+        skip: int = 0,
+        limit: int = 50,
+        search: Optional[str] = None,
+        demo_data: Optional[bool] = None
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """List patients with pagination, search, and demo/live mode filtering, sorted by updated_at desc."""
         try:
             query: Dict[str, Any] = {}
             if search:
@@ -36,6 +42,18 @@ class PatientRepository:
                     {"patient_id": {"$regex": search, "$options": "i"}},
                     {"display_name": {"$regex": search, "$options": "i"}}
                 ]
+
+            if demo_data is True:
+                # Demo Mode: Only synthetic demo records
+                demo_cond = {"$or": [{"demo_data": True}, {"is_synthetic": True}]}
+                if "$or" in query:
+                    query = {"$and": [query, demo_cond]}
+                else:
+                    query.update(demo_cond)
+            elif demo_data is False:
+                # Live Data Mode: Real authorized patients only
+                query["demo_data"] = {"$ne": True}
+                query["is_synthetic"] = {"$ne": True}
 
             total = self.collection.count_documents(query)
             cursor = self.collection.find(
