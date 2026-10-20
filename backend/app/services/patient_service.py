@@ -14,10 +14,11 @@ class PatientService:
         db: Database,
         skip: int = 0,
         limit: int = 50,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        demo_data: Optional[bool] = None
     ) -> List[Dict[str, Any]]:
         repo = PatientRepository(db)
-        docs, _ = repo.list_patients(skip=skip, limit=limit, search=search)
+        docs, _ = repo.list_patients(skip=skip, limit=limit, search=search, demo_data=demo_data)
 
         patients = []
         for doc in docs:
