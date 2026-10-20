@@ -1,27 +1,30 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pymongo.database import Database
 from app.api.deps import get_database
 from app.models.assessment import DigitalTwinStateResponse, HealthAssessmentResponse
 from app.services.assessment_service import AssessmentService
+from app.repositories.assessment_repository import AssessmentRepository
 
-router = APIRouter(prefix="/patients/{patient_id}/twin", tags=["Digital Twin"])
+router = APIRouter(tags=["Digital Twin & Analytics"])
 
-@router.get("/state", response_model=DigitalTwinStateResponse)
+@router.get("/patients/{patient_id}/twin", response_model=DigitalTwinStateResponse)
+@router.get("/patients/{patient_id}/twin/state", response_model=DigitalTwinStateResponse)
 def get_twin_state(
     patient_id: str,
     db: Database = Depends(get_database)
 ):
     """
-    Returns the real-time dynamic digital twin state:
-    Current vital signs evaluated strictly against the patient's personal baseline with Z-scores.
+    Returns the dynamic digital twin state:
+    Combines latest observations, personalized baselines, trend slopes,
+    data freshness/quality, and missing-data warnings.
     """
     state = AssessmentService.evaluate_twin_state(db=db, patient_id=patient_id)
     if not state:
         raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
     return state
 
-@router.get("/baseline")
+@router.get("/patients/{patient_id}/twin/baseline")
 def get_twin_baseline(
     patient_id: str,
     window_days: Optional[int] = Query(None, ge=7, le=180, description="Custom rolling baseline window in days"),
@@ -38,7 +41,7 @@ def get_twin_baseline(
         "baselines": baselines
     }
 
-@router.get("/assessment", response_model=HealthAssessmentResponse)
+@router.get("/patients/{patient_id}/twin/assessment", response_model=HealthAssessmentResponse)
 def get_twin_assessment(
     patient_id: str,
     db: Database = Depends(get_database)
@@ -51,3 +54,43 @@ def get_twin_assessment(
     if not assess:
         raise HTTPException(status_code=404, detail=f"No assessment available for patient '{patient_id}'.")
     return assess
+
+@router.get("/patients/{patient_id}/trends")
+def get_patient_trends(
+    patient_id: str,
+    db: Database = Depends(get_database)
+):
+    """
+    Returns longitudinal trends, 7-day slopes, volatility metrics,
+    and baseline bounds for visualization and clinical review.
+    """
+    trends = AssessmentService.get_patient_trends(db=db, patient_id=patient_id)
+    if not trends:
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
+    return trends
+
+@router.get("/patients/{patient_id}/assessments")
+def list_patient_assessments(
+    patient_id: str,
+    limit: int = Query(20, ge=1, le=100),
+    db: Database = Depends(get_database)
+):
+    """
+    Retrieves chronological history of computed health assessments for a patient.
+    """
+    repo = AssessmentRepository(db)
+    history = repo.list_history(patient_id=patient_id, limit=limit)
+    return history
+
+@router.get("/patients/{patient_id}/predict")
+def predict_patient_trends(
+    patient_id: str,
+    horizon_days: int = Query(7, ge=1, le=30, description="Forecast horizon in days"),
+    db: Database = Depends(get_database)
+):
+    """
+    Time-series trend forecasting with temporal leakage prevention and held-out validation.
+    Reports MAE/RMSE comparisons against simple persistence baselines.
+    """
+    forecasts = AssessmentService.get_patient_predictions(db=db, patient_id=patient_id, horizon_days=horizon_days)
+    return forecasts
