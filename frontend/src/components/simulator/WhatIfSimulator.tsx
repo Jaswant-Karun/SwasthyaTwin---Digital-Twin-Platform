@@ -363,7 +363,7 @@ export const WhatIfSimulator: React.FC = () => {
               <span>Simulation Guardrails & Model Assumptions</span>
             </div>
             <p>
-              Projections reflect mathematical pharmacodynamic exponential response curves ($1 - e^{-t/\tau}$) with physiological saturation.
+              Projections reflect mathematical pharmacodynamic exponential response curves (1 - exp(-t/τ)) with physiological saturation.
               Simulated outcomes do not guarantee clinical response; individual neurohormonal adaptation varies.
             </p>
           </div>
