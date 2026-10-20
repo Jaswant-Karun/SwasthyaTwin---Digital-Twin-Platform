@@ -209,7 +209,32 @@ export const api = {
     }
   },
 
+  getTrends: async (patientId: string) => {
+    try {
+      return await request<any>(`/api/patients/${patientId}/trends`);
+    } catch {
+      return null;
+    }
+  },
+
+  getAssessments: async (patientId: string) => {
+    try {
+      return await request<HealthAssessment[]>(`/api/patients/${patientId}/assessments`);
+    } catch {
+      return [{ ...MOCK_ASSESSMENT, patient_id: patientId }];
+    }
+  },
+
+  getPredictions: async (patientId: string, horizonDays: number = 7) => {
+    try {
+      return await request<any>(`/api/patients/${patientId}/predict?horizon_days=${horizonDays}`);
+    } catch {
+      return null;
+    }
+  },
+
   // Simulations
+
   runSimulation: async (patientId: string, scenario_name: string, parameters: InterventionParams): Promise<SimulationResult> => {
     try {
       return await request<SimulationResult>(`/api/v1/patients/${patientId}/simulations/run`, {

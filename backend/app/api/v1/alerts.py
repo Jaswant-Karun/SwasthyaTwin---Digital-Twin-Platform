@@ -31,10 +31,12 @@ def get_all_alerts(
     items = []
     for doc in cursor:
         pub_id = doc.get("alert_id") or str(doc.get("_id"))
+        doc["alert_id"] = pub_id
         doc["id"] = pub_id
         doc["_id"] = pub_id
         items.append(doc)
     return items
+
 
 @router.get("/patients/{patient_id}/alerts", response_model=List[AlertResponse])
 def get_patient_alerts(

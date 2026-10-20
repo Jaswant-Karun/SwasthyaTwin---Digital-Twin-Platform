@@ -29,6 +29,7 @@ class AlertAcknowledgeRequest(BaseModel):
     notes: Optional[str] = None
 
 class AlertResponse(AlertBase):
-    id: str = Field(alias="alert_id")
+    alert_id: str
+    id: str
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)

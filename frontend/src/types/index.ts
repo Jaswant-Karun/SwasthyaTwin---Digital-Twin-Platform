@@ -80,9 +80,16 @@ export interface DigitalTwinState {
   snapshot_time: string;
   baseline_window_days: number;
   metrics: Record<string, MetricDeviation>;
+  baselines?: Record<string, MetricBaseline>;
+  trends?: Record<string, any>;
   overall_vitality: number;
   stability_status: StabilityStatus;
   active_alert_count: number;
+  missing_inputs?: string[];
+  missing_data_warnings?: string[];
+  data_quality?: Record<string, any>;
+  data_freshness_hours?: number;
+  is_data_stale?: boolean;
 }
 
 export interface ExplainabilityFactor {
@@ -95,6 +102,7 @@ export interface ExplainabilityFactor {
 
 export interface HealthAssessment {
   _id?: string;
+  assessment_id?: string;
   patient_id: string;
   calculated_at: string;
   vitality_index: number;
@@ -103,7 +111,10 @@ export interface HealthAssessment {
   explainability_factors: ExplainabilityFactor[];
   summary_message: string;
   safety_disclaimer: string;
+  missing_inputs?: string[];
+  component_contributions?: Record<string, any>;
 }
+
 
 export interface InterventionParams {
   delta_sleep_hours: number;
