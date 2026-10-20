@@ -1,39 +1,33 @@
-import os
 from typing import List
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
+
     PROJECT_NAME: str = "SwasthyaTwin"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
-    ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
-    HOST: str = Field(default="0.0.0.0", env="HOST")
-    PORT: int = Field(default=8000, env="PORT")
+    ENVIRONMENT: str = "development"
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
     
     # MongoDB
-    MONGODB_URI: str = Field(default="mongodb://localhost:27017", env="MONGODB_URI")
-    MONGODB_DATABASE: str = Field(default="swasthya_twin", env="MONGODB_DATABASE")
-    ALLOW_IN_MEMORY_FALLBACK: bool = Field(default=True, env="ALLOW_IN_MEMORY_FALLBACK")
+    MONGODB_URI: str = "mongodb://localhost:27017"
+    MONGODB_DATABASE: str = "swasthya_twin"
+    ALLOW_IN_MEMORY_FALLBACK: bool = True
     
     # CORS
-    CORS_ORIGINS: str = Field(
-        default="http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
-        env="CORS_ORIGINS"
-    )
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
     
     # Analytics
-    DEFAULT_BASELINE_DAYS: int = Field(default=30, env="DEFAULT_BASELINE_DAYS")
-    DEVIATION_SIGMA_THRESHOLD: float = Field(default=2.0, env="DEVIATION_SIGMA_THRESHOLD")
-    ENABLE_SYNTHETIC_AUTOSEED: bool = Field(default=True, env="ENABLE_SYNTHETIC_AUTOSEED")
+    DEFAULT_BASELINE_DAYS: int = 30
+    DEVIATION_SIGMA_THRESHOLD: float = 2.0
+    ENABLE_SYNTHETIC_AUTOSEED: bool = True
 
     @property
     def cors_origin_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
 
 settings = Settings()
