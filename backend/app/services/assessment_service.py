@@ -283,14 +283,17 @@ class AssessmentService:
 
         results: Dict[str, Any] = {}
         for m in target_metrics:
-            obs = list(db.observations.find({
+            query = {
                 "patient_id": patient_id,
-                "$or": [{"measurement_type": m}, {"metric_type": m}],
-                "$or": [{"observed_at": {"$gte": cutoff}}, {"timestamp": {"$gte": cutoff}}]
-            }, {"_id": 0}).sort("observed_at", 1))
+                "$and": [
+                    {"$or": [{"measurement_type": m}, {"metric_type": m}]},
+                    {"$or": [{"observed_at": {"$gte": cutoff}}, {"timestamp": {"$gte": cutoff}}]}
+                ]
+            }
+            obs = list(db.observations.find(query, {"_id": 0}).sort("observed_at", 1))
 
             if not obs:
-                # Fallback to general query if timestamp format varies
+                # Fallback to query without date cutoff if sparse
                 obs = list(db.observations.find({
                     "patient_id": patient_id,
                     "$or": [{"measurement_type": m}, {"metric_type": m}]
@@ -305,6 +308,7 @@ class AssessmentService:
             )
             if forecast:
                 results[m] = forecast.model_dump()
+
 
         return {
             "patient_id": patient_id,
