@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 
 class AlertBase(BaseModel):
+    alert_id: Optional[str] = None
     patient_id: str
     timestamp: datetime
     severity: str = Field(..., pattern="^(info|warning|critical)$")
@@ -28,7 +29,6 @@ class AlertAcknowledgeRequest(BaseModel):
     notes: Optional[str] = None
 
 class AlertResponse(AlertBase):
-    id: str = Field(alias="_id")
+    id: str = Field(alias="alert_id")
 
-    model_config = ConfigDict(populate_by_name=True)
-
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
