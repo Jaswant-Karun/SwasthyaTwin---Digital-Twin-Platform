@@ -42,7 +42,6 @@ class SimulationRecord(BaseModel):
 class SimulationResponse(BaseModel):
     simulation_id: str
     id: str = Field(alias="simulation_id")
-    _id: str = Field(alias="simulation_id")
     patient_id: str
     scenario_name: str
     created_at: datetime

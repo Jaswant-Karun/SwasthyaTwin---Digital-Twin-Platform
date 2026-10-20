@@ -53,7 +53,6 @@ class HealthAssessmentRecord(BaseModel):
 
 class HealthAssessmentResponse(BaseModel):
     assessment_id: Optional[str] = None
-    _id: Optional[str] = None
     patient_id: str
     calculated_at: datetime
     vitality_index: float

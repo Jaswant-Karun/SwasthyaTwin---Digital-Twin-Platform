@@ -110,7 +110,6 @@ class BatchObservationCreate(BaseModel):
 
 class ObservationResponse(ObservationBase):
     id: str = Field(alias="observation_id")
-    _id: str = Field(alias="observation_id") # So both _id and id work in React
     metric_type: str
     timestamp: datetime
     data_tier: str
