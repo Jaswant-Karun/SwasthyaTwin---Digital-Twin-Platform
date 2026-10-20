@@ -23,7 +23,8 @@ def calculate_health_stability_index(
     deviations: Dict[str, MetricDeviation]
 ) -> HealthAssessmentResponse:
     """
-    Computes a transparent, explainable 0-100 Health Stability Index.
+    Computes an explainable, transparent 0-100 Experimental Health Stability Trend Indicator.
+    Prefer individual measurement-specific indicators; this composite indicator is a macro overview.
 
     FORMULA & METHODOLOGY:
     1. Base Score = 100.0.
@@ -34,10 +35,10 @@ def calculate_health_stability_index(
        P_i = min(30.0, E_i * 12.0) * w_i
     4. Weight Normalization over observed metrics:
        If some metrics are missing, active weights W_active = sum(w_i for active i) are normalized
-       so missing metrics never produce artificial penalties or zeroes.
+       so missing metrics never produce artificial penalties or fabricated zero values.
     5. Final Vitality Index:
        Index = max(20.0, min(100.0, 100.0 - (total_penalties / W_active)))
-    6. Non-diagnostic: Clearly labeled as a demonstration heuristic, not disease probability.
+    6. Non-diagnostic: Clearly labeled as an experimental trend indicator, NOT a clinical risk score or disease probability.
     """
     total_raw_deductions = 0.0
     active_weights_sum = 0.0
@@ -107,6 +108,14 @@ def calculate_health_stability_index(
         status = "significant_deviation"
         summary = "Significant multi-metric divergence from personal baseline. Active rest and clinician consult advised."
 
+    methodology_disclosure = {
+        "score_type": "Experimental Health Stability Trend Indicator",
+        "formula": "100.0 - (sum(w_i * min(30.0, max(0, |Z_i| - 1.0) * 12.0)) / sum(w_active))",
+        "weights": CANONICAL_METRIC_WEIGHTS,
+        "missing_input_policy": "Normalized across active observed metrics; missing metrics are excluded without artificial penalties.",
+        "limitations": "Demonstration research heuristic. Not a clinical risk score, emergency predictor, or disease probability."
+    }
+
     return HealthAssessmentResponse(
         patient_id=patient_id,
         calculated_at=datetime.now(timezone.utc),
@@ -117,7 +126,7 @@ def calculate_health_stability_index(
         summary_message=summary,
         safety_disclaimer=(
             "SwasthyaTwin provides mathematical trend indicators against personal self-baselines for research "
-            "and lifestyle wellness insight. This is a heuristic demonstration index; it is not a clinical diagnosis, "
+            "and lifestyle wellness insight. This is an experimental trend indicator, NOT a clinical risk score, "
             "disease probability score, or certified medical prognosis."
         ),
         missing_inputs=missing_inputs,
