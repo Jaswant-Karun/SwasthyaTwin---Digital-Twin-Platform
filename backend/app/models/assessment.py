@@ -22,6 +22,27 @@ class MetricBaseline(BaseModel):
     is_sufficient: bool = True
     iqr_lower_fence: Optional[float] = None
     iqr_upper_fence: Optional[float] = None
+    calculated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    includes_simulated: bool = False
+    data_tier: str = "measured"
+
+class MeasurementAssessment(BaseModel):
+    patient_id: str
+    measurement_type: str
+    observed_value: float
+    personal_baseline: float
+    unit: str
+    absolute_deviation: float
+    relative_deviation_percent: Optional[float] = None
+    trend_direction: Optional[str] = None
+    data_quality: Dict[str, Any] = Field(default_factory=dict)
+    data_freshness: Dict[str, Any] = Field(default_factory=dict)
+    rule_id: Optional[str] = None
+    rule_version: Optional[str] = None
+    explanation: str
+    data_source: str = "wearable_continuous"
+    assessed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    limitations: str = "Heuristic demonstration comparison against personal median; not a diagnostic clinical standard."
 
 class MetricDeviation(BaseModel):
     metric_type: str
@@ -39,6 +60,22 @@ class MetricDeviation(BaseModel):
     freshness_hours: Optional[float] = None
     is_stale: bool = False
     contributing_observation_id: Optional[str] = None
+    # Requirement F fields and aliases
+    observed_value: Optional[float] = None
+    personal_baseline: Optional[float] = None
+    absolute_deviation: Optional[float] = None
+    relative_deviation_percent: Optional[float] = None
+    relative_deviation_meaningful: bool = True
+    relative_deviation_note: Optional[str] = None
+    trend_direction: Optional[str] = None
+    data_quality: Dict[str, Any] = Field(default_factory=dict)
+    data_freshness: Dict[str, Any] = Field(default_factory=dict)
+    rule_id: Optional[str] = None
+    rule_version: Optional[str] = None
+    explanation: Optional[str] = None
+    data_source: str = "wearable_continuous"
+    assessed_at: Optional[datetime] = None
+    limitations: str = "Heuristic demonstration comparison against personal median; not a diagnostic clinical standard."
 
 class ExplainabilityFactor(BaseModel):
     metric_type: str

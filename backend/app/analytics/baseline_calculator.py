@@ -13,21 +13,30 @@ def compute_metric_baseline(
     values: List[float],
     timestamps: List[datetime],
     window_days: int = 30,
-    min_observations: Optional[int] = None
+    min_observations: Optional[int] = None,
+    include_simulated: bool = False,
+    data_tier: str = "measured"
 ) -> Optional[MetricBaseline]:
     """
     Computes statistical baseline for a specific biometric over a defined historical window.
     Applies robust IQR filtering (Tukey's fences) to identify outliers and prevent aberrant transient
     spikes from skewing the baseline.
     Never treats missing values as zero.
+    Returns median as primary personal baseline, alongside sample count, window bounds, and calculation timestamp.
     """
     min_obs = min_observations if min_observations is not None else settings.MIN_OBSERVATIONS_FOR_BASELINE
 
     # Filter out None and NaN values
-    valid_pairs = [
-        (v, t) for v, t in zip(values, timestamps)
-        if v is not None and not (isinstance(v, float) and np.isnan(v))
-    ]
+    valid_pairs = []
+    for v, t in zip(values, timestamps):
+        if v is None:
+            continue
+        try:
+            num = float(v)
+            if not np.isnan(num):
+                valid_pairs.append((num, t))
+        except (ValueError, TypeError):
+            continue
 
     if not valid_pairs:
         return None
@@ -88,23 +97,39 @@ def compute_metric_baseline(
         outlier_count=outlier_count,
         is_sufficient=is_sufficient,
         iqr_lower_fence=round(iqr_lower_fence, 2),
-        iqr_upper_fence=round(iqr_upper_fence, 2)
+        iqr_upper_fence=round(iqr_upper_fence, 2),
+        calculated_at=now,
+        includes_simulated=include_simulated,
+        data_tier=data_tier
     )
 
 def compute_all_baselines(
     observations: List[Dict[str, Any]],
     window_days: int = 30,
-    min_observations: Optional[int] = None
+    min_observations: Optional[int] = None,
+    include_simulated: bool = False
 ) -> Dict[str, MetricBaseline]:
     """
     Groups observations by measurement_type and computes personalized baseline for each.
     Handles field name aliases (measurement_type vs metric_type, observed_at vs timestamp).
+    Explicitly excludes simulated observations from measured-data baselines unless include_simulated=True.
     """
     grouped_values: Dict[str, List[float]] = {}
     grouped_timestamps: Dict[str, List[datetime]] = {}
     metric_units: Dict[str, str] = {}
+    metric_simulated_flags: Dict[str, bool] = {}
 
     for obs in observations:
+        # Check simulated provenance
+        is_sim = (
+            obs.get("data_kind") == "simulated"
+            or obs.get("data_tier") == "simulated"
+            or obs.get("is_synthetic") is True
+            or obs.get("demo_data") is True and obs.get("source") == "simulation"
+        )
+        if is_sim and not include_simulated:
+            continue
+
         m = obs.get("measurement_type") or obs.get("metric_type")
         val = obs.get("value")
         ts = obs.get("observed_at") or obs.get("timestamp")
@@ -113,6 +138,8 @@ def compute_all_baselines(
         if m and val is not None:
             try:
                 numeric_val = float(val)
+                if np.isnan(numeric_val):
+                    continue
                 grouped_values.setdefault(m, []).append(numeric_val)
                 if isinstance(ts, str):
                     ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
@@ -122,18 +149,24 @@ def compute_all_baselines(
                     ts = ts.replace(tzinfo=timezone.utc)
                 grouped_timestamps.setdefault(m, []).append(ts)
                 metric_units[m] = unit
+                if is_sim:
+                    metric_simulated_flags[m] = True
             except (ValueError, TypeError):
                 continue
 
     baselines: Dict[str, MetricBaseline] = {}
     for m, vals in grouped_values.items():
+        has_sim = metric_simulated_flags.get(m, False)
+        tier = "mixed_simulated" if has_sim else "measured"
         base = compute_metric_baseline(
             metric_type=m,
             unit=metric_units.get(m, ""),
             values=vals,
             timestamps=grouped_timestamps.get(m, []),
             window_days=window_days,
-            min_observations=min_observations
+            min_observations=min_observations,
+            include_simulated=has_sim,
+            data_tier=tier
         )
         if base:
             baselines[m] = base
