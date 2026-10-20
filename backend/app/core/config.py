@@ -38,9 +38,13 @@ class Settings(BaseSettings):
     # Optional Security / Auth Key
     API_SECRET_KEY: Optional[str] = None
     
-    # Analytics Defaults
+    # Analytics & Twin State Defaults
     DEFAULT_BASELINE_DAYS: int = 30
-    DEVIATION_SIGMA_THRESHOLD: float = 2.0
+    MIN_OBSERVATIONS_FOR_BASELINE: int = 3
+    DEVIATION_SIGMA_THRESHOLD: float = 1.8
+    DATA_STALENESS_WARNING_HOURS: int = 48
+    DATA_STALENESS_CRITICAL_HOURS: int = 168
+    RULE_ENGINE_VERSION: str = "v1.3.0-heuristic"
     ENABLE_SYNTHETIC_AUTOSEED: bool = False # Do not delete or overwrite user data automatically during startup
 
     @property
