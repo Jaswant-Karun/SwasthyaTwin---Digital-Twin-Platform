@@ -25,7 +25,7 @@ interface TwinContextType {
   setCurrentPatientId: (id: string) => void;
   refreshData: () => Promise<void>;
   acknowledgeAlert: (alertId: string, notes?: string) => Promise<void>;
-  seedDemoData: (force?: boolean) => Promise<void>;
+  seedDemoData: (force?: boolean | any) => Promise<void>;
   resetDemoCohort: () => Promise<void>;
   injectLiveDemoObservation: (metricType?: string, value?: number) => Promise<any>;
   toggleDarkMode: () => void;
@@ -152,11 +152,12 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const seedDemoData = async (force: boolean = true) => {
+  const seedDemoData = async (force?: boolean | any) => {
+    const isForce = typeof force === 'boolean' ? force : true;
     setIsSeeding(true);
     setErrorMessage(null);
     try {
-      await api.triggerSeed(force);
+      await api.triggerSeed(isForce);
       await initApp();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to seed synthetic data.');
