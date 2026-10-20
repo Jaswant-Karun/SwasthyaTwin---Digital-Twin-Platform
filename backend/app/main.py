@@ -73,15 +73,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount Health check at root
+# Mount Health check at root and /api
 app.include_router(health_router)
+app.include_router(health_router, prefix="/api")
 
-# Mount v1 API routers
-app.include_router(patients_router, prefix=settings.API_V1_STR)
-app.include_router(observations_router, prefix=settings.API_V1_STR)
-app.include_router(twin_router, prefix=settings.API_V1_STR)
-app.include_router(simulations_router, prefix=settings.API_V1_STR)
-app.include_router(alerts_router, prefix=settings.API_V1_STR)
-app.include_router(seed_router, prefix=settings.API_V1_STR)
-app.include_router(audit_router, prefix=settings.API_V1_STR)
+# Mount API routers on /api/v1 and /api
+for prefix in [settings.API_V1_STR, "/api"]:
+    app.include_router(patients_router, prefix=prefix)
+    app.include_router(observations_router, prefix=prefix)
+    app.include_router(twin_router, prefix=prefix)
+    app.include_router(simulations_router, prefix=prefix)
+    app.include_router(alerts_router, prefix=prefix)
+    app.include_router(seed_router, prefix=prefix)
+    app.include_router(audit_router, prefix=prefix)
+
 
