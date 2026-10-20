@@ -39,5 +39,4 @@ class PatientResponse(PatientBase):
     latest_vitality_index: Optional[float] = None
     stability_status: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
