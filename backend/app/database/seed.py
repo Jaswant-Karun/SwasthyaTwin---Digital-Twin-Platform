@@ -575,11 +575,8 @@ def inject_live_observation(
     db.observations.insert_one(obs_doc)
 
     # Recalculate dynamic twin state
-    updated_assessment = AssessmentService.evaluate_twin_state(db, patient_id)
-
-    # Fetch updated twin metrics
-    from app.services.twin_service import TwinService
-    twin_state = TwinService.get_digital_twin_state(db, patient_id)
+    twin_state = AssessmentService.evaluate_twin_state(db, patient_id)
+    latest_assess = AssessmentService.get_latest_assessment(db, patient_id)
 
     return {
         "status": "success",
@@ -595,6 +592,6 @@ def inject_live_observation(
             "data_tier": kind,
             "is_live_demonstration": True
         },
-        "recalculated_vitality_index": updated_assessment.indicator_value if updated_assessment else None,
-        "twin_state": twin_state
+        "recalculated_vitality_index": latest_assess.indicator_value if latest_assess else None,
+        "twin_state": twin_state.model_dump() if twin_state and hasattr(twin_state, "model_dump") else twin_state
     }
