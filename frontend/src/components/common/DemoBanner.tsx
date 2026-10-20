@@ -7,7 +7,10 @@ import {
   User,
   AlertTriangle,
   RotateCcw,
-  CheckCircle2
+  CheckCircle2,
+  Database,
+  WifiOff,
+  Wifi
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 
@@ -16,10 +19,13 @@ export const DemoBanner: React.FC = () => {
     patients,
     currentPatient,
     setCurrentPatientId,
+    systemHealth,
+    dbReadiness,
+    isOfflineDemo,
+    setOfflineDemo,
     isSeeding,
     isLiveInjecting,
     latestUpdateInfo,
-    newlyAddedObservationId,
     seedDemoData,
     resetDemoCohort,
     injectLiveDemoObservation
@@ -43,9 +49,37 @@ export const DemoBanner: React.FC = () => {
   const handleConfirmReset = async () => {
     setShowResetConfirm(false);
     await resetDemoCohort();
-    // After reset, re-seed with 5 pristine profiles
     await seedDemoData(true);
   };
+
+  const isDbConnected = dbReadiness?.ready || systemHealth?.database?.status === 'connected';
+
+  // Explicit Offline Demo Banner
+  if (isOfflineDemo) {
+    return (
+      <div className="bg-amber-950 text-amber-200 border-b border-amber-600/40 px-3 sm:px-4 py-2 text-xs">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <WifiOff className="w-2.5 h-2.5 text-amber-400" />
+              OFFLINE DEMO MODE ACTIVE
+            </span>
+            <span className="text-[11px] text-amber-200 font-medium">
+              Operating on static cached demonstration dataset. Live MongoDB updates are disabled.
+            </span>
+          </div>
+
+          <button
+            onClick={() => setOfflineDemo(false)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] transition-colors"
+          >
+            <Wifi className="w-3 h-3" />
+            Switch to Live Backend
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-900 text-slate-200 border-b border-teal-500/20 px-3 sm:px-4 py-2 text-xs">
@@ -64,28 +98,37 @@ export const DemoBanner: React.FC = () => {
           </span>
         </div>
 
-        {/* Center: Live Freshness / Ingestion status indicator */}
-        <div className="flex items-center gap-2 text-[11px]">
+        {/* Center: Live Freshness / Database ping */}
+        <div className="flex items-center gap-3 text-[11px]">
+          {/* Real Database Health Indicator */}
+          <div className="flex items-center gap-1.5 font-mono text-[10px]">
+            <Database className="w-3 h-3 text-teal-400" />
+            {isDbConnected ? (
+              <span className="inline-flex items-center gap-1 text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                MongoDB: Connected {dbReadiness?.ping_ms !== undefined && dbReadiness.ping_ms >= 0 ? `(${dbReadiness.ping_ms}ms)` : ''}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-rose-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                MongoDB: Disconnected
+              </span>
+            )}
+          </div>
+
           {liveSuccessMsg ? (
             <span className="inline-flex items-center gap-1 text-emerald-400 font-mono font-medium animate-fadeIn bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
               {liveSuccessMsg}
             </span>
           ) : latestUpdateInfo ? (
-            <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[10px]">
+            <div className="hidden md:flex items-center gap-1 text-slate-400 font-mono text-[10px]">
               <Clock className="w-3 h-3 text-teal-400" />
               <span>
                 Latest: <strong className="text-teal-300">{latestUpdateInfo.metric.replace(/_/g, ' ')} {latestUpdateInfo.value} {latestUpdateInfo.unit}</strong>
               </span>
-              <span className="text-slate-500">•</span>
-              <span className="text-slate-400">Src: {latestUpdateInfo.source}</span>
             </div>
-          ) : (
-            <div className="hidden md:flex items-center gap-1.5 text-slate-400 text-[10px] font-mono">
-              <Clock className="w-3 h-3 text-slate-400" />
-              <span>Telemetry: 90-day stream</span>
-            </div>
-          )}
+          ) : null}
         </div>
 
         {/* Right: Controls (Patient Selector + Live Demo Ingest + Reset Cohort) */}

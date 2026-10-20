@@ -18,18 +18,28 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  endpoint: string;
+  detail?: string;
+
+  constructor(message: string, status: number, endpoint: string, detail?: string) {
     super(message);
     this.status = status;
+    this.endpoint = endpoint;
+    this.detail = detail;
     this.name = 'ApiError';
   }
 }
 
-let isUsingFallbackStore = false;
+// Explicit Offline Demo Mode control (Never silently active)
+let explicitOfflineDemo = false;
 
-export const getStoreMode = () => isUsingFallbackStore;
+export const setOfflineDemoMode = (enabled: boolean): void => {
+  explicitOfflineDemo = enabled;
+};
+
+export const isOfflineDemoMode = (): boolean => explicitOfflineDemo;
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
@@ -48,116 +58,53 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
         const errorJson = await res.json();
         errorDetail = errorJson.detail || errorDetail;
       } catch {
-        // Fallback to status text
+        // Fallback to HTTP status text
+        errorDetail = res.statusText || errorDetail;
       }
-      throw new ApiError(errorDetail, res.status);
+      throw new ApiError(errorDetail, res.status, endpoint, errorDetail);
     }
 
-    isUsingFallbackStore = false;
     return await res.json();
   } catch (err: any) {
-    console.warn(`[SwasthyaTwin API] Network error on ${endpoint}. Engaging centralized demo dataset.`, err);
-    isUsingFallbackStore = true;
-    throw err;
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    const message = err?.message || 'Failed to communicate with SwasthyaTwin API backend.';
+    throw new ApiError(message, 0, endpoint);
   }
 }
 
 export const api = {
-  // System Health
+  // System Health & Database Readiness
   getHealth: async (): Promise<SystemHealth> => {
-    try {
-      return await request<SystemHealth>('/health');
-    } catch {
+    if (explicitOfflineDemo) {
       return {
         status: 'healthy',
-        service: 'SwasthyaTwin',
+        service: 'SwasthyaTwin (Offline Demo)',
         version: '1.0.0',
-        environment: 'demo_fallback',
+        environment: 'offline_demo',
         database: {
-          status: 'connected',
-          engine: 'centralized_synthetic_demo_store',
-          database_name: 'swasthya_twin',
+          status: 'offline_demo',
+          engine: 'browser_cached_store',
+          database_name: 'swasthya_twin_offline',
           fallback_active: true
         },
-        disclaimer: 'SwasthyaTwin is a prototype medical digital twin research engine. Not for emergency diagnostics.'
+        disclaimer: 'Explicit Offline Demo Mode Active. Not connected to live MongoDB.'
       };
     }
+    return await request<SystemHealth>('/health');
   },
 
-  // Seed
-  triggerSeed: async (force: boolean = false) => {
-    try {
-      return await request<{ status: string; patients_created: number; observations_created: number; message: string }>(`/api/v1/seed?force=${force}`, {
-        method: 'POST'
-      });
-    } catch {
-      return {
-        status: 'success',
-        patients_created: 5,
-        observations_created: 2833,
-        message: 'Successfully refreshed centralized synthetic demonstration cohort.'
-      };
+  getReadiness: async (): Promise<{ ready: boolean; database: string; ping_ms: number }> => {
+    if (explicitOfflineDemo) {
+      return { ready: true, database: 'offline_demo', ping_ms: 0.1 };
     }
-  },
-
-  resetDemoData: async () => {
-    try {
-      return await request<{ status: string; message: string; deleted_counts: any }>('/api/v1/seed/reset?confirm=true', {
-        method: 'POST'
-      });
-    } catch {
-      return {
-        status: 'success',
-        message: 'Synthetic demo data reset successfully.',
-        deleted_counts: { patients: 5, observations: 2833 }
-      };
-    }
-  },
-
-  injectLiveObservation: async (patientId: string, metricType: string = 'heart_rate', value?: number) => {
-    try {
-      return await request<{
-        status: string;
-        message: string;
-        observation: any;
-        recalculated_vitality_index: number;
-        twin_state: any;
-      }>('/api/v1/seed/live-observation', {
-        method: 'POST',
-        body: JSON.stringify({
-          patient_id: patientId,
-          metric_type: metricType,
-          value: value,
-          source: 'wearable_continuous_live'
-        })
-      });
-    } catch {
-      return {
-        status: 'success',
-        message: 'Live synthetic telemetry simulated.',
-        observation: {
-          observation_id: `obs_live_${Date.now().toString(36)}`,
-          patient_id: patientId,
-          metric_type: metricType,
-          value: value || 86.5,
-          unit: metricType === 'heart_rate' ? 'bpm' : 'unit',
-          timestamp: new Date().toISOString(),
-          source: 'wearable_continuous_live',
-          data_tier: 'measured',
-          is_live_demonstration: true
-        },
-        recalculated_vitality_index: 82.5,
-        twin_state: null
-      };
-    }
+    return await request<{ ready: boolean; database: string; ping_ms: number }>('/health/ready');
   },
 
   // Patients
   getPatients: async (search?: string): Promise<Patient[]> => {
-    try {
-      const q = search ? `?search=${encodeURIComponent(search)}` : '';
-      return await request<Patient[]>(`/api/v1/patients${q}`);
-    } catch {
+    if (explicitOfflineDemo) {
       if (search) {
         return MOCK_PATIENTS.filter(p =>
           p.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -166,40 +113,43 @@ export const api = {
       }
       return MOCK_PATIENTS;
     }
+    const q = search ? `?search=${encodeURIComponent(search)}` : '';
+    return await request<Patient[]>(`/api/v1/patients${q}`);
   },
 
   getPatient: async (id: string): Promise<Patient> => {
-    try {
-      return await request<Patient>(`/api/v1/patients/${id}`);
-    } catch {
+    if (explicitOfflineDemo) {
       const found = MOCK_PATIENTS.find(p => p.patient_id === id);
-      if (found) return found;
-      return MOCK_PATIENTS[0];
+      if (!found) throw new ApiError(`Patient '${id}' not found in offline store`, 404, `/patients/${id}`);
+      return found;
     }
+    return await request<Patient>(`/api/v1/patients/${id}`);
   },
 
   updatePatient: async (id: string, data: Partial<Patient>): Promise<Patient> => {
-    try {
-      return await request<Patient>(`/api/v1/patients/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-      });
-    } catch {
+    if (explicitOfflineDemo) {
       const found = MOCK_PATIENTS.find(p => p.patient_id === id) || MOCK_PATIENTS[0];
       return { ...found, ...data };
     }
+    return await request<Patient>(`/api/v1/patients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
   },
 
   // Observations
-  getObservations: async (patientId: string, params?: { metric_type?: string; limit?: number; start_date?: string }) => {
-    try {
-      const searchParams = new URLSearchParams();
-      if (params?.metric_type) searchParams.append('metric_type', params.metric_type);
-      if (params?.limit) searchParams.append('limit', params.limit.toString());
-      if (params?.start_date) searchParams.append('start_date', params.start_date);
-      const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
-      return await request<{ total: number; skip: number; limit: number; items: Observation[] }>(`/api/v1/patients/${patientId}/observations${query}`);
-    } catch {
+  getObservations: async (
+    patientId: string,
+    params?: {
+      metric_type?: string;
+      limit?: number;
+      skip?: number;
+      start_date?: string;
+      end_date?: string;
+      data_tier?: string;
+    }
+  ): Promise<{ total: number; skip: number; limit: number; items: Observation[] }> => {
+    if (explicitOfflineDemo) {
       const metric = params?.metric_type || 'heart_rate';
       const items = generateMockLongitudinalObservations(metric);
       return {
@@ -209,17 +159,23 @@ export const api = {
         items
       };
     }
+    const searchParams = new URLSearchParams();
+    if (params?.metric_type) searchParams.append('metric_type', params.metric_type);
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.skip) searchParams.append('skip', params.skip.toString());
+    if (params?.start_date) searchParams.append('start_date', params.start_date);
+    if (params?.end_date) searchParams.append('end_date', params.end_date);
+    if (params?.data_tier) searchParams.append('data_tier', params.data_tier);
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    return await request<{ total: number; skip: number; limit: number; items: Observation[] }>(
+      `/api/v1/patients/${patientId}/observations${query}`
+    );
   },
 
   addObservation: async (patientId: string, obs: Partial<Observation>): Promise<Observation> => {
-    try {
-      return await request<Observation>(`/api/v1/patients/${patientId}/observations`, {
-        method: 'POST',
-        body: JSON.stringify(obs)
-      });
-    } catch {
+    if (explicitOfflineDemo) {
       return {
-        _id: `obs-${Date.now()}`,
+        _id: `obs_mock_${Date.now()}`,
         patient_id: patientId,
         timestamp: obs.timestamp || new Date().toISOString(),
         metric_type: obs.metric_type || 'heart_rate',
@@ -229,72 +185,65 @@ export const api = {
         data_tier: obs.data_tier || 'user_reported'
       };
     }
+    return await request<Observation>(`/api/v1/patients/${patientId}/observations`, {
+      method: 'POST',
+      body: JSON.stringify(obs)
+    });
   },
 
-  // Digital Twin
+  // Digital Twin & Baselines
   getTwinState: async (patientId: string): Promise<DigitalTwinState> => {
-    try {
-      return await request<DigitalTwinState>(`/api/v1/patients/${patientId}/twin/state`);
-    } catch {
+    if (explicitOfflineDemo) {
       return MOCK_TWIN_STATE[patientId] || MOCK_TWIN_STATE["PT-1001"];
     }
+    return await request<DigitalTwinState>(`/api/v1/patients/${patientId}/twin/state`);
   },
 
-  getTwinBaseline: async (patientId: string, windowDays?: number) => {
-    try {
-      const q = windowDays ? `?window_days=${windowDays}` : '';
-      return await request<{ patient_id: string; window_days: number; baselines: Record<string, any> }>(`/api/v1/patients/${patientId}/twin/baseline${q}`);
-    } catch {
+  getTwinBaseline: async (
+    patientId: string,
+    windowDays?: number
+  ): Promise<{ patient_id: string; window_days: number; baselines: Record<string, any> }> => {
+    if (explicitOfflineDemo) {
       return {
         patient_id: patientId,
         window_days: windowDays || 30,
         baselines: MOCK_TWIN_STATE[patientId]?.metrics || MOCK_TWIN_STATE["PT-1001"].metrics
       };
     }
+    const q = windowDays ? `?window_days=${windowDays}` : '';
+    return await request<{ patient_id: string; window_days: number; baselines: Record<string, any> }>(
+      `/api/v1/patients/${patientId}/twin/baseline${q}`
+    );
   },
 
   getTwinAssessment: async (patientId: string): Promise<HealthAssessment> => {
-    try {
-      return await request<HealthAssessment>(`/api/v1/patients/${patientId}/twin/assessment`);
-    } catch {
+    if (explicitOfflineDemo) {
       return { ...MOCK_ASSESSMENT, patient_id: patientId };
     }
+    return await request<HealthAssessment>(`/api/v1/patients/${patientId}/twin/assessment`);
   },
 
-  getTrends: async (patientId: string) => {
-    try {
-      return await request<any>(`/api/patients/${patientId}/trends`);
-    } catch {
+  getTrends: async (patientId: string): Promise<any> => {
+    if (explicitOfflineDemo) {
       return null;
     }
+    return await request<any>(`/api/v1/patients/${patientId}/trends`);
   },
 
-  getAssessments: async (patientId: string) => {
-    try {
-      return await request<HealthAssessment[]>(`/api/patients/${patientId}/assessments`);
-    } catch {
-      return [{ ...MOCK_ASSESSMENT, patient_id: patientId }];
-    }
-  },
-
-  getPredictions: async (patientId: string, horizonDays: number = 7) => {
-    try {
-      return await request<any>(`/api/patients/${patientId}/predict?horizon_days=${horizonDays}`);
-    } catch {
+  getPredictions: async (patientId: string, horizonDays: number = 7): Promise<any> => {
+    if (explicitOfflineDemo) {
       return null;
     }
+    return await request<any>(`/api/v1/patients/${patientId}/predict?horizon_days=${horizonDays}`);
   },
 
-  // Simulations
-
-  runSimulation: async (patientId: string, scenario_name: string, parameters: InterventionParams): Promise<SimulationResult> => {
-    try {
-      return await request<SimulationResult>(`/api/v1/patients/${patientId}/simulations/run`, {
-        method: 'POST',
-        body: JSON.stringify({ scenario_name, parameters })
-      });
-    } catch {
-      // Functional simulation calculation
+  // What-If Simulations
+  runSimulation: async (
+    patientId: string,
+    scenario_name: string,
+    parameters: InterventionParams
+  ): Promise<SimulationResult> => {
+    if (explicitOfflineDemo) {
       const trajectories = [];
       const baseRhr = 76.0;
       const baseSbp = 126.0;
@@ -321,7 +270,7 @@ export const api = {
         });
       }
       return {
-        _id: `sim-${Date.now()}`,
+        _id: `sim_offline_${Date.now()}`,
         patient_id: patientId,
         scenario_name,
         created_at: new Date().toISOString(),
@@ -345,36 +294,38 @@ export const api = {
         disclaimer: "Simulated data generated by mathematical digital twin model. For lifestyle exploration only."
       };
     }
+
+    return await request<SimulationResult>(`/api/v1/patients/${patientId}/simulations/run`, {
+      method: 'POST',
+      body: JSON.stringify({ scenario_name, parameters })
+    });
   },
 
   getSimulations: async (patientId: string): Promise<SimulationResult[]> => {
-    try {
-      return await request<SimulationResult[]>(`/api/v1/patients/${patientId}/simulations`);
-    } catch {
+    if (explicitOfflineDemo) {
       return [];
     }
+    return await request<SimulationResult[]>(`/api/v1/patients/${patientId}/simulations`);
   },
 
-  // Alerts
+  // Surveillance Alerts & Deviations
   getAlerts: async (patientId: string, acknowledged?: boolean): Promise<Alert[]> => {
-    try {
-      const q = acknowledged !== undefined ? `?acknowledged=${acknowledged}` : '';
-      return await request<Alert[]>(`/api/v1/patients/${patientId}/alerts${q}`);
-    } catch {
+    if (explicitOfflineDemo) {
       if (acknowledged !== undefined) {
         return MOCK_ALERTS.filter(a => a.is_acknowledged === acknowledged);
       }
       return MOCK_ALERTS;
     }
+    const q = acknowledged !== undefined ? `?acknowledged=${acknowledged}` : '';
+    return await request<Alert[]>(`/api/v1/patients/${patientId}/alerts${q}`);
   },
 
-  acknowledgeAlert: async (alertId: string, acknowledged_by: string = 'User', notes?: string): Promise<Alert> => {
-    try {
-      return await request<Alert>(`/api/v1/alerts/${alertId}/acknowledge`, {
-        method: 'POST',
-        body: JSON.stringify({ acknowledged_by, notes })
-      });
-    } catch {
+  acknowledgeAlert: async (
+    alertId: string,
+    acknowledged_by: string = 'User',
+    notes?: string
+  ): Promise<Alert> => {
+    if (explicitOfflineDemo) {
       const found = MOCK_ALERTS.find(a => a._id === alertId);
       if (found) {
         found.is_acknowledged = true;
@@ -383,22 +334,63 @@ export const api = {
         found.acknowledgement_notes = notes;
         return found;
       }
-      return {
-        _id: alertId,
-        patient_id: 'PT-1001',
-        timestamp: new Date().toISOString(),
-        severity: 'info',
-        metric_type: 'general',
-        title: 'Alert Acknowledged',
-        description: 'Acknowledged',
-        current_value: 0,
-        baseline_value: 0,
-        unit: '',
-        z_score: 0,
-        evidence: {},
-        suggested_action: '',
-        is_acknowledged: true
-      };
+      throw new ApiError(`Alert '${alertId}' not found in offline store`, 404, `/alerts/${alertId}/acknowledge`);
     }
+    return await request<Alert>(`/api/v1/alerts/${alertId}/acknowledge`, {
+      method: 'PATCH',
+      body: JSON.stringify({ acknowledged_by, notes })
+    });
+  },
+
+  // Seed & Synthetic Demo Workflow
+  triggerSeed: async (force: boolean = false): Promise<{
+    status: string;
+    patients_created: number;
+    observations_created: number;
+    message: string;
+  }> => {
+    return await request<{
+      status: string;
+      patients_created: number;
+      observations_created: number;
+      message: string;
+    }>(`/api/v1/seed?force=${force}`, {
+      method: 'POST'
+    });
+  },
+
+  resetDemoData: async (): Promise<{ status: string; message: string; deleted_counts: any }> => {
+    return await request<{ status: string; message: string; deleted_counts: any }>(
+      '/api/v1/seed/reset?confirm=true',
+      { method: 'POST' }
+    );
+  },
+
+  injectLiveObservation: async (
+    patientId: string,
+    metricType: string = 'heart_rate',
+    value?: number
+  ): Promise<{
+    status: string;
+    message: string;
+    observation: any;
+    recalculated_vitality_index: number;
+    twin_state: any;
+  }> => {
+    return await request<{
+      status: string;
+      message: string;
+      observation: any;
+      recalculated_vitality_index: number;
+      twin_state: any;
+    }>('/api/v1/seed/live-observation', {
+      method: 'POST',
+      body: JSON.stringify({
+        patient_id: patientId,
+        metric_type: metricType,
+        value: value,
+        source: 'wearable_continuous_live'
+      })
+    });
   }
 };

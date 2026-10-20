@@ -1,46 +1,102 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   Patient,
   DigitalTwinState,
   HealthAssessment,
   Alert,
+  Observation,
   SystemHealth
 } from '../types';
-import { api } from '../services/api';
+import { api, setOfflineDemoMode, isOfflineDemoMode } from '../services/api';
+
+interface DbReadiness {
+  ready: boolean;
+  database: string;
+  ping_ms: number;
+}
 
 interface TwinContextType {
+  // Offline Demo Mode
+  isOfflineDemo: boolean;
+  setOfflineDemo: (enabled: boolean) => void;
+
+  // System & Database Connectivity
+  systemHealth: SystemHealth | null;
+  dbReadiness: DbReadiness | null;
+  isHealthChecking: boolean;
+  healthError: string | null;
+  checkHealth: () => Promise<void>;
+
+  // Patient Cohort
   patients: Patient[];
   currentPatient: Patient | null;
+  setCurrentPatientId: (id: string) => void;
+
+  // Real-time Digital Twin State
   twinState: DigitalTwinState | null;
   assessment: HealthAssessment | null;
   alerts: Alert[];
-  systemHealth: SystemHealth | null;
+
+  // Global Time Window Filter
+  selectedRangeDays: number;
+  setSelectedRangeDays: (days: number) => void;
+
+  // Loading, Skeletons & Errors
   isLoading: boolean;
+  isLoadingPatientData: boolean;
+  patientDataError: string | null;
+  errorMessage: string | null;
+  retryLoadPatient: () => Promise<void>;
+
+  // Demo Controls & Live Injection
   isSeeding: boolean;
   isLiveInjecting: boolean;
   newlyAddedObservationId: string | null;
-  latestUpdateInfo: { time: string; source: string; metric: string; value: number; unit: string } | null;
-  errorMessage: string | null;
-  isDarkMode: boolean;
-  setCurrentPatientId: (id: string) => void;
+  latestUpdateInfo: {
+    time: string;
+    source: string;
+    metric: string;
+    value: number;
+    unit: string;
+  } | null;
+
+  // Actions
   refreshData: () => Promise<void>;
+  logObservation: (obs: Partial<Observation>) => Promise<Observation | null>;
   acknowledgeAlert: (alertId: string, notes?: string) => Promise<void>;
   seedDemoData: (force?: boolean | any) => Promise<void>;
   resetDemoCohort: () => Promise<void>;
   injectLiveDemoObservation: (metricType?: string, value?: number) => Promise<any>;
+
+  // Appearance
+  isDarkMode: boolean;
   toggleDarkMode: () => void;
 }
 
 const TwinContext = createContext<TwinContextType | undefined>(undefined);
 
 export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isOfflineDemo, setIsOfflineDemoState] = useState<boolean>(isOfflineDemoMode());
   const [patients, setPatients] = useState<Patient[]>([]);
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [twinState, setTwinState] = useState<DigitalTwinState | null>(null);
   const [assessment, setAssessment] = useState<HealthAssessment | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [selectedRangeDays, setSelectedRangeDays] = useState<number>(30);
+
+  // Health and Readiness
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
+  const [dbReadiness, setDbReadiness] = useState<DbReadiness | null>(null);
+  const [isHealthChecking, setIsHealthChecking] = useState<boolean>(false);
+  const [healthError, setHealthError] = useState<string | null>(null);
+
+  // Loading & Error States
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingPatientData, setIsLoadingPatientData] = useState<boolean>(false);
+  const [patientDataError, setPatientDataError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Demo Ingest & Highlight tracking
   const [isSeeding, setIsSeeding] = useState<boolean>(false);
   const [isLiveInjecting, setIsLiveInjecting] = useState<boolean>(false);
   const [newlyAddedObservationId, setNewlyAddedObservationId] = useState<string | null>(null);
@@ -51,8 +107,11 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     value: number;
     unit: string;
   } | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+
+  // Race condition token to discard superseded asynchronous responses
+  const activeRequestIdRef = useRef<number>(0);
 
   // Toggle Dark Mode
   const toggleDarkMode = () => {
@@ -71,48 +130,108 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.documentElement.classList.add('dark');
   }, []);
 
-  // Fetch initial patient list and system health
-  const initApp = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
+  // Explicit Offline Demo Switch
+  const setOfflineDemo = (enabled: boolean) => {
+    setOfflineDemoMode(enabled);
+    setIsOfflineDemoState(enabled);
+    initApp();
+  };
+
+  // Real Health & Readiness Probe
+  const checkHealth = useCallback(async () => {
+    setIsHealthChecking(true);
+    setHealthError(null);
     try {
-      const health = await api.getHealth();
-      setSystemHealth(health);
-
-      const patientList = await api.getPatients();
-      setPatients(patientList);
-
-      if (patientList.length > 0) {
-        setCurrentPatient(patientList[0]);
-      }
+      const [h, r] = await Promise.all([
+        api.getHealth(),
+        api.getReadiness().catch(() => ({ ready: false, database: 'disconnected', ping_ms: -1 }))
+      ]);
+      setSystemHealth(h);
+      setDbReadiness(r);
     } catch (err: any) {
-      console.error('Init error:', err);
-      setErrorMessage(err.message || 'Unable to connect to SwasthyaTwin API server.');
+      setHealthError(err.message || 'Health probe failed.');
+      setSystemHealth({
+        status: 'degraded',
+        service: 'SwasthyaTwin',
+        version: '1.0.0',
+        environment: 'unreachable',
+        database: {
+          status: 'disconnected',
+          engine: 'unknown',
+          database_name: 'swasthyatwin',
+          fallback_active: false,
+          connection_error: err.message
+        },
+        disclaimer: 'Live API backend is currently unreachable.'
+      });
+      setDbReadiness({ ready: false, database: 'disconnected', ping_ms: -1 });
     } finally {
-      setIsLoading(false);
+      setIsHealthChecking(false);
     }
   }, []);
 
-  useEffect(() => {
-    initApp();
-  }, [initApp]);
-
-  // Load telemetry & digital twin state whenever currentPatient changes
+  // Load telemetry & digital twin state with race condition protection
   const loadPatientData = useCallback(async (patientId: string) => {
+    const requestId = ++activeRequestIdRef.current;
+    setIsLoadingPatientData(true);
+    setPatientDataError(null);
+
     try {
-      const [stateRes, assessRes, alertsRes] = await Promise.allSettled([
+      const [stateRes, assessRes, alertsRes] = await Promise.all([
         api.getTwinState(patientId),
         api.getTwinAssessment(patientId),
         api.getAlerts(patientId)
       ]);
 
-      if (stateRes.status === 'fulfilled') setTwinState(stateRes.value);
-      if (assessRes.status === 'fulfilled') setAssessment(assessRes.value);
-      if (alertsRes.status === 'fulfilled') setAlerts(alertsRes.value);
+      // Check if this request is still the active one
+      if (requestId === activeRequestIdRef.current) {
+        setTwinState(stateRes);
+        setAssessment(assessRes);
+        setAlerts(alertsRes);
+      }
     } catch (err: any) {
-      console.error('Error loading patient telemetry:', err);
+      if (requestId === activeRequestIdRef.current) {
+        console.error(`Error loading telemetry for patient ${patientId}:`, err);
+        setPatientDataError(err.message || `Unable to load digital twin state for ${patientId}.`);
+      }
+    } finally {
+      if (requestId === activeRequestIdRef.current) {
+        setIsLoadingPatientData(false);
+      }
     }
   }, []);
+
+  // Initialize application
+  const initApp = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      await checkHealth();
+      const patientList = await api.getPatients();
+      setPatients(patientList);
+
+      if (patientList.length > 0) {
+        // Keep current patient if still exists in list, otherwise select first
+        setCurrentPatient(prev => {
+          if (prev && patientList.some(p => p.patient_id === prev.patient_id)) {
+            return prev;
+          }
+          return patientList[0];
+        });
+      }
+    } catch (err: any) {
+      console.error('Initialization error:', err);
+      setErrorMessage(
+        err.message || 'Unable to connect to live SwasthyaTwin API backend. Check if backend is running on port 8000.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [checkHealth]);
+
+  useEffect(() => {
+    initApp();
+  }, [initApp]);
 
   useEffect(() => {
     if (currentPatient) {
@@ -122,16 +241,53 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const setCurrentPatientId = (id: string) => {
     const found = patients.find(p => p.patient_id === id);
-    if (found) setCurrentPatient(found);
+    if (found) {
+      setCurrentPatient(found);
+    }
+  };
+
+  const retryLoadPatient = async () => {
+    if (currentPatient) {
+      await loadPatientData(currentPatient.patient_id);
+    }
   };
 
   const refreshData = async () => {
-    if (currentPatient) {
-      setIsLoading(true);
-      await loadPatientData(currentPatient.patient_id);
+    setIsLoading(true);
+    try {
+      await checkHealth();
       const patientList = await api.getPatients();
       setPatients(patientList);
+      if (currentPatient) {
+        await loadPatientData(currentPatient.patient_id);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Refresh failed.');
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Immediate in-place update after adding an observation (no page reload)
+  const logObservation = async (obs: Partial<Observation>): Promise<Observation | null> => {
+    if (!currentPatient) return null;
+    try {
+      const created = await api.addObservation(currentPatient.patient_id, obs);
+      setNewlyAddedObservationId(created._id || (created as any).observation_id);
+      setLatestUpdateInfo({
+        time: created.timestamp || new Date().toISOString(),
+        source: created.source || 'manual_entry',
+        metric: created.metric_type,
+        value: created.value,
+        unit: created.unit
+      });
+
+      // Instantly refresh twin state and alerts without page reload
+      await loadPatientData(currentPatient.patient_id);
+      return created;
+    } catch (err: any) {
+      console.error('Failed to log observation:', err);
+      throw err;
     }
   };
 
@@ -140,7 +296,6 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await api.acknowledgeAlert(alertId, 'User/Clinician', notes);
       setAlerts(prev => prev.map(a => a._id === alertId ? { ...a, is_acknowledged: true } : a));
       if (currentPatient) {
-        // Refresh alert counts
         setPatients(prev => prev.map(p =>
           p.patient_id === currentPatient.patient_id
             ? { ...p, active_alerts_count: Math.max(0, p.active_alerts_count - 1) }
@@ -149,6 +304,7 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err: any) {
       console.error('Failed to acknowledge alert:', err);
+      throw err;
     }
   };
 
@@ -160,7 +316,7 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await api.triggerSeed(isForce);
       await initApp();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to seed synthetic data.');
+      setErrorMessage(err.message || 'Failed to seed synthetic demo records.');
     } finally {
       setIsSeeding(false);
     }
@@ -201,7 +357,6 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // Immediately refresh the current patient's digital twin state & assessment
       await loadPatientData(currentPatient.patient_id);
       const patientList = await api.getPatients();
       setPatients(patientList);
@@ -209,6 +364,7 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error('Error during live telemetry injection:', err);
       setErrorMessage(err.message || 'Failed to simulate live telemetry packet.');
+      throw err;
     } finally {
       setIsLiveInjecting(false);
     }
@@ -217,21 +373,32 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <TwinContext.Provider
       value={{
+        isOfflineDemo,
+        setOfflineDemo,
+        systemHealth,
+        dbReadiness,
+        isHealthChecking,
+        healthError,
+        checkHealth,
         patients,
         currentPatient,
+        setCurrentPatientId,
         twinState,
         assessment,
         alerts,
-        systemHealth,
+        selectedRangeDays,
+        setSelectedRangeDays,
         isLoading,
+        isLoadingPatientData,
+        patientDataError,
+        errorMessage,
+        retryLoadPatient,
         isSeeding,
         isLiveInjecting,
         newlyAddedObservationId,
         latestUpdateInfo,
-        errorMessage,
-        isDarkMode,
-        setCurrentPatientId,
         refreshData,
+        logObservation,
         acknowledgeAlert,
         seedDemoData,
         resetDemoCohort,
