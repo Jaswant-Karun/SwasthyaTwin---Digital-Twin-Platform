@@ -91,12 +91,15 @@ class AssessmentService:
         now = datetime.now(timezone.utc)
         baseline_cutoff = now - timedelta(days=window_days)
 
-        # 1. Fetch observations within baseline window
+        # 1. Fetch observations within baseline window (preventing future timestamps and excluding simulated data)
         all_window_obs = list(db.observations.find({
             "patient_id": patient_id,
+            "data_kind": {"$ne": "simulated"},
+            "data_tier": {"$ne": "simulated"},
+            "is_synthetic": {"$ne": True},
             "$or": [
-                {"observed_at": {"$gte": baseline_cutoff}},
-                {"timestamp": {"$gte": baseline_cutoff}}
+                {"observed_at": {"$gte": baseline_cutoff, "$lte": now}},
+                {"timestamp": {"$gte": baseline_cutoff, "$lte": now}}
             ]
         }, {"_id": 0}))
 
@@ -106,7 +109,7 @@ class AssessmentService:
             min_observations=settings.MIN_OBSERVATIONS_FOR_BASELINE
         )
 
-        # 2. Extract latest observation per distinct metric type
+        # 2. Extract latest valid observation per distinct metric type up to current time
         distinct_types = db.observations.distinct("measurement_type", {"patient_id": patient_id})
         if not distinct_types:
             distinct_types = db.observations.distinct("metric_type", {"patient_id": patient_id})
@@ -116,7 +119,12 @@ class AssessmentService:
             latest = db.observations.find_one(
                 {
                     "patient_id": patient_id,
-                    "$or": [{"measurement_type": m}, {"metric_type": m}]
+                    "data_kind": {"$ne": "simulated"},
+                    "data_tier": {"$ne": "simulated"},
+                    "$and": [
+                        {"$or": [{"measurement_type": m}, {"metric_type": m}]},
+                        {"$or": [{"observed_at": {"$lte": now}}, {"timestamp": {"$lte": now}}]}
+                    ]
                 },
                 {"_id": 0},
                 sort=[("observed_at", -1), ("timestamp", -1)]
@@ -236,21 +244,40 @@ class AssessmentService:
         }
         repo.save_assessment(assess_doc)
 
-        # 8. Check and persist alerts
+        # 8. Check and persist alerts (avoid duplicate alerts for same observation and rule)
         new_alerts = evaluate_alerts(patient_id, deviations)
         for al in new_alerts:
-            recent = db.alerts.find_one({
+            recent_unack = db.alerts.find_one({
                 "patient_id": patient_id,
                 "metric_type": al.metric_type,
                 "is_acknowledged": False
             })
-            if not recent:
+            exact_existing = db.alerts.find_one({
+                "patient_id": patient_id,
+                "metric_type": al.metric_type,
+                "current_value": al.current_value,
+                "timestamp": al.timestamp
+            })
+            if not recent_unack and not exact_existing:
                 AlertService.create_alert(db, al)
 
         active_alert_count = db.alerts.count_documents({
             "patient_id": patient_id,
             "is_acknowledged": False
         })
+
+        # Synchronize patient cohort record with latest calculated state
+        db.patients.update_one(
+            {"patient_id": patient_id},
+            {
+                "$set": {
+                    "stability_status": assessment.stability_status,
+                    "latest_vitality_index": round(assessment.vitality_index, 1),
+                    "active_alerts_count": active_alert_count,
+                    "updated_at": now
+                }
+            }
+        )
 
         return DigitalTwinStateResponse(
             patient_id=patient_id,
