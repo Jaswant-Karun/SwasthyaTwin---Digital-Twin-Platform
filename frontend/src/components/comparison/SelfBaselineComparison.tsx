@@ -2,6 +2,7 @@ import React from 'react';
 import { GitCompare, ShieldCheck, AlertCircle, ArrowUpRight, ArrowDownRight, Minus, HelpCircle } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 export const SelfBaselineComparison: React.FC = () => {
   const { currentPatient, twinState } = useTwin();
@@ -57,6 +58,7 @@ export const SelfBaselineComparison: React.FC = () => {
                 <th className="py-3 px-4">Delta vs Self</th>
                 <th className="py-3 px-4">Standardized Z-Score</th>
                 <th className="py-3 px-4">Stability Tier</th>
+                <th className="py-3 px-4">Explain</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
@@ -68,7 +70,15 @@ export const SelfBaselineComparison: React.FC = () => {
                 return (
                   <tr key={m.metric_type} className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-3.5 px-4 font-semibold text-white capitalize">
-                      {m.metric_type.replace(/_/g, ' ')}
+                      <div className="flex items-center gap-1.5">
+                        <span>{m.metric_type.replace(/_/g, ' ')}</span>
+                        <HowCalculatedButton
+                          category="metric"
+                          itemId={m.metric_type}
+                          variant="icon"
+                          title={`How ${m.metric_type} is processed`}
+                        />
+                      </div>
                       <span className="block text-[10px] text-slate-500 font-mono lowercase">tier: {m.data_tier}</span>
                     </td>
                     <td className="py-3.5 px-4 font-bold text-white font-mono text-sm">
@@ -76,7 +86,15 @@ export const SelfBaselineComparison: React.FC = () => {
                       <span className="text-[11px] font-normal text-slate-400 ml-1">{m.unit}</span>
                     </td>
                     <td className="py-3.5 px-4 text-slate-300 font-mono">
-                      {m.metric_type === 'daily_steps' ? Math.round(m.baseline_mean).toLocaleString() : m.baseline_mean.toFixed(1)} {m.unit}
+                      <div className="flex items-center gap-1.5">
+                        <span>{m.metric_type === 'daily_steps' ? Math.round(m.baseline_mean).toLocaleString() : m.baseline_mean.toFixed(1)} {m.unit}</span>
+                        <HowCalculatedButton
+                          category="baseline"
+                          itemId={m.metric_type}
+                          variant="icon"
+                          title={`How ${m.metric_type} baseline is calculated`}
+                        />
+                      </div>
                     </td>
                     <td className="py-3.5 px-4 text-slate-400 font-mono">
                       ±{m.baseline_std.toFixed(2)}
@@ -102,6 +120,14 @@ export const SelfBaselineComparison: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4">
                       <StatusBadge status={m.status} />
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <HowCalculatedButton
+                        category="metric"
+                        itemId={m.metric_type}
+                        variant="link"
+                        label="Formula"
+                      />
                     </td>
                   </tr>
                 );
