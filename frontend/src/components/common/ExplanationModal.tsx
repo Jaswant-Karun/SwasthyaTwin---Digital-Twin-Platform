@@ -136,11 +136,11 @@ export const ExplanationModal: React.FC<ExplanationModalProps> = ({
                   <span className="text-[10px] font-mono text-slate-400 uppercase block font-semibold">
                     2. Personal Baseline
                   </span>
-                  <span className="text-sm font-bold text-teal-700 font-mono block truncate" title={explanation.baseline_formatted}>
-                    {explanation.baseline_formatted.split('(')[0].trim() || 'Not Set'}
+                  <span className="text-sm font-bold text-teal-700 font-mono block truncate" title={explanation.baseline_formatted || 'Not Established'}>
+                    {(explanation.baseline_formatted || 'Not Established').split('(')[0].trim() || 'Not Established'}
                   </span>
-                  <span className="text-[10px] text-slate-500 truncate block" title={explanation.baseline_formatted}>
-                    {explanation.baseline_formatted.includes('(') ? `(${explanation.baseline_formatted.split('(')[1]}` : 'Self-anchor'}
+                  <span className="text-[10px] text-slate-500 truncate block" title={explanation.baseline_formatted || 'Self-anchor'}>
+                    {explanation.baseline_formatted && explanation.baseline_formatted.includes('(') ? `(${explanation.baseline_formatted.split('(')[1]}` : 'Self-anchor'}
                   </span>
                 </div>
 
