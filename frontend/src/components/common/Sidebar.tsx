@@ -11,7 +11,9 @@ import {
   Settings,
   ChevronRight,
   HeartPulse,
-  BookOpen
+  BookOpen,
+  UserPlus,
+  PlusCircle
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 
@@ -28,6 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'add-patient', label: 'Add Patient', icon: UserPlus },
+    { id: 'add-observation', label: 'Add Health Data', icon: PlusCircle },
     { id: 'digital-twin', label: 'Digital Twin', icon: HeartPulse },
     { id: 'health-trends', label: 'Health Trends', icon: LineChart },
     { id: 'risk-insights', label: 'Risk Insights', icon: ShieldAlert },
