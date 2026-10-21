@@ -8,7 +8,7 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_DATABASE: swasthya_twin
+      MONGO_INITDB_DATABASE: swasthyatwin
     volumes:
       - mongo-data:/data/db
     healthcheck:
@@ -27,7 +27,7 @@ services:
       - "8000:8000"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017
-      - MONGODB_DATABASE=swasthya_twin
+      - MONGODB_DATABASE=swasthyatwin
       - CORS_ORIGINS=http://localhost:5173,http://localhost:3000
       - ALLOW_IN_MEMORY_FALLBACK=true
     depends_on:
