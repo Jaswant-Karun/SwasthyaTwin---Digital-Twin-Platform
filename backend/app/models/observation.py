@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, Literal
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
-DataKind = Literal["measured", "user_entered", "simulated"]
+DataKind = Literal["measured", "user_entered", "wearable_imported", "synthetic_demo", "simulated"]
 
 VALID_UNITS = {
     "heart_rate": ["bpm"],
@@ -17,6 +17,52 @@ VALID_UNITS = {
     "respiratory_rate": ["breaths/min", "rpm"]
 }
 
+PHYSIOLOGICAL_BOUNDS = {
+    "heart_rate": (30.0, 240.0, "bpm", "Resting Heart Rate"),
+    "blood_pressure_systolic": (50.0, 260.0, "mmHg", "Systolic Blood Pressure"),
+    "blood_pressure_diastolic": (30.0, 160.0, "mmHg", "Diastolic Blood Pressure"),
+    "hrv_rmssd": (5.0, 300.0, "ms", "Heart Rate Variability (RMSSD)"),
+    "sleep_duration_hours": (0.0, 24.0, "hours", "Sleep Duration"),
+    "daily_steps": (0.0, 120000.0, "steps", "Daily Steps"),
+    "spo2": (50.0, 100.0, "%", "Blood Oxygen (SpO2)"),
+    "fasting_blood_glucose": (20.0, 600.0, "mg/dL", "Fasting Blood Glucose"),
+    "respiratory_rate": (4.0, 60.0, "breaths/min", "Respiratory Rate")
+}
+
+def validate_and_normalize_measurement(m_type: str, val: float, unit: str) -> tuple[float, str]:
+    """Validate physiological plausibility and auto-normalize units without false alarm disease labeling."""
+    clean_type = m_type.strip().lower()
+    clean_unit = unit.strip()
+
+    # Supported Unit Conversions
+    if clean_type == "fasting_blood_glucose" and clean_unit.lower() == "mmol/l":
+        val = round(val * 18.0182, 1)
+        clean_unit = "mg/dL"
+    elif clean_type == "sleep_duration_hours" and clean_unit.lower() in ["hrs", "h"]:
+        clean_unit = "hours"
+    elif clean_type == "daily_steps" and clean_unit.lower() == "count":
+        clean_unit = "steps"
+    elif clean_type == "respiratory_rate" and clean_unit.lower() == "rpm":
+        clean_unit = "breaths/min"
+
+    # Unit validation
+    if clean_type in VALID_UNITS:
+        allowed = VALID_UNITS[clean_type]
+        if not any(clean_unit.lower() == a.lower() for a in allowed):
+            raise ValueError(
+                f"Invalid unit '{clean_unit}' for measurement type '{clean_type}'. Supported units: {allowed}"
+            )
+
+    # Range validation
+    if clean_type in PHYSIOLOGICAL_BOUNDS:
+        min_v, max_v, std_unit, label = PHYSIOLOGICAL_BOUNDS[clean_type]
+        if val < min_v or val > max_v:
+            raise ValueError(
+                f"{label} value {val} {clean_unit} is outside physiologically plausible range ({min_v} to {max_v} {std_unit}). Please check for data entry error."
+            )
+
+    return val, clean_unit
+
 class ObservationBase(BaseModel):
     observation_id: str = Field(default_factory=lambda: f"obs_{uuid.uuid4().hex[:12]}")
     patient_id: str = Field(..., min_length=2, max_length=64)
@@ -26,6 +72,7 @@ class ObservationBase(BaseModel):
     observed_at: datetime
     source: str = Field(default="wearable_continuous")
     data_kind: DataKind = Field(default="measured")
+    notes: Optional[str] = Field(default=None, max_length=500)
     demo_data: bool = Field(default=False, description="Flag indicating synthetic demonstration record")
     is_synthetic: bool = Field(default=False, description="Explicit synthetic provenance indicator")
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -43,16 +90,14 @@ class ObservationBase(BaseModel):
     @field_validator("unit")
     @classmethod
     def validate_unit(cls, v, info):
-        # Normalize unit string
         v_clean = v.strip()
         m_type = info.data.get("measurement_type")
         if m_type and m_type in VALID_UNITS:
             allowed = VALID_UNITS[m_type]
-            if v_clean not in allowed and not any(v_clean.lower() == a.lower() for a in allowed):
+            if not any(v_clean.lower() == a.lower() for a in allowed):
                 raise ValueError(f"Invalid unit '{v_clean}' for measurement_type '{m_type}'. Expected one of: {allowed}")
         return v_clean
 
-    # Compatibility properties for frontend & legacy queries
     @property
     def metric_type(self) -> str:
         return self.measurement_type
@@ -63,8 +108,7 @@ class ObservationBase(BaseModel):
 
     @property
     def data_tier(self) -> str:
-        # map user_entered to user_reported for frontend compatibility
-        if self.data_kind == "user_entered":
+        if self.data_kind in ["user_entered", "user_reported"]:
             return "user_reported"
         return self.data_kind
 
@@ -76,36 +120,50 @@ class ObservationCreate(BaseModel):
     unit: str
     observed_at: Optional[datetime] = None
     timestamp: Optional[datetime] = None # Support either field name
-    source: str = "wearable_continuous"
+    source: str = "manual_entry"
     data_kind: Optional[DataKind] = None
     data_tier: Optional[str] = None # Support either field name
+    notes: Optional[str] = Field(default=None, max_length=500)
     metadata: Optional[Dict[str, Any]] = None
 
     def to_observation_base(self, observation_id: Optional[str] = None) -> ObservationBase:
         m_type = self.measurement_type or self.metric_type or "general"
         obs_time = self.observed_at or self.timestamp or datetime.now(timezone.utc)
         
+        # Physiological range and unit validation & normalization
+        normalized_val, normalized_unit = validate_and_normalize_measurement(m_type, self.value, self.unit)
+        
         # Map data_tier to data_kind
         kind = self.data_kind
         if not kind:
-            if self.data_tier == "user_reported":
+            if self.data_tier in ["user_reported", "user_entered"]:
                 kind = "user_entered"
-            elif self.data_tier in ["measured", "simulated"]:
+            elif self.data_tier in ["wearable_imported", "imported_measured"]:
+                kind = "wearable_imported"
+            elif self.data_tier in ["measured", "simulated", "synthetic_demo"]:
                 kind = self.data_tier
             else:
-                kind = "measured"
+                kind = "user_entered"
 
         return ObservationBase(
             observation_id=observation_id or f"obs_{uuid.uuid4().hex[:12]}",
             patient_id=self.patient_id,
             measurement_type=m_type,
-            value=self.value,
-            unit=self.unit,
+            value=normalized_val,
+            unit=normalized_unit,
             observed_at=obs_time,
             source=self.source,
             data_kind=kind,
+            notes=self.notes,
             metadata=self.metadata or {}
         )
+
+class ObservationUpdate(BaseModel):
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    observed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    correction_reason: Optional[str] = Field(default=None, description="Audit reason for modifying historical telemetry")
 
 class BatchObservationCreate(BaseModel):
     observations: List[ObservationCreate]
@@ -115,6 +173,7 @@ class ObservationResponse(ObservationBase):
     metric_type: str
     timestamp: datetime
     data_tier: str
+    notes: Optional[str] = None
     demo_data: bool = False
     is_synthetic: bool = False
 
@@ -135,3 +194,29 @@ class PaginatedObservationsResponse(BaseModel):
     skip: int
     limit: int
     items: List[ObservationResponse]
+
+class CSVValidationRow(BaseModel):
+    row_number: int
+    patient_id: str
+    measurement_type: str
+    value: Optional[float]
+    unit: str
+    observed_at: Optional[str]
+    source: str
+    data_kind: str
+    notes: Optional[str] = None
+    is_valid: bool
+    errors: List[str] = Field(default_factory=list)
+    is_duplicate: bool = False
+
+class CSVValidationResponse(BaseModel):
+    total_rows: int
+    valid_rows_count: int
+    invalid_rows_count: int
+    duplicate_rows_count: int
+    rows: List[CSVValidationRow]
+    can_import: bool
+
+class CSVImportRequest(BaseModel):
+    rows: List[Dict[str, Any]]
+    skip_duplicates: bool = True
