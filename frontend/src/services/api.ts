@@ -395,5 +395,335 @@ export const api = {
         source: 'wearable_continuous_live'
       })
     });
+  },
+
+  // Explainability & Calculation Metadata
+  getExplanations: async (patientId: string): Promise<PatientExplanationsResponse> => {
+    if (explicitOfflineDemo) {
+      const twin = MOCK_TWIN_STATE[patientId] || MOCK_TWIN_STATE["PT-1001"];
+      const metrics: Record<string, CalculationExplanation> = {};
+      const baselines: Record<string, CalculationExplanation> = {};
+
+      Object.entries(twin.metrics).forEach(([m, dev]) => {
+        const isOpt = dev.status === 'optimal';
+        metrics[m] = {
+          item_id: `metric_${m}`,
+          category: 'metric',
+          title: `${m.replace(/_/g, ' ').toUpperCase()} Calculation`,
+          metric_type: m,
+          current_value: dev.current_value,
+          current_value_formatted: `${dev.current_value.toFixed(1)} ${dev.unit}`,
+          unit: dev.unit,
+          baseline_value: dev.baseline_mean,
+          baseline_formatted: `${dev.baseline_mean.toFixed(1)} ${dev.unit} (Personal Mean)`,
+          historical_window: '30-day rolling baseline window',
+          window_days: 30,
+          observations_count: 28,
+          observations_sufficiency: 'Sufficient (28 observations ≥ 14 minimum)',
+          is_sufficient: true,
+          formula_name: 'Standardized Z-Score & Personal Median Delta',
+          formula_latex_or_text: 'Z = (Observed - Baseline_Mean) / Baseline_StdDev; Δ_abs = Observed - Baseline_Median',
+          formula_explanation: 'Standardizes the difference between the observed reading and the personal baseline distribution.',
+          worked_example_steps: [
+            {
+              step_number: 1,
+              title: 'Extract Observed Telemetry & Baseline',
+              description: 'Retrieve latest observation and historical statistical baseline.',
+              calculation: `Observed = ${dev.current_value.toFixed(1)} ${dev.unit}, Baseline = ${dev.baseline_mean.toFixed(1)} ${dev.unit}, StdDev = ${dev.baseline_std.toFixed(2)} ${dev.unit}`,
+              result: 'Inputs established'
+            },
+            {
+              step_number: 2,
+              title: 'Calculate Absolute & Relative Deviation',
+              description: 'Compute raw delta and percentage deviation.',
+              formula: 'Δ_abs = Observed - Baseline; Δ_pct = 100 * Δ_abs / Baseline',
+              calculation: `${dev.current_value.toFixed(1)} - ${dev.baseline_mean.toFixed(1)} = ${dev.delta_absolute:+.1f} ${dev.unit} (${dev.delta_percentage:+.1f}%)`,
+              result: `${dev.delta_percentage:+.1f}%`
+            },
+            {
+              step_number: 3,
+              title: 'Standardize via Z-Score',
+              description: 'Standardize deviation in units of personal historical standard deviation.',
+              formula: 'Z = (Observed - Baseline_Mean) / Baseline_StdDev',
+              calculation: `(${dev.current_value.toFixed(1)} - ${dev.baseline_mean.toFixed(1)}) / ${dev.baseline_std.toFixed(2)} = ${dev.z_score:+.2f}σ`,
+              result: `${dev.z_score:+.2f}σ`
+            },
+            {
+              step_number: 4,
+              title: 'Classify Stability Status',
+              description: 'Map standardized score to clinical stability tier.',
+              calculation: `|Z| = ${Math.abs(dev.z_score).toFixed(2)}σ -> ${dev.status.replace(/_/g, ' ')}`,
+              result: dev.status
+            }
+          ],
+          worked_example_summary: `Observed ${dev.current_value.toFixed(1)} ${dev.unit} deviates by ${dev.delta_absolute:+.1f} ${dev.unit} (${dev.delta_percentage:+.1f}%) from personal baseline (${dev.baseline_mean.toFixed(1)} ${dev.unit}).`,
+          data_source: 'wearable_continuous',
+          latest_timestamp_formatted: 'Recent continuous telemetry (< 2h ago)',
+          reason_flag_or_alert: isOpt ? 'Within normal 1.0σ baseline tolerance corridor.' : `Divergence of ${dev.z_score:+.2f}σ exceeds baseline variance tolerance.`,
+          flag_severity: isOpt ? 'optimal' : 'warning',
+          warnings: ['Telemetry is fresh and actively synchronized.'],
+          is_stale: false,
+          is_missing_data: false,
+          result_type: 'Statistical Estimate',
+          limitations: 'Non-diagnostic demonstration research indicator.'
+        };
+
+        baselines[m] = {
+          item_id: `baseline_${m}`,
+          category: 'baseline',
+          title: `${m.replace(/_/g, ' ').toUpperCase()} Personal Baseline`,
+          metric_type: m,
+          current_value: dev.baseline_mean,
+          current_value_formatted: `${dev.baseline_mean.toFixed(1)} ${dev.unit}`,
+          unit: dev.unit,
+          baseline_value: dev.baseline_mean,
+          baseline_formatted: `${dev.baseline_mean.toFixed(1)} ${dev.unit}`,
+          historical_window: '30-day rolling window',
+          window_days: 30,
+          observations_count: 28,
+          observations_sufficiency: 'Sufficient (28 observations ≥ 14 threshold)',
+          is_sufficient: true,
+          formula_name: 'Robust Median with Tukey Outlier Filtering',
+          formula_latex_or_text: 'Median = P_50(X); IQR = Q_3 - Q_1; Fences = [Q_1 - 1.5*IQR, Q_3 + 1.5*IQR]',
+          formula_explanation: 'Filters transient outliers and computes central tendency.',
+          worked_example_steps: [
+            {
+              step_number: 1,
+              title: 'Collect Window Telemetry',
+              description: 'Retrieve observations across rolling 30-day window.',
+              calculation: 'Sample count n = 28 observations',
+              result: '28 samples'
+            },
+            {
+              step_number: 2,
+              title: 'Compute Median & IQR',
+              description: 'Calculate distribution quartiles and interquartile range.',
+              calculation: `Median = ${dev.baseline_mean.toFixed(1)} ${dev.unit}, StdDev = ${dev.baseline_std.toFixed(2)} ${dev.unit}`,
+              result: `Baseline = ${dev.baseline_mean.toFixed(1)} ${dev.unit}`
+            }
+          ],
+          worked_example_summary: `Personal baseline calibrated to ${dev.baseline_mean.toFixed(1)} ${dev.unit} from 28 historical readings.`,
+          data_source: 'historical_telemetry',
+          latest_timestamp_formatted: 'Within active 30-day window',
+          warnings: [],
+          is_stale: false,
+          is_missing_data: false,
+          result_type: 'Statistical Estimate',
+          limitations: 'Individualized longitudinal baseline. Not a clinical reference standard.'
+        };
+      });
+
+      const trends: Record<string, CalculationExplanation> = {
+        vitality_index: {
+          item_id: 'trend_vitality_index',
+          category: 'trend',
+          title: 'Health Stability Index (Vitality Trend)',
+          metric_type: 'vitality_index',
+          current_value: twin.overall_vitality,
+          current_value_formatted: `${twin.overall_vitality.toFixed(1)} / 100`,
+          unit: 'pts',
+          baseline_value: 100.0,
+          baseline_formatted: '100.0 (Personal Alignment Anchor)',
+          historical_window: '30-day rolling baseline window',
+          window_days: 30,
+          observations_count: 140,
+          observations_sufficiency: 'Sufficient (140 observations across biometrics)',
+          is_sufficient: true,
+          formula_name: 'Personal Baseline Normalized Excess Deviation Index',
+          formula_latex_or_text: 'Vitality = 100.0 - [ sum(w_i * min(30.0, max(0, |Z_i| - 1.0) * 12.0)) / sum(w_active) ]',
+          formula_explanation: 'Starts at 100 with transparent weighted deductions for excess standardized deviation (|Z| > 1.0) from personal norms.',
+          worked_example_steps: [
+            {
+              step_number: 1,
+              title: 'Base Score Initialization',
+              description: 'Score starts at 100.0 pts for optimal self-alignment.',
+              calculation: 'Base Score = 100.0 pts',
+              result: '100.0 pts'
+            },
+            {
+              step_number: 2,
+              title: 'Evaluate Excess Drift (|Z| > 1.0σ)',
+              description: 'Points deducted proportionally for biometrics exceeding 1.0σ.',
+              calculation: `Normalized point deductions = ${(100 - twin.overall_vitality).toFixed(1)} pts`,
+              result: `-${(100 - twin.overall_vitality).toFixed(1)} pts`
+            },
+            {
+              step_number: 3,
+              title: 'Compute Final Vitality Index',
+              description: '100.0 minus normalized deductions.',
+              calculation: `100.0 - ${(100 - twin.overall_vitality).toFixed(1)} = ${twin.overall_vitality.toFixed(1)} pts`,
+              result: `${twin.overall_vitality.toFixed(1)} / 100`
+            }
+          ],
+          worked_example_summary: `Vitality index evaluated as ${twin.overall_vitality.toFixed(1)} / 100 (${twin.stability_status.replace(/_/g, ' ')}).`,
+          data_source: 'multi_stream_telemetry',
+          latest_timestamp_formatted: 'Recent continuous telemetry (< 2h ago)',
+          reason_flag_or_alert: `Stability Status: ${twin.stability_status.replace(/_/g, ' ')}`,
+          flag_severity: twin.overall_vitality < 75 ? 'warning' : 'optimal',
+          warnings: [],
+          is_stale: false,
+          is_missing_data: false,
+          result_type: 'Rule-Based Indicator',
+          limitations: 'Experimental research trend indicator. Not a clinical risk score or emergency triage tool.'
+        }
+      };
+
+      const alerts: Record<string, CalculationExplanation> = {};
+      MOCK_ALERTS.forEach((al) => {
+        alerts[al._id] = {
+          item_id: `alert_${al._id}`,
+          category: 'alert',
+          title: `Alert Explanation: ${al.title}`,
+          metric_type: al.metric_type,
+          current_value: al.current_value,
+          current_value_formatted: `${al.current_value} ${al.unit}`,
+          unit: al.unit,
+          baseline_value: al.baseline_value,
+          baseline_formatted: `${al.baseline_value} ${al.unit} (Personal Baseline)`,
+          historical_window: '30-day baseline window',
+          window_days: 30,
+          observations_count: 28,
+          observations_sufficiency: 'Sufficient',
+          is_sufficient: true,
+          formula_name: 'Configurable Baseline Surveillance Rule',
+          formula_latex_or_text: 'Condition: |Z| ≥ 1.8σ with temporal persistence',
+          formula_explanation: 'Alerts trigger strictly when telemetry breaches personalized statistical thresholds.',
+          worked_example_steps: [
+            {
+              step_number: 1,
+              title: 'Observed Telemetry vs Baseline',
+              description: 'Compare reading against personal baseline.',
+              calculation: `Observed = ${al.current_value} ${al.unit}, Baseline = ${al.baseline_value} ${al.unit}`,
+              result: `Z = ${al.z_score:+.2f}σ`
+            },
+            {
+              step_number: 2,
+              title: 'Threshold Evaluation',
+              description: 'Check rule condition |Z| >= 1.8σ.',
+              calculation: `|Z| = ${Math.abs(al.z_score).toFixed(2)}σ ≥ 1.8σ -> TRIGGERED`,
+              result: 'Condition met'
+            }
+          ],
+          worked_example_summary: `Alert '${al.title}' was triggered by ${al.z_score:+.2f}σ deviation from personal baseline.`,
+          data_source: 'wearable_telemetry',
+          latest_timestamp_formatted: new Date(al.timestamp).toLocaleString(),
+          reason_flag_or_alert: al.description,
+          flag_severity: al.severity,
+          warnings: ['Non-emergency surveillance flag.'],
+          is_stale: false,
+          is_missing_data: false,
+          result_type: 'Rule-Based Indicator',
+          limitations: 'Configurable research demonstration heuristic. Not a clinical diagnostic dispatch.'
+        };
+      });
+
+      return {
+        patient_id: patientId,
+        generated_at: new Date().toISOString(),
+        metrics,
+        baselines,
+        trends,
+        alerts,
+        simulation: null
+      };
+    }
+
+    return await request<PatientExplanationsResponse>(`/api/v1/patients/${patientId}/explanations`);
+  },
+
+  getSpecificExplanation: async (
+    patientId: string,
+    category: string,
+    itemId: string
+  ): Promise<CalculationExplanation> => {
+    if (explicitOfflineDemo) {
+      const all = await api.getExplanations(patientId);
+      const cat = category.toLowerCase();
+      if (cat === 'metric' && all.metrics[itemId]) return all.metrics[itemId];
+      if (cat === 'baseline' && all.baselines[itemId]) return all.baselines[itemId];
+      if (cat === 'trend' && (all.trends[itemId] || all.trends.vitality_index)) return all.trends[itemId] || all.trends.vitality_index;
+      if (cat === 'alert' && all.alerts[itemId]) return all.alerts[itemId];
+      if (cat === 'simulation' && all.simulation) return all.simulation;
+      const anyMatch = all.metrics[itemId] || all.baselines[itemId] || all.trends[itemId] || all.alerts[itemId];
+      if (anyMatch) return anyMatch;
+      throw new ApiError(`Explanation not found for ${category}/${itemId}`, 404, `/explanations/${category}/${itemId}`);
+    }
+
+    return await request<CalculationExplanation>(`/api/v1/patients/${patientId}/explanations/${category}/${itemId}`);
+  },
+
+  getSimulationExplanation: async (
+    patientId: string,
+    payload: SimulationExplanationRequest
+  ): Promise<CalculationExplanation> => {
+    if (explicitOfflineDemo) {
+      const params = payload.parameters || { duration_days: 30, delta_sleep_hours: 1.0, delta_daily_steps: 3000 };
+      const duration = params.duration_days || 30;
+      const baseRhr = payload.baseline_summary?.resting_hr || 72.0;
+      const finalRhr = payload.projected_outcomes?.final_resting_hr || (baseRhr - 3.2);
+      const deltaRhr = Number((finalRhr - baseRhr).toFixed(1));
+
+      return {
+        item_id: 'simulation_offline',
+        category: 'simulation',
+        title: `What-If Simulation Modeling: ${payload.scenario_name || 'Scenario'}`,
+        metric_type: 'resting_hr',
+        current_value: finalRhr,
+        current_value_formatted: `${finalRhr} bpm (Projected)`,
+        unit: 'bpm',
+        baseline_value: baseRhr,
+        baseline_formatted: `${baseRhr} bpm (Starting Baseline Anchor)`,
+        historical_window: `${duration}-day forward projection horizon`,
+        window_days: duration,
+        observations_count: 3,
+        observations_sufficiency: 'Anchored to measured personal baseline',
+        is_sufficient: true,
+        formula_name: 'Pharmacokinetic/Pharmacodynamic Exponential Saturation Model',
+        formula_latex_or_text: 'Δy(t) = sum_j [ k_j * Δu_j * (1 - exp(-t / τ_j)) ]; CI(t) = base_ci * (1 + 0.8 * t / T)',
+        formula_explanation: 'Models autonomic and cardiovascular adaptation over time using physiological time constants with exponential saturation.',
+        worked_example_steps: [
+          {
+            step_number: 1,
+            title: 'Baseline Anchors',
+            description: 'Starting biometrics anchored to patient baseline.',
+            calculation: `Resting HR = ${baseRhr} bpm`,
+            result: `${baseRhr} bpm`
+          },
+          {
+            step_number: 2,
+            title: 'Compute Exponential Response Factors',
+            description: 'Evaluate exponential saturation at horizon.',
+            formula: 'resp = 1 - exp(-t / τ)',
+            calculation: `Sleep response factor (τ=4d) = ${(1 - Math.exp(-duration / 4.0)).toFixed(3)}`,
+            result: 'Adaptation factors evaluated'
+          },
+          {
+            step_number: 3,
+            title: 'Calculate Projected Outcome',
+            description: 'Apply effect coefficients and sum deltas.',
+            calculation: `Base ${baseRhr} bpm + (${deltaRhr} bpm) = ${finalRhr} bpm`,
+            result: `${finalRhr} bpm`
+          }
+        ],
+        worked_example_summary: `Simulated ${duration}-day projection: Resting HR projected to ${finalRhr} bpm (Δ ${deltaRhr:+.1f} bpm from baseline ${baseRhr} bpm).`,
+        data_source: 'in_silico_computational_twin_engine',
+        latest_timestamp_formatted: new Date().toLocaleTimeString(),
+        reason_flag_or_alert: 'Counterfactual Projection under assumed intervention adherence.',
+        flag_severity: 'info',
+        warnings: [
+          'Counterfactual Model: Assumes consistent sleep timing and moderate-intensity activity.',
+          'Historical observed telemetry remains completely immutable.'
+        ],
+        is_stale: false,
+        is_missing_data: false,
+        result_type: 'Model Prediction',
+        limitations: 'Illustrative mathematical simulation only. Does not guarantee clinical prognosis or replace clinical trials.'
+      };
+    }
+
+    return await request<CalculationExplanation>(`/api/v1/patients/${patientId}/explanations/simulation`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
   }
 };
