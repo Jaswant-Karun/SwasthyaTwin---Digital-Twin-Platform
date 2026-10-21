@@ -459,7 +459,11 @@ export const api = {
       return MOCK_ALERTS;
     }
     const q = acknowledged !== undefined ? `?acknowledged=${acknowledged}` : '';
-    return await request<Alert[]>(`/api/v1/patients/${patientId}/alerts${q}`);
+    const res = await request<Alert[]>(`/api/v1/patients/${patientId}/alerts${q}`);
+    return (res || []).map(a => ({
+      ...a,
+      _id: a._id || (a as any).alert_id || (a as any).id || ''
+    }));
   },
 
   acknowledgeAlert: async (
