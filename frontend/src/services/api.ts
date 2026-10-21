@@ -437,16 +437,16 @@ export const api = {
               title: 'Calculate Absolute & Relative Deviation',
               description: 'Compute raw delta and percentage deviation.',
               formula: 'Δ_abs = Observed - Baseline; Δ_pct = 100 * Δ_abs / Baseline',
-              calculation: `${dev.current_value.toFixed(1)} - ${dev.baseline_mean.toFixed(1)} = ${dev.delta_absolute:+.1f} ${dev.unit} (${dev.delta_percentage:+.1f}%)`,
-              result: `${dev.delta_percentage:+.1f}%`
+              calculation: `${dev.current_value.toFixed(1)} - ${dev.baseline_mean.toFixed(1)} = ${dev.delta_absolute > 0 ? '+' : ''}${dev.delta_absolute.toFixed(1)} ${dev.unit} (${dev.delta_percentage > 0 ? '+' : ''}${dev.delta_percentage.toFixed(1)}%)`,
+              result: `${dev.delta_percentage > 0 ? '+' : ''}${dev.delta_percentage.toFixed(1)}%`
             },
             {
               step_number: 3,
               title: 'Standardize via Z-Score',
               description: 'Standardize deviation in units of personal historical standard deviation.',
               formula: 'Z = (Observed - Baseline_Mean) / Baseline_StdDev',
-              calculation: `(${dev.current_value.toFixed(1)} - ${dev.baseline_mean.toFixed(1)}) / ${dev.baseline_std.toFixed(2)} = ${dev.z_score:+.2f}σ`,
-              result: `${dev.z_score:+.2f}σ`
+              calculation: `(${dev.current_value.toFixed(1)} - ${dev.baseline_mean.toFixed(1)}) / ${dev.baseline_std.toFixed(2)} = ${dev.z_score > 0 ? '+' : ''}${dev.z_score.toFixed(2)}σ`,
+              result: `${dev.z_score > 0 ? '+' : ''}${dev.z_score.toFixed(2)}σ`
             },
             {
               step_number: 4,
@@ -456,10 +456,10 @@ export const api = {
               result: dev.status
             }
           ],
-          worked_example_summary: `Observed ${dev.current_value.toFixed(1)} ${dev.unit} deviates by ${dev.delta_absolute:+.1f} ${dev.unit} (${dev.delta_percentage:+.1f}%) from personal baseline (${dev.baseline_mean.toFixed(1)} ${dev.unit}).`,
+          worked_example_summary: `Observed ${dev.current_value.toFixed(1)} ${dev.unit} deviates by ${dev.delta_absolute > 0 ? '+' : ''}${dev.delta_absolute.toFixed(1)} ${dev.unit} (${dev.delta_percentage > 0 ? '+' : ''}${dev.delta_percentage.toFixed(1)}%) from personal baseline (${dev.baseline_mean.toFixed(1)} ${dev.unit}).`,
           data_source: 'wearable_continuous',
           latest_timestamp_formatted: 'Recent continuous telemetry (< 2h ago)',
-          reason_flag_or_alert: isOpt ? 'Within normal 1.0σ baseline tolerance corridor.' : `Divergence of ${dev.z_score:+.2f}σ exceeds baseline variance tolerance.`,
+          reason_flag_or_alert: isOpt ? 'Within normal 1.0σ baseline tolerance corridor.' : `Divergence of ${dev.z_score > 0 ? '+' : ''}${dev.z_score.toFixed(2)}σ exceeds baseline variance tolerance.`,
           flag_severity: isOpt ? 'optimal' : 'warning',
           warnings: ['Telemetry is fresh and actively synchronized.'],
           is_stale: false,
@@ -594,7 +594,7 @@ export const api = {
               title: 'Observed Telemetry vs Baseline',
               description: 'Compare reading against personal baseline.',
               calculation: `Observed = ${al.current_value} ${al.unit}, Baseline = ${al.baseline_value} ${al.unit}`,
-              result: `Z = ${al.z_score:+.2f}σ`
+              result: `Z = ${al.z_score > 0 ? '+' : ''}${al.z_score.toFixed(2)}σ`
             },
             {
               step_number: 2,
@@ -604,7 +604,7 @@ export const api = {
               result: 'Condition met'
             }
           ],
-          worked_example_summary: `Alert '${al.title}' was triggered by ${al.z_score:+.2f}σ deviation from personal baseline.`,
+          worked_example_summary: `Alert '${al.title}' was triggered by ${al.z_score > 0 ? '+' : ''}${al.z_score.toFixed(2)}σ deviation from personal baseline.`,
           data_source: 'wearable_telemetry',
           latest_timestamp_formatted: new Date(al.timestamp).toLocaleString(),
           reason_flag_or_alert: al.description,
