@@ -366,6 +366,12 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Instantly refresh twin state and alerts without page reload
       await loadPatientData(currentPatient.patient_id);
+      try {
+        const patientList = await api.getPatients();
+        setPatients(patientList);
+      } catch (e) {
+        // ignore patient list refresh failure if offline
+      }
       return created;
     } catch (err: any) {
       console.error('Failed to log observation:', err);
