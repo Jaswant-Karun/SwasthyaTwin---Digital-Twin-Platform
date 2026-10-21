@@ -473,12 +473,23 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         acknowledgeAlert,
         seedDemoData,
         resetDemoCohort,
-        injectLiveDemoObservation,
         isDarkMode,
-        toggleDarkMode
+        toggleDarkMode,
+        patientExplanations,
+        activeExplanation,
+        isExplanationOpen,
+        isLoadingExplanation,
+        openExplanation,
+        closeExplanation
       }}
     >
       {children}
+      <ExplanationModal
+        isOpen={isExplanationOpen}
+        onClose={closeExplanation}
+        explanation={activeExplanation}
+        isLoading={isLoadingExplanation}
+      />
     </TwinContext.Provider>
   );
 };
