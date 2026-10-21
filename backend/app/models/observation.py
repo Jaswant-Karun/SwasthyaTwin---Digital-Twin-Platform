@@ -168,6 +168,42 @@ class ObservationUpdate(BaseModel):
 class BatchObservationCreate(BaseModel):
     observations: List[ObservationCreate]
 
+class BaselineSummary(BaseModel):
+    mean: float
+    median: float
+    std_dev: float
+    iqr: float
+    sample_count: int
+    window_days: int
+    is_sufficient: bool
+    unit: str
+
+class DeviationSummary(BaseModel):
+    delta_absolute: float
+    delta_percentage: float
+    z_score: float
+    status: str
+    direction: str
+    relative_is_excluded: bool = False
+    exclusion_reason: Optional[str] = None
+
+class AssessmentUpdateMetadata(BaseModel):
+    patient_id: str
+    metric_type: str
+    observed_value: float
+    unit: str
+    observed_at: datetime
+    is_first_observation: bool = False
+    sufficiency_message: Optional[str] = None
+    previous_baseline: Optional[BaselineSummary] = None
+    updated_baseline: Optional[BaselineSummary] = None
+    deviation: Optional[DeviationSummary] = None
+    vitality_index: Optional[float] = None
+    previous_vitality_index: Optional[float] = None
+    stability_status: Optional[str] = None
+    triggered_alert: Optional[Dict[str, Any]] = None
+    explanation: Optional[str] = None
+
 class ObservationResponse(ObservationBase):
     id: str = Field(default="")
     observation_id: str
@@ -177,6 +213,7 @@ class ObservationResponse(ObservationBase):
     notes: Optional[str] = None
     demo_data: bool = False
     is_synthetic: bool = False
+    assessment_update: Optional[AssessmentUpdateMetadata] = None
 
     @field_validator("id", mode="before")
     @classmethod
