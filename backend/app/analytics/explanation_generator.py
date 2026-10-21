@@ -278,7 +278,7 @@ def build_metric_explanation(
         is_stale=deviation.is_stale,
         is_missing_data=False,
         result_type="Statistical Estimate",
-        limitations="Personal baseline comparison heuristic. Does not diagnose disease, predict medical emergencies, or supersede clinician evaluation.",
+        limitations="Non-diagnostic demonstration research indicator. Personal baseline comparison heuristic. Does not diagnose disease, predict medical emergencies, or supersede clinician evaluation.",
         metadata={
             "z_score": z,
             "status": status,
