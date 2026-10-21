@@ -192,10 +192,14 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPatientDataError(null);
 
     try {
-      const [stateRes, assessRes, alertsRes] = await Promise.all([
+      const [stateRes, assessRes, alertsRes, explanationsRes] = await Promise.all([
         api.getTwinState(patientId),
         api.getTwinAssessment(patientId),
-        api.getAlerts(patientId)
+        api.getAlerts(patientId),
+        api.getExplanations(patientId).catch(e => {
+          console.warn('Could not pre-fetch explanations:', e);
+          return null;
+        })
       ]);
 
       // Check if this request is still the active one
@@ -203,6 +207,9 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTwinState(stateRes);
         setAssessment(assessRes);
         setAlerts(alertsRes);
+        if (explanationsRes) {
+          setPatientExplanations(explanationsRes);
+        }
       }
     } catch (err: any) {
       if (requestId === activeRequestIdRef.current) {
@@ -214,6 +221,55 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoadingPatientData(false);
       }
     }
+  }, []);
+
+  // Explainability Modal Handlers
+  const openExplanation = useCallback(async (
+    category: string,
+    itemId: string,
+    customPayload?: any
+  ) => {
+    if (!currentPatient) return;
+    setIsLoadingExplanation(true);
+    setIsExplanationOpen(true);
+
+    try {
+      // Dynamic simulation explanation (with custom slider levers)
+      if (category === 'simulation' && customPayload) {
+        const simExpl = await api.getSimulationExplanation(currentPatient.patient_id, customPayload);
+        setActiveExplanation(simExpl);
+        return;
+      }
+
+      // Check pre-fetched explanations pool
+      if (patientExplanations) {
+        const cat = category.toLowerCase();
+        let found: CalculationExplanation | null = null;
+        if (cat === 'metric') found = patientExplanations.metrics[itemId] || null;
+        else if (cat === 'baseline') found = patientExplanations.baselines[itemId] || null;
+        else if (cat === 'trend') found = patientExplanations.trends[itemId] || patientExplanations.trends.vitality_index || null;
+        else if (cat === 'alert') found = patientExplanations.alerts[itemId] || null;
+        else if (cat === 'simulation') found = patientExplanations.simulation || null;
+
+        if (found) {
+          setActiveExplanation(found);
+          setIsLoadingExplanation(false);
+          return;
+        }
+      }
+
+      // Fetch on-demand from backend
+      const specific = await api.getSpecificExplanation(currentPatient.patient_id, category, itemId);
+      setActiveExplanation(specific);
+    } catch (err) {
+      console.error('Failed to load specific explanation:', err);
+    } finally {
+      setIsLoadingExplanation(false);
+    }
+  }, [currentPatient, patientExplanations]);
+
+  const closeExplanation = useCallback(() => {
+    setIsExplanationOpen(false);
   }, []);
 
   // Initialize application
