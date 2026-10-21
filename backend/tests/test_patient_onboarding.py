@@ -1,21 +1,4 @@
-import pytest
-from datetime import datetime, timezone
-from fastapi.testclient import TestClient
-from pymongo.database import Database
-from app.main import app
-from app.api.deps import get_database
-
-@pytest.fixture
-def client_with_db(test_db: Database):
-    def override_get_db():
-        return test_db
-    app.dependency_overrides[get_database] = override_get_db
-    client = TestClient(app)
-    yield client, test_db
-    app.dependency_overrides.clear()
-
-def test_create_patient_auto_generates_id(client_with_db):
-    client, db = client_with_db
+def test_create_patient_auto_generates_id(client, mock_db):
     payload = {
         "display_name": "Priya Sharma",
         "age": 34,
@@ -34,12 +17,11 @@ def test_create_patient_auto_generates_id(client_with_db):
     assert data["is_synthetic"] is False
 
     # Verify directly in MongoDB
-    doc = db.patients.find_one({"patient_id": data["patient_id"]})
+    doc = mock_db.patients.find_one({"patient_id": data["patient_id"]})
     assert doc is not None
     assert doc["display_name"] == "Priya Sharma"
 
-def test_create_patient_custom_id_and_duplicate_rejection(client_with_db):
-    client, db = client_with_db
+def test_create_patient_custom_id_and_duplicate_rejection(client, mock_db):
     payload = {
         "patient_id": "PT-CUSTOM-99",
         "display_name": "Dev Vikram",
