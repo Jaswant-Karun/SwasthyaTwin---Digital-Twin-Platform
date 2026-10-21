@@ -134,6 +134,55 @@ export const api = {
     return await request<Patient>(`/api/v1/patients/${id}`);
   },
 
+  createPatient: async (data: PatientCreateInput): Promise<Patient> => {
+    if (explicitOfflineDemo) {
+      const newId = data.patient_id || `PT-${1000 + MOCK_PATIENTS.length + 1}`;
+      const newPatient: Patient = {
+        patient_id: newId,
+        full_name: data.full_name,
+        age: data.age ?? 45,
+        biological_sex: data.biological_sex || 'male',
+        baseline_window_days: data.baseline_window_days || 30,
+        chronic_conditions: data.chronic_conditions || [],
+        primary_physician: data.primary_physician || 'Dr. Self-Reported',
+        lifestyle_profile: {
+          baseline_sleep_hours: data.lifestyle_profile?.baseline_sleep_hours ?? 7.0,
+          baseline_daily_steps: data.lifestyle_profile?.baseline_daily_steps ?? 6000,
+          activity_level: data.lifestyle_profile?.activity_level || 'moderate'
+        },
+        notes: data.notes,
+        consent_confirmed: data.consent_confirmed ?? true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        active_alerts_count: 0,
+        total_observations_count: 0,
+        latest_vitality_index: 85,
+        stability_status: 'optimal'
+      };
+      MOCK_PATIENTS.unshift(newPatient);
+      return newPatient;
+    }
+    return await request<Patient>('/api/v1/patients', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  deletePatient: async (
+    id: string,
+    deleteAssociatedData = true
+  ): Promise<{ success: boolean; message: string; deleted_associated_data: boolean }> => {
+    if (explicitOfflineDemo) {
+      const idx = MOCK_PATIENTS.findIndex(p => p.patient_id === id);
+      if (idx !== -1) MOCK_PATIENTS.splice(idx, 1);
+      return { success: true, message: `Patient ${id} deleted (offline demo)`, deleted_associated_data: deleteAssociatedData };
+    }
+    return await request<{ success: boolean; message: string; deleted_associated_data: boolean }>(
+      `/api/v1/patients/${id}?delete_associated_data=${deleteAssociatedData}`,
+      { method: 'DELETE' }
+    );
+  },
+
   updatePatient: async (id: string, data: Partial<Patient>): Promise<Patient> => {
     if (explicitOfflineDemo) {
       const found = MOCK_PATIENTS.find(p => p.patient_id === id) || MOCK_PATIENTS[0];
@@ -180,7 +229,7 @@ export const api = {
     );
   },
 
-  addObservation: async (patientId: string, obs: Partial<Observation>): Promise<Observation> => {
+  addObservation: async (patientId: string, obs: ObservationCreateInput | Partial<Observation>): Promise<Observation> => {
     if (explicitOfflineDemo) {
       return {
         _id: `obs_mock_${Date.now()}`,
@@ -190,13 +239,98 @@ export const api = {
         value: obs.value || 70,
         unit: obs.unit || 'bpm',
         source: obs.source || 'manual_entry',
-        data_tier: obs.data_tier || 'user_reported'
+        data_tier: obs.data_tier || 'user_reported',
+        data_classification: (obs as any).data_classification || 'user_entered'
       };
     }
     return await request<Observation>(`/api/v1/patients/${patientId}/observations`, {
       method: 'POST',
       body: JSON.stringify(obs)
     });
+  },
+
+  updateObservation: async (
+    patientId: string,
+    observationId: string,
+    data: ObservationUpdateInput
+  ): Promise<Observation> => {
+    if (explicitOfflineDemo) {
+      return {
+        _id: observationId,
+        patient_id: patientId,
+        timestamp: new Date().toISOString(),
+        metric_type: 'heart_rate',
+        value: data.value ?? 72,
+        unit: data.unit ?? 'bpm',
+        source: 'manual_entry',
+        data_tier: 'user_reported'
+      };
+    }
+    return await request<Observation>(`/api/v1/patients/${patientId}/observations/${observationId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+
+  deleteObservation: async (
+    patientId: string,
+    observationId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    if (explicitOfflineDemo) {
+      return { success: true, message: `Observation ${observationId} deleted (offline demo)` };
+    }
+    return await request<{ success: boolean; message: string }>(
+      `/api/v1/patients/${patientId}/observations/${observationId}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  validateCSV: async (patientId: string, rows: any[]): Promise<CSVValidationResult> => {
+    if (explicitOfflineDemo) {
+      return {
+        total_rows: rows.length,
+        valid_rows: rows.length,
+        invalid_rows: 0,
+        duplicate_rows: 0,
+        rows: rows.map((r, i) => ({
+          row_index: i + 1,
+          patient_id: patientId,
+          metric_type: r.metric_type || 'resting_heart_rate',
+          value: Number(r.value) || 72,
+          unit: r.unit || 'bpm',
+          timestamp: r.timestamp || new Date().toISOString(),
+          is_valid: true,
+          errors: [],
+          is_duplicate: false
+        })),
+        errors: []
+      };
+    }
+    return await request<CSVValidationResult>(`/api/v1/patients/${patientId}/observations/csv/validate`, {
+      method: 'POST',
+      body: JSON.stringify({ patient_id: patientId, rows })
+    });
+  },
+
+  importCSV: async (
+    patientId: string,
+    rows: any[]
+  ): Promise<{ success: boolean; imported_count: number; message: string; errors: string[] }> => {
+    if (explicitOfflineDemo) {
+      return {
+        success: true,
+        imported_count: rows.length,
+        message: `Successfully imported ${rows.length} rows (offline demo)`,
+        errors: []
+      };
+    }
+    return await request<{ success: boolean; imported_count: number; message: string; errors: string[] }>(
+      `/api/v1/patients/${patientId}/observations/csv/import`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ patient_id: patientId, rows })
+      }
+    );
   },
 
   // Digital Twin & Baselines
