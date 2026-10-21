@@ -4,9 +4,11 @@ import {
   Observation,
   DataClassification,
   CSVValidationResult,
-  CSVValidationRow
+  CSVValidationRow,
+  InputPlausibilityResult
 } from '../../types';
 import { api } from '../../services/api';
+import { AIOpticalTwinScanner } from '../scanner/AIOpticalTwinScanner';
 import {
   Activity,
   PlusCircle,
@@ -26,6 +28,7 @@ import {
   HelpCircle,
   ArrowRight,
   HeartPulse,
+  Zap,
   X
 } from 'lucide-react';
 
@@ -161,7 +164,7 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
 
   // Navigation tab inside this page
   const [activeSubTab, setActiveSubTab] = useState<
-    'single' | 'lifestyle' | 'csv' | 'history'
+    'ai_scan' | 'single' | 'lifestyle' | 'csv' | 'history'
   >('single');
 
   // Single Observation Form State
@@ -185,6 +188,34 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
   const [isSingleSubmitting, setIsSingleSubmitting] = useState(false);
   const [singleSuccess, setSingleSuccess] = useState<Observation | null>(null);
   const [singleError, setSingleError] = useState<string | null>(null);
+
+  // AI Plausibility & Typo Guard State
+  const [plausibilityResult, setPlausibilityResult] = useState<InputPlausibilityResult | null>(null);
+  const [isValidatingPlausibility, setIsValidatingPlausibility] = useState(false);
+
+  useEffect(() => {
+    if (!value || isNaN(parseFloat(value))) {
+      setPlausibilityResult(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsValidatingPlausibility(true);
+      try {
+        const res = await api.validateInputPlausibility({
+          measurement_type: metricType,
+          value: parseFloat(value),
+          unit: unit,
+          patient_id: selectedPatientId
+        });
+        setPlausibilityResult(res);
+      } catch (err) {
+        console.warn('Plausibility validation error:', err);
+      } finally {
+        setIsValidatingPlausibility(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [value, metricType, unit, selectedPatientId]);
 
   // Lifestyle Log Form State
   const [lifestyleSleep, setLifestyleSleep] = useState('7.5');
