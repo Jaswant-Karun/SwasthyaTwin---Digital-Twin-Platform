@@ -15,7 +15,7 @@ describe('AddPatientPage Component', () => {
     // Header and title
     expect(screen.getByRole('heading', { name: /Add Patient/i })).toBeInTheDocument();
     expect(screen.getByText(/Privacy Protection Warning/i)).toBeInTheDocument();
-    expect(screen.getByText(/Do NOT enter unnecessary sensitive personal information/i)).toBeInTheDocument();
+    expect(screen.getByText(/Only non-identifying clinical and lifestyle observations/i)).toBeInTheDocument();
     expect(screen.getByText(/Consent & Authorization Confirmation/i)).toBeInTheDocument();
 
     // Inputs
