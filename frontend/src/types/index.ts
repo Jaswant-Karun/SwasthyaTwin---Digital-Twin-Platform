@@ -194,3 +194,85 @@ export interface SystemHealth {
   };
   disclaimer: string;
 }
+
+export interface WorkedExampleStep {
+  step_number: number;
+  title: string;
+  description: string;
+  formula?: string;
+  calculation: string;
+  result: string;
+}
+
+export interface CalculationExplanation {
+  item_id: string;
+  category: 'metric' | 'baseline' | 'trend' | 'alert' | 'simulation' | string;
+  title: string;
+  metric_type?: string;
+
+  // 1. Current value and unit
+  current_value?: number | null;
+  current_value_formatted: string;
+  unit: string;
+
+  // 2. Patient baseline
+  baseline_value?: number | null;
+  baseline_formatted: string;
+
+  // 3. Historical window
+  historical_window: string;
+  window_days: number;
+
+  // 4. Number of observations
+  observations_count: number;
+  observations_sufficiency: string;
+  is_sufficient: boolean;
+
+  // 5. Formula applied
+  formula_name: string;
+  formula_latex_or_text: string;
+  formula_explanation: string;
+
+  // 6. Worked numerical example matching displayed data
+  worked_example_steps: WorkedExampleStep[];
+  worked_example_summary: string;
+
+  // 7. Data source and latest observation timestamp
+  data_source: string;
+  latest_timestamp?: string | null;
+  latest_timestamp_formatted: string;
+
+  // 8. Reason trend flag or alert generated
+  reason_flag_or_alert?: string | null;
+  flag_severity?: string | null;
+
+  // 9. Missing-data or freshness warnings
+  warnings: string[];
+  is_stale: boolean;
+  is_missing_data: boolean;
+
+  // 10. Limitations and result type
+  result_type: 'Rule-Based Indicator' | 'Statistical Estimate' | 'Model Prediction' | string;
+  limitations: string;
+  metadata?: Record<string, any>;
+}
+
+export interface SimulationExplanationRequest {
+  patient_id?: string;
+  scenario_name?: string;
+  parameters?: Record<string, any>;
+  projected_outcomes?: Record<string, any>;
+  baseline_summary?: Record<string, any>;
+  metric_focus?: string;
+}
+
+export interface PatientExplanationsResponse {
+  patient_id: string;
+  generated_at: string;
+  metrics: Record<string, CalculationExplanation>;
+  baselines: Record<string, CalculationExplanation>;
+  trends: Record<string, CalculationExplanation>;
+  alerts: Record<string, CalculationExplanation>;
+  simulation?: CalculationExplanation | null;
+}
+

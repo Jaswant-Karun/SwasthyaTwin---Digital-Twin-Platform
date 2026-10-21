@@ -6,7 +6,10 @@ import {
   SimulationResult,
   InterventionParams,
   Alert,
-  SystemHealth
+  SystemHealth,
+  CalculationExplanation,
+  PatientExplanationsResponse,
+  SimulationExplanationRequest
 } from '../types';
 import {
   MOCK_PATIENTS,
