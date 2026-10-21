@@ -6,6 +6,8 @@ import { Sidebar } from './components/common/Sidebar';
 
 // Pages
 import { OverviewPage } from './components/pages/OverviewPage';
+import { AddPatientPage } from './components/pages/AddPatientPage';
+import { AddObservationPage } from './components/pages/AddObservationPage';
 import { DigitalTwinPage } from './components/pages/DigitalTwinPage';
 import { HealthTrendsPage } from './components/pages/HealthTrendsPage';
 import { RiskInsightsPage } from './components/pages/RiskInsightsPage';
