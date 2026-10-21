@@ -49,7 +49,8 @@ export const InteractiveHistoricalChart: React.FC<{ initialDays?: number }> = ({
           limit: 500
         });
         if (currentReq === reqIdRef.current) {
-          const sorted = [...res.items].sort(
+          const items = res?.items || [];
+          const sorted = [...items].sort(
             (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
           );
           setObservations(sorted);

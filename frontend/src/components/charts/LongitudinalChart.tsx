@@ -39,8 +39,8 @@ export const LongitudinalChart: React.FC = () => {
           metric_type: selectedMetric,
           limit: 300
         });
-        // Sort ascending chronologically for chart display
-        const sorted = [...res.items].sort(
+        const items = res?.items || [];
+        const sorted = [...items].sort(
           (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
         setObservations(sorted);
