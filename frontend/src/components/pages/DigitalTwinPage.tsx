@@ -14,6 +14,7 @@ import {
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
 import { HowCalculatedButton } from '../common/HowCalculatedButton';
+import { AIOpticalTwinScanner } from '../scanner/AIOpticalTwinScanner';
 
 export const DigitalTwinPage: React.FC = () => {
   const { currentPatient, twinState, assessment, latestUpdateInfo } = useTwin();
@@ -35,12 +36,15 @@ export const DigitalTwinPage: React.FC = () => {
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
           <HeartPulse className="w-6 h-6 text-teal-600" />
-          Digital Twin Patient State
+          Autonomous AI Digital Twin & Bio-Scanner
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Dynamic computational representation of {currentPatient.full_name}’s physiological stability.
+          Dynamic computational representation of {currentPatient.full_name}’s physiological stability with Machine Learning prediction.
         </p>
       </div>
+
+      {/* Autonomous AI Optical Twin Scanner Component */}
+      <AIOpticalTwinScanner />
 
       {/* Patient Demographic & Clinical Context Card */}
       <div className="card-surface rounded-xl p-5 space-y-4">
