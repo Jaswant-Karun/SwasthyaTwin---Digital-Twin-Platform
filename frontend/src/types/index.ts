@@ -394,3 +394,68 @@ export interface PatientExplanationsResponse {
   simulation?: CalculationExplanation | null;
 }
 
+export interface InputPlausibilityResult {
+  is_plausible: boolean;
+  plausibility_score: number;
+  confidence_weight: number;
+  warnings: string[];
+  suggested_value?: number | null;
+  evaluated_metric: string;
+  evaluated_value: number;
+}
+
+export interface MLPredictionResult {
+  patient_id: string;
+  patient_name: string;
+  predicted_risk_tier: string;
+  risk_probabilities: {
+    low_resilient: number;
+    moderate_drift: number;
+    elevated_strain: number;
+  };
+  predicted_14d_vitality_delta: number;
+  health_phenotype: string;
+  phenotype_description: string;
+  top_driving_factors: Array<{
+    feature: string;
+    importance_pct: number;
+    current_value: number;
+  }>;
+  radar_scores: {
+    cardiovascular_stability: number;
+    autonomic_reserve: number;
+    circadian_alignment: number;
+    metabolic_vitality: number;
+    input_credibility: number;
+  };
+  model_metadata: {
+    algorithm: string;
+    training_samples: number;
+    confidence_score: number;
+    evaluated_at: string;
+  };
+}
+
+export interface AIScanResult {
+  patient_id: string;
+  scan_timestamp: string;
+  scan_source: string;
+  is_valid: boolean;
+  overall_credibility_score: number;
+  signal_quality_pct: number;
+  extracted_biometrics: {
+    heart_rate: { value: number; unit: string; valid: boolean };
+    hrv_rmssd: { value: number; unit: string; valid: boolean };
+    respiratory_rate: { value: number; unit: string; valid: boolean };
+  };
+  plausibility_audit: {
+    heart_rate_warnings: string[];
+    hrv_warnings: string[];
+  };
+  ml_prediction: MLPredictionResult;
+  persisted_observation_ids: string[];
+  twin_updated: boolean;
+  clinical_disclaimer: string;
+}
+
+
