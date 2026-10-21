@@ -452,6 +452,90 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const createPatient = async (data: PatientCreateInput): Promise<Patient> => {
+    try {
+      const created = await api.createPatient(data);
+      const patientList = await api.getPatients();
+      setPatients(patientList);
+      setCurrentPatient(created);
+      return created;
+    } catch (err: any) {
+      console.error('Failed to create patient:', err);
+      throw err;
+    }
+  };
+
+  const deletePatient = async (patientId: string, cascade = true): Promise<void> => {
+    try {
+      await api.deletePatient(patientId, cascade);
+      const patientList = await api.getPatients();
+      setPatients(patientList);
+      if (currentPatient?.patient_id === patientId) {
+        if (patientList.length > 0) {
+          setCurrentPatient(patientList[0]);
+        } else {
+          setCurrentPatient(null);
+          setTwinState(null);
+          setAssessment(null);
+          setAlerts([]);
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to delete patient:', err);
+      throw err;
+    }
+  };
+
+  const updatePatientProfile = async (patientId: string, data: Partial<Patient>): Promise<Patient> => {
+    try {
+      const updated = await api.updatePatient(patientId, data);
+      const patientList = await api.getPatients();
+      setPatients(patientList);
+      if (currentPatient?.patient_id === patientId) {
+        setCurrentPatient(updated);
+      }
+      return updated;
+    } catch (err: any) {
+      console.error('Failed to update patient:', err);
+      throw err;
+    }
+  };
+
+  const updateObservation = async (observationId: string, data: ObservationUpdateInput): Promise<Observation> => {
+    if (!currentPatient) throw new Error("No active patient selected.");
+    try {
+      const updated = await api.updateObservation(currentPatient.patient_id, observationId, data);
+      await loadPatientData(currentPatient.patient_id);
+      return updated;
+    } catch (err: any) {
+      console.error('Failed to update observation:', err);
+      throw err;
+    }
+  };
+
+  const deleteObservation = async (observationId: string): Promise<void> => {
+    if (!currentPatient) throw new Error("No active patient selected.");
+    try {
+      await api.deleteObservation(currentPatient.patient_id, observationId);
+      await loadPatientData(currentPatient.patient_id);
+    } catch (err: any) {
+      console.error('Failed to delete observation:', err);
+      throw err;
+    }
+  };
+
+  const validateCSV = async (rows: any[]): Promise<CSVValidationResult> => {
+    if (!currentPatient) throw new Error("No active patient selected.");
+    return await api.validateCSV(currentPatient.patient_id, rows);
+  };
+
+  const importCSV = async (rows: any[]): Promise<{ success: boolean; imported_count: number; message: string; errors: string[] }> => {
+    if (!currentPatient) throw new Error("No active patient selected.");
+    const res = await api.importCSV(currentPatient.patient_id, rows);
+    await loadPatientData(currentPatient.patient_id);
+    return res;
+  };
+
   return (
     <TwinContext.Provider
       value={{
@@ -481,6 +565,13 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
         latestUpdateInfo,
         refreshData,
         logObservation,
+        createPatient,
+        deletePatient,
+        updatePatientProfile,
+        updateObservation,
+        deleteObservation,
+        validateCSV,
+        importCSV,
         acknowledgeAlert,
         seedDemoData,
         resetDemoCohort,
