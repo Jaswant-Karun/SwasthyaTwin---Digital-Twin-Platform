@@ -169,13 +169,21 @@ class BatchObservationCreate(BaseModel):
     observations: List[ObservationCreate]
 
 class ObservationResponse(ObservationBase):
-    id: str = Field(alias="observation_id")
+    id: str = Field(default="")
+    observation_id: str
     metric_type: str
     timestamp: datetime
     data_tier: str
     notes: Optional[str] = None
     demo_data: bool = False
     is_synthetic: bool = False
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def resolve_id(cls, v, info):
+        if not v and "observation_id" in info.data:
+            return info.data["observation_id"]
+        return v or ""
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
