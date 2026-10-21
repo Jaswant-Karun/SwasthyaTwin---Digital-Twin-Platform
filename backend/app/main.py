@@ -87,5 +87,6 @@ for prefix in [settings.API_V1_STR, "/api"]:
     app.include_router(alerts_router, prefix=prefix)
     app.include_router(seed_router, prefix=prefix)
     app.include_router(audit_router, prefix=prefix)
+    app.include_router(explanations_router, prefix=prefix)
 
 
