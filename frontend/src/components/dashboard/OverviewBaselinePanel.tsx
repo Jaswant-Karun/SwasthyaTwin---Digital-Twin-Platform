@@ -24,12 +24,20 @@ export const OverviewBaselinePanel: React.FC<{ onNavigate: (tab: string) => void
           </p>
         </div>
 
-        <button
-          onClick={() => onNavigate('health-trends')}
-          className="text-xs text-teal-700 hover:text-teal-800 font-semibold flex items-center gap-1"
-        >
-          Detailed Analysis →
-        </button>
+        <div className="flex items-center gap-2">
+          <HowCalculatedButton
+            category="baseline"
+            itemId={metrics[0]?.metric_type || "heart_rate"}
+            variant="button"
+            label="Baseline Methodology"
+          />
+          <button
+            onClick={() => onNavigate('health-trends')}
+            className="text-xs text-teal-700 hover:text-teal-800 font-semibold flex items-center gap-1"
+          >
+            Detailed Analysis →
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -42,6 +50,7 @@ export const OverviewBaselinePanel: React.FC<{ onNavigate: (tab: string) => void
               <th className="py-2.5 px-3">Delta vs Self</th>
               <th className="py-2.5 px-3">Z-Score</th>
               <th className="py-2.5 px-3">Stability Status</th>
+              <th className="py-2.5 px-3 text-right">Transparency</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -82,6 +91,14 @@ export const OverviewBaselinePanel: React.FC<{ onNavigate: (tab: string) => void
                   </td>
                   <td className="py-2.5 px-3">
                     <StatusBadge status={m.status} />
+                  </td>
+                  <td className="py-2.5 px-3 text-right">
+                    <HowCalculatedButton
+                      category="baseline"
+                      itemId={m.metric_type}
+                      variant="link"
+                      label="How calculated?"
+                    />
                   </td>
                 </tr>
               );

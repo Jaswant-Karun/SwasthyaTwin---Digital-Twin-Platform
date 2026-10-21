@@ -2,6 +2,7 @@ import React from 'react';
 import { Activity, ShieldCheck, Clock, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 export const OverviewTwinStatusPanel: React.FC<{ onNavigate: (tab: string) => void }> = ({ onNavigate }) => {
   const { currentPatient, twinState, assessment } = useTwin();
@@ -70,6 +71,15 @@ export const OverviewTwinStatusPanel: React.FC<{ onNavigate: (tab: string) => vo
           <p className="text-[11px] text-slate-500 max-w-[190px] leading-tight">
             100% explainable deduction formula calibrated against personal baseline variance.
           </p>
+          <div className="pt-1">
+            <HowCalculatedButton
+              category="trend"
+              itemId="vitality_index"
+              label="How is vitality calculated?"
+              variant="link"
+              className="text-[10px]"
+            />
+          </div>
         </div>
       </div>
     </div>

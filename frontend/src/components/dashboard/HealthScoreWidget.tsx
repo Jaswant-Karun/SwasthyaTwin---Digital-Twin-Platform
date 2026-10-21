@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck, Info, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 interface HealthScoreWidgetProps {
   onLearnMore?: () => void;
@@ -20,14 +21,22 @@ export const HealthScoreWidget: React.FC<HealthScoreWidgetProps> = ({ onLearnMor
           <ShieldCheck className="w-4 h-4 text-teal-400" />
           <h3 className="text-sm font-bold text-white">Vitality Index Explainability</h3>
         </div>
-        {onLearnMore && (
-          <button
-            onClick={onLearnMore}
-            className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1 font-semibold"
-          >
-            Formula & Math <ArrowRight className="w-3 h-3" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <HowCalculatedButton
+            category="trend"
+            itemId="vitality_index"
+            variant="button"
+            className="bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 hover:text-white"
+          />
+          {onLearnMore && (
+            <button
+              onClick={onLearnMore}
+              className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1 font-semibold"
+            >
+              Formula & Math <ArrowRight className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="text-xs text-slate-400 leading-relaxed">
