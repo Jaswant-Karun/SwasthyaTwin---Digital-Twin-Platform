@@ -24,7 +24,9 @@ import {
   Layers,
   Sparkles,
   HelpCircle,
-  ArrowRight
+  ArrowRight,
+  HeartPulse,
+  X
 } from 'lucide-react';
 
 interface MetricMeta {
@@ -141,7 +143,11 @@ const SUPPORTED_METRICS: MetricMeta[] = [
   }
 ];
 
-export const AddObservationPage: React.FC = () => {
+interface AddObservationPageProps {
+  onNavigate?: (tab: string) => void;
+}
+
+export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNavigate }) => {
   const {
     patients,
     currentPatient,
@@ -297,13 +303,15 @@ export const AddObservationPage: React.FC = () => {
         notes: notes.trim() || undefined
       };
 
-      const saved = await api.addObservation(selectedPatientId, payload);
-      setSingleSuccess(saved);
-      setValue('');
-      setNotes('');
-      // Reload history if on that tab
-      if (activeSubTab === 'history') {
-        loadHistory();
+      const saved = await logObservation(payload);
+      if (saved) {
+        setSingleSuccess(saved);
+        setValue('');
+        setNotes('');
+        // Reload history if on that tab
+        if (activeSubTab === 'history') {
+          loadHistory();
+        }
       }
     } catch (err: any) {
       setSingleError(err.message || 'Failed to persist observation to MongoDB.');
@@ -629,33 +637,199 @@ export const AddObservationPage: React.FC = () => {
       {/* TAB 1: SINGLE OBSERVATION */}
       {activeSubTab === 'single' && (
         <div className="space-y-6">
-          {/* Success Banner */}
+          {/* Complete Digital Twin Pipeline Update Card */}
           {singleSuccess && (
-            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 shadow-xs flex items-center justify-between gap-3 animate-fade-in">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                <div>
-                  <div className="font-bold text-sm">
-                    Observation Persisted in MongoDB!
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-xs space-y-4 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/60 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-xs">
+                    <CheckCircle2 className="w-5 h-5" />
                   </div>
-                  <p className="text-xs text-emerald-700 mt-0.5">
-                    Saved <strong className="font-semibold">{singleSuccess.metric_type}</strong> ={' '}
-                    <strong>
-                      {singleSuccess.value} {singleSuccess.unit}
-                    </strong>{' '}
-                    for patient <strong>{singleSuccess.patient_id}</strong>. Observation ID:{' '}
-                    <span className="font-mono bg-emerald-100 px-1.5 py-0.5 rounded text-emerald-900 font-bold">
-                      {singleSuccess.observation_id || singleSuccess._id}
-                    </span>
-                  </p>
+                  <div>
+                    <h3 className="font-bold text-sm text-emerald-950 flex items-center gap-2">
+                      Observation Saved & Digital Twin Updated
+                      <span className="font-mono text-[11px] font-semibold bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded-full">
+                        {singleSuccess.observation_id || singleSuccess._id}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-emerald-800">
+                      Measurement: <strong className="font-semibold text-emerald-950">{singleSuccess.metric_type.replace('_', ' ').toUpperCase()} = {singleSuccess.value} {singleSuccess.unit}</strong> • Recorded at: {new Date(singleSuccess.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white border border-emerald-300 text-emerald-800 shadow-2xs">
+                    {(singleSuccess as any).data_classification || singleSuccess.data_tier || 'user_entered'}
+                  </span>
+                  <button
+                    onClick={() => setSingleSuccess(null)}
+                    className="p-1 rounded text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100 transition-colors"
+                    aria-label="Dismiss banner"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={() => setSingleSuccess(null)}
-                className="text-xs text-emerald-700 hover:text-emerald-900 font-semibold"
-              >
-                Dismiss
-              </button>
+
+              {/* Assessment Update Details */}
+              {singleSuccess.assessment_update && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  {/* Card 1: Baseline Transition */}
+                  <div className="p-3.5 rounded-xl bg-white/90 border border-emerald-200/80 shadow-2xs space-y-1.5">
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-teal-600" />
+                      Personal Baseline Corridor
+                    </div>
+                    {singleSuccess.assessment_update.is_first_observation ? (
+                      <div className="text-slate-700 text-xs">
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold text-[10px] mb-1">
+                          Initial Observation
+                        </span>
+                        <p className="text-[11px] text-slate-500">
+                          First reading for this biometric ({singleSuccess.value} {singleSuccess.unit}). Minimum 3 historical readings needed for a locked baseline corridor.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Previous Median:</span>
+                          <span className="font-mono font-semibold text-slate-800">
+                            {singleSuccess.assessment_update.previous_baseline?.median ?? 'None'} {singleSuccess.unit}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-900 font-semibold">
+                          <span>Recalculated Median:</span>
+                          <span className="font-mono text-teal-700 font-bold">
+                            {singleSuccess.assessment_update.updated_baseline?.median ?? singleSuccess.value} {singleSuccess.unit}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {singleSuccess.assessment_update.updated_baseline?.sample_count ?? 1} samples in {singleSuccess.assessment_update.updated_baseline?.window_days ?? 30}d window
+                          {singleSuccess.assessment_update.updated_baseline?.is_sufficient === false && ' (Provisional)'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card 2: Deviation Analysis */}
+                  <div className="p-3.5 rounded-xl bg-white/90 border border-emerald-200/80 shadow-2xs space-y-1.5">
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-teal-600" />
+                      Baseline Deviation
+                    </div>
+                    {singleSuccess.assessment_update.deviation ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Absolute Shift:</span>
+                          <span className="font-mono font-bold text-slate-900">
+                            {singleSuccess.assessment_update.deviation.delta_absolute > 0 ? `+${singleSuccess.assessment_update.deviation.delta_absolute}` : singleSuccess.assessment_update.deviation.delta_absolute} {singleSuccess.unit}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Relative Delta:</span>
+                          {singleSuccess.assessment_update.deviation.relative_is_excluded ? (
+                            <span className="text-[10px] text-slate-400 italic" title={singleSuccess.assessment_update.deviation.exclusion_reason}>
+                              Excluded (percentage scale)
+                            </span>
+                          ) : (
+                            <span className="font-mono font-bold text-slate-900">
+                              {singleSuccess.assessment_update.deviation.delta_percentage > 0 ? `+${singleSuccess.assessment_update.deviation.delta_percentage}%` : `${singleSuccess.assessment_update.deviation.delta_percentage}%`}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500">Z-Score: <strong className="font-mono text-slate-700">{singleSuccess.assessment_update.deviation.z_score}</strong></span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                            singleSuccess.assessment_update.deviation.status === 'optimal'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : singleSuccess.assessment_update.deviation.status === 'mild_deviation'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-rose-100 text-rose-800'
+                          }`}>
+                            {singleSuccess.assessment_update.deviation.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-500">
+                        Insufficient historical window to calculate baseline sigma deviation.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Card 3: Vitality & Alert Impact */}
+                  <div className="p-3.5 rounded-xl bg-white/90 border border-emerald-200/80 shadow-2xs space-y-1.5">
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
+                      <HeartPulse className="w-3.5 h-3.5 text-teal-600" />
+                      Twin State Impact
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">Autonomic Vitality:</span>
+                        <span className="font-mono font-bold text-teal-700 text-sm">
+                          {singleSuccess.assessment_update.vitality_index ?? '—'} / 100
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500">Twin Stability:</span>
+                        <span className="font-semibold text-slate-800 capitalize">
+                          {singleSuccess.assessment_update.stability_status ? singleSuccess.assessment_update.stability_status.replace('_', ' ') : 'Stable'}
+                        </span>
+                      </div>
+                      {singleSuccess.assessment_update.triggered_alert ? (
+                        <div className="p-1.5 rounded bg-rose-50 border border-rose-200 text-rose-900 text-[10px] font-semibold flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                          <span>Alert Triggered: {singleSuccess.assessment_update.triggered_alert.title}</span>
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-emerald-700 font-medium">
+                          ✓ No clinical safety alerts triggered
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Sufficiency Warning (if applicable) */}
+              {singleSuccess.assessment_update?.sufficiency_message && (
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+                  <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>{singleSuccess.assessment_update.sufficiency_message}</span>
+                </div>
+              )}
+
+              {/* Explanation Summary & Quick Links */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+                <p className="text-xs text-slate-700 italic">
+                  "{singleSuccess.assessment_update?.explanation || 'Observation successfully persisted into MongoDB and twin state updated.'}"
+                </p>
+
+                {onNavigate && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => onNavigate('digital-twin')}
+                      className="px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1"
+                    >
+                      <span>Digital Twin</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => onNavigate('health-trends')}
+                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold shadow-2xs transition-colors"
+                    >
+                      Trends & Corridors
+                    </button>
+                    <button
+                      onClick={() => onNavigate('timeline')}
+                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold shadow-2xs transition-colors"
+                    >
+                      Timeline
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
