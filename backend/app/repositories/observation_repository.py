@@ -140,3 +140,32 @@ class ObservationRepository:
         except PyMongoError as e:
             logger.error(f"Failed to delete observations for patient {patient_id}: {e}")
             raise
+
+    def update(self, observation_id: str, update_dict: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Update observation fields and return updated record."""
+        try:
+            update_data = {k: v for k, v in update_dict.items() if v is not None}
+            update_data.pop("_id", None)
+            update_data.pop("observation_id", None)
+
+            result = self.collection.find_one_and_update(
+                {"$or": [{"observation_id": observation_id}, {"id": observation_id}]},
+                {"$set": update_data},
+                projection={"_id": 0},
+                return_document=True
+            )
+            return result
+        except PyMongoError as e:
+            logger.error(f"Failed to update observation {observation_id}: {e}")
+            raise
+
+    def delete_one(self, observation_id: str) -> bool:
+        """Delete single observation by observation_id."""
+        try:
+            res = self.collection.delete_one(
+                {"$or": [{"observation_id": observation_id}, {"id": observation_id}]}
+            )
+            return res.deleted_count > 0
+        except PyMongoError as e:
+            logger.error(f"Failed to delete observation {observation_id}: {e}")
+            raise
