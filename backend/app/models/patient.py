@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict, field_validator
@@ -20,6 +21,7 @@ class PatientBase(BaseModel):
     chronic_conditions: List[str] = Field(default_factory=list)
     primary_physician: Optional[str] = None
     lifestyle_profile: LifestyleProfile = Field(default_factory=LifestyleProfile)
+    notes: Optional[str] = Field(default=None, max_length=1000, description="Optional non-sensitive clinical/lifestyle notes")
     demo_data: bool = Field(default=False, description="Flag indicating synthetic demonstration record")
     is_synthetic: bool = Field(default=False, description="Explicit synthetic provenance indicator")
 
@@ -33,7 +35,7 @@ class PatientBase(BaseModel):
         return self.gender or "other"
 
 class PatientCreate(BaseModel):
-    patient_id: str = Field(..., min_length=2, max_length=64)
+    patient_id: Optional[str] = Field(default=None, max_length=64)
     display_name: Optional[str] = None
     full_name: Optional[str] = None # Support either field name
     age: Optional[int] = Field(default=None, ge=1, le=125)
@@ -43,6 +45,8 @@ class PatientCreate(BaseModel):
     chronic_conditions: List[str] = Field(default_factory=list)
     primary_physician: Optional[str] = None
     lifestyle_profile: Optional[LifestyleProfile] = Field(default_factory=LifestyleProfile)
+    notes: Optional[str] = Field(default=None, max_length=1000)
+    consent_confirmed: bool = Field(default=True, description="Confirmation of authorization to monitor digital twin")
     demo_data: bool = Field(default=False)
     is_synthetic: bool = Field(default=False)
 
@@ -51,12 +55,13 @@ class PatientCreate(BaseModel):
     def resolve_name(cls, v, values):
         return v
 
-    def to_patient_base(self) -> PatientBase:
-        resolved_name = self.display_name or self.full_name or "Anonymous Patient"
+    def to_patient_base(self, generated_id: Optional[str] = None) -> PatientBase:
+        resolved_name = (self.display_name or self.full_name or "Anonymous Patient").strip()
         resolved_gender = self.gender or self.biological_sex or "unspecified"
         is_syn = self.is_synthetic or self.demo_data
+        pid = (self.patient_id or generated_id or f"PT-{uuid.uuid4().hex[:6].upper()}").strip()
         return PatientBase(
-            patient_id=self.patient_id,
+            patient_id=pid,
             display_name=resolved_name,
             age=self.age,
             gender=resolved_gender,
@@ -64,6 +69,7 @@ class PatientCreate(BaseModel):
             chronic_conditions=self.chronic_conditions,
             primary_physician=self.primary_physician,
             lifestyle_profile=self.lifestyle_profile or LifestyleProfile(),
+            notes=self.notes,
             demo_data=self.demo_data or is_syn,
             is_synthetic=is_syn
         )
@@ -78,6 +84,7 @@ class PatientUpdate(BaseModel):
     chronic_conditions: Optional[List[str]] = None
     primary_physician: Optional[str] = None
     lifestyle_profile: Optional[LifestyleProfile] = None
+    notes: Optional[str] = None
 
 class PatientResponse(PatientBase):
     full_name: str
