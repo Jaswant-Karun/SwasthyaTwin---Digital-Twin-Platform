@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { MetricDeviation } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 interface MetricCardProps {
   deviation: MetricDeviation;
@@ -72,7 +73,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({ deviation, onSelect, isS
             </div>
           </div>
         </div>
-        <StatusBadge status={deviation.status} />
+        <div className="flex items-center gap-1.5">
+          <HowCalculatedButton
+            category="metric"
+            itemId={deviation.metric_type}
+            variant="icon"
+            className="text-slate-400 hover:text-teal-400"
+          />
+          <StatusBadge status={deviation.status} />
+        </div>
       </div>
 
       {/* Main Metric Value */}
@@ -107,9 +116,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({ deviation, onSelect, isS
 
       {/* Baseline comparison footer */}
       <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-        <div>
+        <div className="flex items-center gap-1">
           <span>Your Baseline: </span>
           <span className="font-semibold text-slate-200">{formatValue(deviation.baseline_mean, deviation.metric_type)} {deviation.unit}</span>
+          <HowCalculatedButton
+            category="baseline"
+            itemId={deviation.metric_type}
+            variant="icon"
+            className="text-slate-400 hover:text-teal-400 p-0.5"
+          />
         </div>
         <div className="font-mono">
           <span>Z: </span>

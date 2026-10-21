@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 import type { MetricDeviation } from '../../types';
 
 interface MetricMeta {
@@ -206,7 +207,14 @@ export const OverviewMetricCards: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <StatusBadge status={d.status} />
+              <div className="flex items-center gap-1.5">
+                <HowCalculatedButton
+                  category="metric"
+                  itemId={key}
+                  variant="icon"
+                />
+                <StatusBadge status={d.status} />
+              </div>
             </div>
 
             {/* Metric Value & Trend Delta */}
@@ -242,11 +250,17 @@ export const OverviewMetricCards: React.FC = () => {
 
             {/* Baseline comparison and timestamp */}
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-              <div>
+              <div className="flex items-center gap-1">
                 <span>Self μ: </span>
                 <span className="font-semibold text-slate-800 font-mono">
                   {key === 'daily_steps' ? Math.round(d.baseline_mean).toLocaleString() : d.baseline_mean.toFixed(1)} {d.unit}
                 </span>
+                <HowCalculatedButton
+                  category="baseline"
+                  itemId={key}
+                  variant="icon"
+                  className="p-0.5 text-slate-400 hover:text-teal-600"
+                />
               </div>
               <div className="font-mono text-[10px] text-slate-400">
                 <span>Z: </span>
@@ -254,6 +268,16 @@ export const OverviewMetricCards: React.FC = () => {
                   {d.z_score > 0 ? `+${d.z_score.toFixed(1)}` : d.z_score.toFixed(1)}σ
                 </span>
               </div>
+            </div>
+
+            {/* Quick explanation link */}
+            <div className="pt-2 mt-1 border-t border-slate-50 flex justify-end">
+              <HowCalculatedButton
+                category="metric"
+                itemId={key}
+                variant="link"
+                className="text-[10px]"
+              />
             </div>
           </div>
         );

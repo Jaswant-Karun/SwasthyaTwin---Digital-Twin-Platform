@@ -2,6 +2,7 @@ import React from 'react';
 import { GitCompare, ArrowUpRight, ArrowDownRight, Minus, BookOpen } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 export const OverviewBaselinePanel: React.FC<{ onNavigate: (tab: string) => void }> = ({ onNavigate }) => {
   const { currentPatient, twinState } = useTwin();
