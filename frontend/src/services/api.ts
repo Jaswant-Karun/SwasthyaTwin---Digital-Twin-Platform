@@ -9,7 +9,12 @@ import {
   SystemHealth,
   CalculationExplanation,
   PatientExplanationsResponse,
-  SimulationExplanationRequest
+  SimulationExplanationRequest,
+  PatientCreateInput,
+  PatientUpdateInput,
+  ObservationCreateInput,
+  ObservationUpdateInput,
+  CSVValidationResult
 } from '../types';
 import {
   MOCK_PATIENTS,
