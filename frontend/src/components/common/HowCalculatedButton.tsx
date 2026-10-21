@@ -45,7 +45,7 @@ export const HowCalculatedButton: React.FC<HowCalculatedButtonProps> = ({
       <button
         type="button"
         onClick={handleClick}
-        aria-label={`How is this ${itemId.replace(/_/g, ' ')} calculated?`}
+        aria-label={`How is this ${(itemId || category || 'value').replace(/_/g, ' ')} calculated?`}
         title={title || 'How is this calculated?'}
         className={`p-1 rounded-md text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors inline-flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-teal-500 ${className}`}
       >

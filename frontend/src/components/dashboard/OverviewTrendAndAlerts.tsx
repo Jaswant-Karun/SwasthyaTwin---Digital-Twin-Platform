@@ -61,7 +61,7 @@ export const OverviewTrendAndAlerts: React.FC<{ onNavigate: (tab: string) => voi
           <div className="space-y-2">
             {assessment?.explainability_factors.map((f, i) => (
               <div
-                key={i}
+                key={f.metric_type ? `${f.metric_type}-${i}` : i}
                 className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs gap-3"
               >
                 <div>
@@ -130,9 +130,9 @@ export const OverviewTrendAndAlerts: React.FC<{ onNavigate: (tab: string) => voi
           </div>
         ) : (
           <div className="space-y-2.5">
-            {unreadAlerts.slice(0, 3).map((a) => (
+            {unreadAlerts.slice(0, 3).map((a, i) => (
               <div
-                key={a._id}
+                key={a._id || a.id || `alert-${a.timestamp}-${i}`}
                 className="p-3.5 rounded-lg bg-white border border-slate-200 shadow-2xs space-y-2 text-xs"
               >
                 <div className="flex items-center justify-between">
