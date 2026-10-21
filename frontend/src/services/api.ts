@@ -705,7 +705,7 @@ export const api = {
             result: `${finalRhr} bpm`
           }
         ],
-        worked_example_summary: `Simulated ${duration}-day projection: Resting HR projected to ${finalRhr} bpm (Δ ${deltaRhr:+.1f} bpm from baseline ${baseRhr} bpm).`,
+        worked_example_summary: `Simulated ${duration}-day projection: Resting HR projected to ${finalRhr} bpm (Δ ${deltaRhr > 0 ? '+' : ''}${deltaRhr.toFixed(1)} bpm from baseline ${baseRhr} bpm).`,
         data_source: 'in_silico_computational_twin_engine',
         latest_timestamp_formatted: new Date().toLocaleTimeString(),
         reason_flag_or_alert: 'Counterfactual Projection under assumed intervention adherence.',

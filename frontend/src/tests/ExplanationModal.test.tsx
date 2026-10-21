@@ -51,7 +51,7 @@ describe('ExplanationModal Component', () => {
     latest_timestamp_formatted: 'Today at 07:30 AM',
     reason_flag_or_alert: 'Current value exceeds self-baseline by +4.33σ (> 2.0σ threshold).',
     flag_severity: 'critical',
-    warnings: [],
+    warnings: ['Continuous telemetry active: Fresh data synchronized within rolling window.'],
     is_stale: false,
     is_missing_data: false,
     result_type: 'Statistical Estimate',
@@ -88,7 +88,7 @@ describe('ExplanationModal Component', () => {
     expect(screen.getByText(/exceeds self-baseline by \+4.33σ/i)).toBeInTheDocument();
 
     // 9. Freshness / Missing data status
-    expect(screen.getByText(/Continuous Real-Time Data Pipeline/i)).toBeInTheDocument();
+    expect(screen.getByText(/Continuous telemetry active/i)).toBeInTheDocument();
 
     // 10. Limitations and methodology classification
     expect(screen.getByText(/Calculated from resting morning samples/i)).toBeInTheDocument();
