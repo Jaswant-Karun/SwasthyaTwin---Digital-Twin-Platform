@@ -67,9 +67,11 @@ def test_1_create_patient_and_confirm_mongodb_persistence(client, audit_db):
     # Verify directly in MongoDB
     doc = audit_db.patients.find_one({"patient_id": patient_id})
     assert doc is not None
-    assert doc["full_name"] == "Audit Test Patient Alpha"
+    assert doc["display_name"] == "Audit Test Patient Alpha"
+    assert doc["age"] == 42
+    assert doc["gender"] == "male"
     assert doc["baseline_window_days"] == 14
-    assert doc["consent_confirmed"] is True
+    assert doc["notes"] == "Auditing patient persistence"
 
 def test_2_and_3_add_observation_persist_and_retrieve_after_refresh(client, audit_db):
     """Add observation, confirm MongoDB persistence, and verify query returns it."""
@@ -152,7 +154,7 @@ def test_4_switch_patients_and_verify_strict_data_isolation(client, audit_db):
 
     # Verify Patient B baselines are not influenced by Patient A
     base_b = client.get(f"/api/v1/patients/{p_b}/twin/baseline").json()
-    hr_base_b = base_b.get("heart_rate")
+    hr_base_b = base_b["baselines"].get("heart_rate")
     if hr_base_b:
         assert hr_base_b["sample_count"] == 1
         assert hr_base_b["mean"] == 95.0
@@ -174,22 +176,22 @@ def test_5_what_if_simulator_data_remains_separate(client, audit_db):
             "data_kind": "measured"
         })
 
-    # Run what-if simulation
+    # Run what-if simulation with valid SimulationRequest schema
     sim_payload = {
-        "patient_id": p_id,
-        "interventions": {
-            "sleep_extension_hours": 1.5,
-            "activity_increase_steps": 3000,
-            "stress_reduction_pct": 25,
-            "dietary_sodium_reduction_pct": 20
-        },
-        "projection_days": 14
+        "scenario_name": "Sleep & Activity Optimization",
+        "parameters": {
+            "delta_sleep_hours": 1.5,
+            "delta_daily_steps": 3000,
+            "delta_stress_level": -20.0,
+            "sodium_reduction_pct": 15.0,
+            "duration_days": 14
+        }
     }
     sim_resp = client.post(f"/api/v1/patients/{p_id}/simulations/run", json=sim_payload)
-    assert sim_resp.status_code == 200, sim_resp.text
+    assert sim_resp.status_code == 201, sim_resp.text
     sim_data = sim_resp.json()
-    assert "projected_vitality_index" in sim_data
-    assert "projected_trajectories" in sim_data
+    assert "trajectories" in sim_data
+    assert "projected_outcomes" in sim_data
 
     # Verify that measured observations in DB were not polluted
     measured_obs = list(audit_db.observations.find({
@@ -200,7 +202,7 @@ def test_5_what_if_simulator_data_remains_separate(client, audit_db):
 
     # Baseline query must still only reflect the 3 measured observations (mean 62.0)
     base_resp = client.get(f"/api/v1/patients/{p_id}/twin/baseline").json()
-    hr_base = base_resp["heart_rate"]
+    hr_base = base_resp["baselines"]["heart_rate"]
     assert hr_base["sample_count"] == 3
     assert hr_base["mean"] == 62.0
 
@@ -221,7 +223,7 @@ def test_6_calculation_engine_mathematical_consistency(client, audit_db):
         })
 
     base_resp = client.get(f"/api/v1/patients/{p_id}/twin/baseline").json()
-    hr_base = base_resp["heart_rate"]
+    hr_base = base_resp["baselines"]["heart_rate"]
     assert hr_base["sample_count"] == 5
     assert hr_base["mean"] == 74.0
     assert hr_base["median"] == 74.0
