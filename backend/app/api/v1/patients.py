@@ -64,3 +64,19 @@ def update_patient(
     if not patient:
         raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
     return patient
+
+@router.delete("/{patient_id}", status_code=200)
+def delete_patient(
+    patient_id: str,
+    delete_associated_data: bool = Query(True, description="Cascade delete observations, assessments, and alerts"),
+    db: Database = Depends(get_database)
+):
+    """Safely delete patient record and optionally cascade associated biometric data."""
+    deleted = PatientService.delete_patient(db=db, patient_id=patient_id, delete_associated_data=delete_associated_data)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
+    return {
+        "status": "success",
+        "deleted_patient_id": patient_id,
+        "cascade_deleted_data": delete_associated_data
+    }
