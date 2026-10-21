@@ -17,6 +17,7 @@ from app.api.v1.alerts import router as alerts_router
 from app.api.v1.seed import router as seed_router
 from app.api.v1.audit import router as audit_router
 from app.api.v1.explanations import router as explanations_router
+from app.api.v1.ml import router as ml_router
 
 logging.basicConfig(
     level=logging.INFO,
