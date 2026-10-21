@@ -78,20 +78,23 @@ class ObservationRepository:
         Supports filtering by measurement_type (or metric_type for backward compat), date range, and data_kind.
         """
         try:
-            query: Dict[str, Any] = {"patient_id": patient_id}
+            and_clauses: List[Dict[str, Any]] = [{"patient_id": patient_id}]
 
             if measurement_type:
-                # Support both measurement_type and metric_type in query
-                query["$or"] = [
-                    {"measurement_type": measurement_type},
-                    {"metric_type": measurement_type}
-                ]
+                and_clauses.append({
+                    "$or": [
+                        {"measurement_type": measurement_type},
+                        {"metric_type": measurement_type}
+                    ]
+                })
 
             if data_kind:
-                query["$or"] = [
-                    {"data_kind": data_kind},
-                    {"data_tier": data_kind}
-                ]
+                and_clauses.append({
+                    "$or": [
+                        {"data_kind": data_kind},
+                        {"data_tier": data_kind}
+                    ]
+                })
 
             time_query: Dict[str, Any] = {}
             if start_date:
@@ -100,8 +103,14 @@ class ObservationRepository:
                 time_query["$lte"] = end_date
 
             if time_query:
-                # Target observed_at or timestamp field
-                query["observed_at"] = time_query
+                and_clauses.append({
+                    "$or": [
+                        {"observed_at": time_query},
+                        {"timestamp": time_query}
+                    ]
+                })
+
+            query: Dict[str, Any] = {"$and": and_clauses} if len(and_clauses) > 1 else and_clauses[0]
 
             total = self.collection.count_documents(query)
             cursor = self.collection.find(
@@ -112,10 +121,19 @@ class ObservationRepository:
             results = list(cursor)
             # Ensure compatibility fields are filled in returned records if missing
             for r in results:
+                obs_id = r.get("observation_id") or r.get("id") or ""
+                r["id"] = obs_id
+                r["observation_id"] = obs_id
+                if "measurement_type" not in r and "metric_type" in r:
+                    r["measurement_type"] = r["metric_type"]
                 if "metric_type" not in r and "measurement_type" in r:
                     r["metric_type"] = r["measurement_type"]
+                if "observed_at" not in r and "timestamp" in r:
+                    r["observed_at"] = r["timestamp"]
                 if "timestamp" not in r and "observed_at" in r:
                     r["timestamp"] = r["observed_at"]
+                if "data_kind" not in r and "data_tier" in r:
+                    r["data_kind"] = "user_entered" if r["data_tier"] == "user_reported" else r["data_tier"]
                 if "data_tier" not in r and "data_kind" in r:
                     r["data_tier"] = "user_reported" if r["data_kind"] == "user_entered" else r["data_kind"]
 

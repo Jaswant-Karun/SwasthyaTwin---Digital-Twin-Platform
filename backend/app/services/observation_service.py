@@ -263,6 +263,34 @@ class ObservationService:
         return created
 
     @staticmethod
+    def query_observations(
+        db: Database,
+        patient_id: str,
+        metric_type: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        data_tier: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 200
+    ) -> Dict[str, Any]:
+        repo = ObservationRepository(db)
+        items, total = repo.list_observations(
+            patient_id=patient_id,
+            measurement_type=metric_type,
+            start_date=start_date,
+            end_date=end_date,
+            data_kind=data_tier,
+            limit=limit,
+            skip=skip
+        )
+        return {
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "items": items
+        }
+
+    @staticmethod
     def batch_add_observations(db: Database, observations: List[ObservationCreate]) -> int:
         if not observations:
             return 0
