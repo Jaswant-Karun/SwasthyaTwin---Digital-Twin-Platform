@@ -117,6 +117,7 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     metric: string;
     value: number;
     unit: string;
+  } | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
   // Explainability & Calculation Metadata
