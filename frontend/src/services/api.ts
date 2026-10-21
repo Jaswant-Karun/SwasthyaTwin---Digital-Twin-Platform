@@ -14,7 +14,10 @@ import {
   PatientUpdateInput,
   ObservationCreateInput,
   ObservationUpdateInput,
-  CSVValidationResult
+  CSVValidationResult,
+  InputPlausibilityResult,
+  MLPredictionResult,
+  AIScanResult
 } from '../types';
 import {
   MOCK_PATIENTS,
@@ -867,6 +870,100 @@ export const api = {
     return await request<CalculationExplanation>(`/api/v1/patients/${patientId}/explanations/simulation`, {
       method: 'POST',
       body: JSON.stringify(payload)
+    });
+  },
+
+  // Machine Learning Intelligence & AI Optical Scanning
+  validateInputPlausibility: async (data: {
+    measurement_type: string;
+    value: number;
+    unit: string;
+    patient_id?: string;
+    paired_measurements?: Record<string, number>;
+  }): Promise<InputPlausibilityResult> => {
+    if (explicitOfflineDemo) {
+      return {
+        is_plausible: true,
+        plausibility_score: 95.0,
+        confidence_weight: 1.0,
+        warnings: [],
+        suggested_value: null,
+        evaluated_metric: data.measurement_type,
+        evaluated_value: data.value
+      };
+    }
+    return await request<InputPlausibilityResult>('/api/v1/ml/validate-input', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  getMLPrediction: async (patientId: string): Promise<MLPredictionResult> => {
+    if (explicitOfflineDemo) {
+      return {
+        patient_id: patientId,
+        patient_name: 'Synthetic Demo Patient',
+        predicted_risk_tier: 'Low Risk (Resilient)',
+        risk_probabilities: { low_resilient: 82.4, moderate_drift: 14.1, elevated_strain: 3.5 },
+        predicted_14d_vitality_delta: 2.5,
+        health_phenotype: 'Optimal Homeostasis',
+        phenotype_description: 'Autonomic and cardiovascular metrics show balanced parasympathetic activity.',
+        top_driving_factors: [
+          { feature: 'HRV RMSSD', importance_pct: 34.2, current_value: 58.0 },
+          { feature: 'Heart Rate', importance_pct: 26.8, current_value: 68.0 },
+          { feature: 'Sleep Duration', importance_pct: 21.5, current_value: 7.8 }
+        ],
+        radar_scores: {
+          cardiovascular_stability: 92.0,
+          autonomic_reserve: 88.5,
+          circadian_alignment: 85.0,
+          metabolic_vitality: 90.0,
+          input_credibility: 99.0
+        },
+        model_metadata: {
+          algorithm: 'RandomForest + GradientBoosting Ensemble',
+          training_samples: 1500,
+          confidence_score: 82.4,
+          evaluated_at: new Date().toISOString()
+        }
+      };
+    }
+    return await request<MLPredictionResult>(`/api/v1/patients/${patientId}/ml/prediction`);
+  },
+
+  processAIScan: async (
+    patientId: string,
+    data: {
+      heart_rate: number;
+      hrv_rmssd: number;
+      respiratory_rate?: number;
+      signal_quality_pct?: number;
+      auto_persist_twin?: boolean;
+    }
+  ): Promise<AIScanResult> => {
+    if (explicitOfflineDemo) {
+      return {
+        patient_id: patientId,
+        scan_timestamp: new Date().toISOString(),
+        scan_source: 'optical_rppg_camera_analyzer',
+        is_valid: true,
+        overall_credibility_score: 96.0,
+        signal_quality_pct: data.signal_quality_pct || 95.0,
+        extracted_biometrics: {
+          heart_rate: { value: data.heart_rate, unit: 'bpm', valid: true },
+          hrv_rmssd: { value: data.hrv_rmssd, unit: 'ms', valid: true },
+          respiratory_rate: { value: data.respiratory_rate || 16.0, unit: 'breaths/min', valid: true }
+        },
+        plausibility_audit: { heart_rate_warnings: [], hrv_warnings: [] },
+        ml_prediction: await api.getMLPrediction(patientId),
+        persisted_observation_ids: ['obs_demo_ai_scan'],
+        twin_updated: true,
+        clinical_disclaimer: 'Optical bio-photoplethysmography is for health screening and biometric tracking.'
+      };
+    }
+    return await request<AIScanResult>(`/api/v1/patients/${patientId}/ai-scan`, {
+      method: 'POST',
+      body: JSON.stringify(data)
     });
   }
 };
