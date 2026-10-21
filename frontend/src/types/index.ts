@@ -2,6 +2,7 @@ export type BiologicalSex = 'male' | 'female' | 'other';
 export type StabilityStatus = 'optimal' | 'mild_deviation' | 'moderate_drift' | 'significant_deviation';
 export type SeverityLevel = 'info' | 'warning' | 'critical';
 export type DataTier = 'measured' | 'user_reported' | 'simulated';
+export type DataClassification = 'user_entered' | 'wearable_imported' | 'synthetic_demo' | 'simulated' | 'measured';
 
 export interface LifestyleProfile {
   baseline_sleep_hours: number;
@@ -22,6 +23,8 @@ export interface Patient {
   chronic_conditions: string[];
   primary_physician?: string;
   lifestyle_profile: LifestyleProfile;
+  notes?: string;
+  consent_confirmed?: boolean;
   created_at: string;
   updated_at: string;
   active_alerts_count: number;
@@ -32,6 +35,7 @@ export interface Patient {
 
 export interface Observation {
   _id: string;
+  observation_id?: string;
   patient_id: string;
   timestamp: string;
   metric_type: string;
@@ -40,8 +44,76 @@ export interface Observation {
   unit: string;
   source: string;
   data_tier: DataTier;
+  data_classification?: DataClassification | string;
   notes?: string;
   metadata?: Record<string, any>;
+}
+
+export interface PatientCreateInput {
+  patient_id?: string;
+  full_name: string;
+  age?: number;
+  biological_sex?: BiologicalSex;
+  baseline_window_days?: number;
+  chronic_conditions?: string[];
+  primary_physician?: string;
+  lifestyle_profile?: Partial<LifestyleProfile>;
+  notes?: string;
+  consent_confirmed?: boolean;
+}
+
+export interface PatientUpdateInput {
+  full_name?: string;
+  age?: number;
+  biological_sex?: BiologicalSex;
+  baseline_window_days?: number;
+  chronic_conditions?: string[];
+  primary_physician?: string;
+  lifestyle_profile?: Partial<LifestyleProfile>;
+  notes?: string;
+}
+
+export interface ObservationCreateInput {
+  patient_id?: string;
+  timestamp?: string;
+  metric_type: string;
+  value: number;
+  secondary_value?: number;
+  unit: string;
+  source?: string;
+  data_tier?: DataTier;
+  data_classification?: DataClassification | string;
+  notes?: string;
+}
+
+export interface ObservationUpdateInput {
+  value?: number;
+  unit?: string;
+  reason_for_edit: string;
+  notes?: string;
+}
+
+export interface CSVValidationRow {
+  row_index: number;
+  patient_id: string;
+  metric_type: string;
+  value: number;
+  unit: string;
+  timestamp: string;
+  source?: string;
+  notes?: string;
+  is_valid: boolean;
+  errors: string[];
+  is_duplicate: boolean;
+}
+
+export interface CSVValidationResult {
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  duplicate_rows: number;
+  rows: CSVValidationRow[];
+  errors: string[];
 }
 
 export interface MetricBaseline {
