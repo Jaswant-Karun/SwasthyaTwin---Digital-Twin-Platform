@@ -639,8 +639,9 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
       </div>
 
       {/* 2. Sub-tab Navigation */}
-      <div className="flex border-b border-slate-200 space-x-1 sm:space-x-4">
+      <div className="flex border-b border-slate-200 space-x-1 sm:space-x-3 overflow-x-auto">
         {[
+          { id: 'ai_scan', label: 'AI Optical Bio-Scan', icon: Zap, badge: 'AUTO' },
           { id: 'single', label: 'Single Observation', icon: PlusCircle },
           { id: 'lifestyle', label: 'Daily Lifestyle Log', icon: Calendar },
           { id: 'csv', label: 'Wearable CSV Import', icon: FileSpreadsheet },
@@ -652,18 +653,30 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id as any)}
-              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-all ${
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
                 isActive
-                  ? 'border-teal-600 text-teal-700 bg-teal-50/30'
+                  ? 'border-teal-600 text-teal-700 bg-teal-50/40 font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
               <Icon className={`w-4 h-4 ${isActive ? 'text-teal-600' : 'text-slate-400'}`} />
               <span>{tab.label}</span>
+              {tab.badge && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-teal-500 text-slate-950 font-mono tracking-wider">
+                  {tab.badge}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
+
+      {/* TAB 0: AI OPTICAL BIO-SCAN */}
+      {activeSubTab === 'ai_scan' && (
+        <div className="space-y-6">
+          <AIOpticalTwinScanner />
+        </div>
+      )}
 
       {/* TAB 1: SINGLE OBSERVATION */}
       {activeSubTab === 'single' && (
@@ -938,11 +951,58 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
                     onChange={e => setValue(e.target.value)}
                     placeholder={currentMeta.placeholder}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-xs text-slate-900 font-mono"
+                    className={`w-full px-3.5 py-2.5 rounded-lg border focus:ring-2 text-xs text-slate-900 font-mono transition-colors ${
+                      plausibilityResult && !plausibilityResult.is_plausible
+                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/20'
+                        : 'border-slate-300 focus:border-teal-500 focus:ring-teal-500/20'
+                    }`}
                   />
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Valid bounds: {currentMeta.min} – {currentMeta.max} {unit}
-                  </span>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                    <span>Valid bounds: {currentMeta.min} – {currentMeta.max} {unit}</span>
+                    {isValidatingPlausibility && (
+                      <span className="text-teal-600 font-mono text-[10px] animate-pulse">AI Checking...</span>
+                    )}
+                  </div>
+
+                  {/* Live ML Plausibility & Typo Guard Alert */}
+                  {plausibilityResult && (
+                    <div className={`mt-2 p-2.5 rounded-lg text-xs border transition-all ${
+                      plausibilityResult.is_plausible
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-rose-50 text-rose-800 border-rose-300 shadow-xs'
+                    }`}>
+                      <div className="flex items-center justify-between font-semibold">
+                        <span className="flex items-center gap-1.5">
+                          {plausibilityResult.is_plausible ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          ) : (
+                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          )}
+                          ML Plausibility: {plausibilityResult.plausibility_score}%
+                        </span>
+                        <span className="text-[10px] font-mono opacity-80">
+                          Confidence Weight: {Math.round(plausibilityResult.confidence_weight * 100)}%
+                        </span>
+                      </div>
+                      {plausibilityResult.warnings.length > 0 && (
+                        <div className="mt-1 text-[11px] space-y-0.5 text-rose-700">
+                          {plausibilityResult.warnings.map((w, i) => (
+                            <div key={i}>⚠️ {w}</div>
+                          ))}
+                        </div>
+                      )}
+                      {plausibilityResult.suggested_value !== null && plausibilityResult.suggested_value !== undefined && (
+                        <button
+                          type="button"
+                          onClick={() => setValue(String(plausibilityResult.suggested_value))}
+                          className="mt-2 px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-2xs transition-colors"
+                        >
+                          <Zap className="w-3 h-3" />
+                          Auto-correct typo to {plausibilityResult.suggested_value} {unit}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>

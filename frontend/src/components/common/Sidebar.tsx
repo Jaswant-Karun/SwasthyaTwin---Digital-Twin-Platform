@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'add-patient', label: 'Add Patient', icon: UserPlus },
     { id: 'add-observation', label: 'Add Health Data', icon: PlusCircle },
-    { id: 'digital-twin', label: 'Digital Twin', icon: HeartPulse },
+    { id: 'digital-twin', label: 'AI Digital Twin', icon: HeartPulse, badgeText: 'LIVE' },
     { id: 'health-trends', label: 'Health Trends', icon: LineChart },
     { id: 'risk-insights', label: 'Risk Insights', icon: ShieldAlert },
     { id: 'what-if', label: 'What-if Simulator', icon: Sliders },
@@ -105,6 +105,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
               {item.badge !== undefined && item.badge > 0 ? (
                 <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
                   {item.badge}
+                </span>
+              ) : (item as any).badgeText ? (
+                <span className="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono tracking-wider">
+                  {(item as any).badgeText}
                 </span>
               ) : isActive ? (
                 <ChevronRight className="w-3.5 h-3.5 text-teal-400" />

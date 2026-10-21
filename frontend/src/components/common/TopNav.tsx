@@ -10,7 +10,8 @@ import {
   Menu,
   ShieldCheck,
   Check,
-  BookOpen
+  BookOpen,
+  Zap
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 
@@ -144,6 +145,16 @@ export const TopNav: React.FC<TopNavProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Quick Scan AI Button */}
+        <button
+          onClick={() => setActiveTab('digital-twin')}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-extrabold text-xs shadow-md shadow-teal-500/20 transition-all cursor-pointer"
+          title="Instant Optical Face / Bio-Sensor Health Scan"
+        >
+          <Zap className="w-3.5 h-3.5 fill-slate-950" />
+          <span>AI Bio-Scan</span>
+        </button>
 
         {/* Refresh Action */}
         <button
