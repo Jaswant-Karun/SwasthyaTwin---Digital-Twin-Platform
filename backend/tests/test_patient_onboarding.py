@@ -37,13 +37,11 @@ def test_create_patient_custom_id_and_duplicate_rejection(client, mock_db):
     assert res2.status_code == 400
     assert "already exists" in res2.json()["detail"].lower()
 
-def test_reject_invalid_patient_age(client_with_db):
-    client, _ = client_with_db
+def test_reject_invalid_patient_age(client, mock_db):
     res = client.post("/api/v1/patients", json={"display_name": "Invalid Age", "age": 150})
     assert res.status_code == 422
 
-def test_add_health_observation_valid_and_persisted(client_with_db):
-    client, db = client_with_db
+def test_add_health_observation_valid_and_persisted(client, mock_db):
     # Create patient first
     p_res = client.post("/api/v1/patients", json={"display_name": "Rohan Sen", "age": 28})
     patient_id = p_res.json()["patient_id"]
@@ -53,7 +51,7 @@ def test_add_health_observation_valid_and_persisted(client_with_db):
         "measurement_type": "heart_rate",
         "value": 74.0,
         "unit": "bpm",
-        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "observed_at": "2026-10-21T08:00:00Z",
         "source": "manual_entry",
         "data_kind": "user_entered",
         "notes": "Post-rest measurement"
@@ -69,13 +67,12 @@ def test_add_health_observation_valid_and_persisted(client_with_db):
     assert obs_id.startswith("obs_")
 
     # Verify directly in MongoDB
-    stored = db.observations.find_one({"observation_id": obs_id})
+    stored = mock_db.observations.find_one({"observation_id": obs_id})
     assert stored is not None
     assert stored["value"] == 74.0
     assert stored["patient_id"] == patient_id
 
-def test_reject_nonexistent_patient_id(client_with_db):
-    client, _ = client_with_db
+def test_reject_nonexistent_patient_id(client, mock_db):
     obs_payload = {
         "patient_id": "PT-NONEXISTENT-9999",
         "measurement_type": "heart_rate",
@@ -86,8 +83,7 @@ def test_reject_nonexistent_patient_id(client_with_db):
     assert res.status_code == 404
     assert "does not exist" in res.json()["detail"].lower()
 
-def test_reject_out_of_bounds_physiological_values(client_with_db):
-    client, _ = client_with_db
+def test_reject_out_of_bounds_physiological_values(client, mock_db):
     p_res = client.post("/api/v1/patients", json={"display_name": "Test Range"})
     patient_id = p_res.json()["patient_id"]
 
@@ -110,8 +106,7 @@ def test_reject_out_of_bounds_physiological_values(client_with_db):
     })
     assert res_sleep.status_code == 400
 
-def test_reject_unit_mismatch(client_with_db):
-    client, _ = client_with_db
+def test_reject_unit_mismatch(client, mock_db):
     p_res = client.post("/api/v1/patients", json={"display_name": "Test Unit"})
     patient_id = p_res.json()["patient_id"]
 
@@ -124,8 +119,7 @@ def test_reject_unit_mismatch(client_with_db):
     assert res.status_code == 400
     assert "invalid unit" in res.json()["detail"].lower()
 
-def test_observation_unit_auto_conversion(client_with_db):
-    client, _ = client_with_db
+def test_observation_unit_auto_conversion(client, mock_db):
     p_res = client.post("/api/v1/patients", json={"display_name": "Unit Conversion"})
     patient_id = p_res.json()["patient_id"]
 
@@ -141,8 +135,7 @@ def test_observation_unit_auto_conversion(client_with_db):
     assert data["unit"] == "mg/dL"
     assert 98.0 <= data["value"] <= 100.0
 
-def test_correct_and_delete_observation_with_audit_trail(client_with_db):
-    client, db = client_with_db
+def test_correct_and_delete_observation_with_audit_trail(client, mock_db):
     p_res = client.post("/api/v1/patients", json={"display_name": "Audit Test"})
     patient_id = p_res.json()["patient_id"]
 
@@ -165,7 +158,7 @@ def test_correct_and_delete_observation_with_audit_trail(client_with_db):
     assert put_res.json()["notes"] == "Added evening walk steps"
 
     # Verify audit event in MongoDB
-    audit = db.audit_events.find_one({"action": "correct_observation", "resource_id": obs_id})
+    audit = mock_db.audit_events.find_one({"action": "correct_observation", "resource_id": obs_id})
     assert audit is not None
     assert audit["details"]["previous_value"] == 8500
     assert audit["details"]["new_value"] == 9200
@@ -173,10 +166,9 @@ def test_correct_and_delete_observation_with_audit_trail(client_with_db):
     # Delete observation
     del_res = client.delete(f"/api/v1/patients/{patient_id}/observations/{obs_id}")
     assert del_res.status_code == 200
-    assert db.observations.find_one({"observation_id": obs_id}) is None
+    assert mock_db.observations.find_one({"observation_id": obs_id}) is None
 
-def test_csv_validation_and_import(client_with_db):
-    client, db = client_with_db
+def test_csv_validation_and_import(client, mock_db):
     p_res = client.post("/api/v1/patients", json={"display_name": "CSV Patient"})
     patient_id = p_res.json()["patient_id"]
 
@@ -222,11 +214,10 @@ def test_csv_validation_and_import(client_with_db):
     assert import_res.json()["imported_count"] == 2
 
     # Verify MongoDB
-    count = db.observations.count_documents({"patient_id": patient_id})
+    count = mock_db.observations.count_documents({"patient_id": patient_id})
     assert count == 2
 
-def test_delete_patient_and_cascade(client_with_db):
-    client, db = client_with_db
+def test_delete_patient_and_cascade(client, mock_db):
     p_res = client.post("/api/v1/patients", json={"display_name": "To Delete"})
     patient_id = p_res.json()["patient_id"]
 
@@ -237,7 +228,7 @@ def test_delete_patient_and_cascade(client_with_db):
         "value": 70,
         "unit": "bpm"
     })
-    assert db.observations.count_documents({"patient_id": patient_id}) == 1
+    assert mock_db.observations.count_documents({"patient_id": patient_id}) == 1
 
     # Delete patient with cascade
     del_res = client.delete(f"/api/v1/patients/{patient_id}?delete_associated_data=true")
@@ -245,5 +236,5 @@ def test_delete_patient_and_cascade(client_with_db):
     assert del_res.json()["status"] == "success"
 
     # Patient and observations must be deleted from MongoDB
-    assert db.patients.find_one({"patient_id": patient_id}) is None
-    assert db.observations.count_documents({"patient_id": patient_id}) == 0
+    assert mock_db.patients.find_one({"patient_id": patient_id}) is None
+    assert mock_db.observations.count_documents({"patient_id": patient_id}) == 0
