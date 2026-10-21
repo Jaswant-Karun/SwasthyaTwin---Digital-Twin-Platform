@@ -467,8 +467,18 @@ def build_trend_explanation(
 ) -> CalculationExplanation:
     window_days = patient.get("baseline_window_days", settings.DEFAULT_BASELINE_DAYS) if patient else 30
     now = datetime.now(timezone.utc)
-    vitality = assessment.vitality_index
-    status = assessment.stability_status
+    if isinstance(assessment, dict):
+        vitality = float(assessment.get("vitality_index", assessment.get("overall_vitality", 100.0)))
+        status = assessment.get("stability_status", "optimal")
+        summary_msg = assessment.get("summary_message", "")
+        missing_inputs = assessment.get("missing_inputs", [])
+        contributions = assessment.get("component_contributions", {})
+    else:
+        vitality = float(getattr(assessment, "vitality_index", getattr(assessment, "overall_vitality", 100.0)))
+        status = getattr(assessment, "stability_status", "optimal")
+        summary_msg = getattr(assessment, "summary_message", "")
+        missing_inputs = getattr(assessment, "missing_inputs", [])
+        contributions = getattr(assessment, "component_contributions", {})
     status_label = status.replace("_", " ").title()
 
     deviations = twin_state.metrics or {}
@@ -520,7 +530,6 @@ def build_trend_explanation(
     # Weight normalization step
     norm_factor = active_weights_sum if active_weights_sum > 0 else 1.0
     normalized_deductions = total_raw_deductions / norm_factor
-    missing_inputs = assessment.missing_inputs or []
 
     steps.append(WorkedExampleStep(
         step_number=3,
@@ -577,7 +586,7 @@ def build_trend_explanation(
         data_source="multi_stream_continuous_telemetry",
         latest_timestamp=twin_state.snapshot_time.isoformat() if twin_state.snapshot_time else None,
         latest_timestamp_formatted=twin_state.snapshot_time.strftime("%b %d, %Y, %H:%M UTC") if twin_state.snapshot_time else now.strftime("%b %d, %Y, %H:%M UTC"),
-        reason_flag_or_alert=f"Stability Status: '{status_label}'. {assessment.summary_message}",
+        reason_flag_or_alert=f"Stability Status: '{status_label}'. {summary_msg}",
         flag_severity="critical" if vitality < 60 else ("warning" if vitality < 75 else ("info" if vitality < 90 else "optimal")),
         warnings=warnings,
         is_stale=twin_state.is_data_stale,
@@ -588,7 +597,7 @@ def build_trend_explanation(
             "vitality_index": vitality,
             "stability_status": status,
             "missing_inputs": missing_inputs,
-            "component_contributions": assessment.component_contributions
+            "component_contributions": contributions
         }
     )
 
