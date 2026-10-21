@@ -117,9 +117,13 @@ export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children
     metric: string;
     value: number;
     unit: string;
-  } | null>(null);
-
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+
+  // Explainability & Calculation Metadata
+  const [patientExplanations, setPatientExplanations] = useState<PatientExplanationsResponse | null>(null);
+  const [activeExplanation, setActiveExplanation] = useState<CalculationExplanation | null>(null);
+  const [isExplanationOpen, setIsExplanationOpen] = useState<boolean>(false);
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState<boolean>(false);
 
   // Race condition token to discard superseded asynchronous responses
   const activeRequestIdRef = useRef<number>(0);
