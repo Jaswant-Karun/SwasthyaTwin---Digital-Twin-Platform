@@ -132,7 +132,7 @@ export const OverviewTrendAndAlerts: React.FC<{ onNavigate: (tab: string) => voi
           <div className="space-y-2.5">
             {unreadAlerts.slice(0, 3).map((a, i) => (
               <div
-                key={a._id || a.id || `alert-${a.timestamp}-${i}`}
+                key={a._id || `alert-${a.timestamp}-${i}`}
                 className="p-3.5 rounded-lg bg-white border border-slate-200 shadow-2xs space-y-2 text-xs"
               >
                 <div className="flex items-center justify-between">
