@@ -7,7 +7,10 @@ import {
   Observation,
   SystemHealth,
   CalculationExplanation,
-  PatientExplanationsResponse
+  PatientExplanationsResponse,
+  PatientCreateInput,
+  ObservationUpdateInput,
+  CSVValidationResult
 } from '../types';
 import { api, setOfflineDemoMode, isOfflineDemoMode } from '../services/api';
 import { ExplanationModal } from '../components/common/ExplanationModal';
@@ -66,6 +69,13 @@ interface TwinContextType {
   // Actions
   refreshData: () => Promise<void>;
   logObservation: (obs: Partial<Observation>) => Promise<Observation | null>;
+  createPatient: (data: PatientCreateInput) => Promise<Patient>;
+  deletePatient: (patientId: string, cascade?: boolean) => Promise<void>;
+  updatePatientProfile: (patientId: string, data: Partial<Patient>) => Promise<Patient>;
+  updateObservation: (observationId: string, data: ObservationUpdateInput) => Promise<Observation>;
+  deleteObservation: (observationId: string) => Promise<void>;
+  validateCSV: (rows: any[]) => Promise<CSVValidationResult>;
+  importCSV: (rows: any[]) => Promise<{ success: boolean; imported_count: number; message: string; errors: string[] }>;
   acknowledgeAlert: (alertId: string, notes?: string) => Promise<void>;
   seedDemoData: (force?: boolean | any) => Promise<void>;
   resetDemoCohort: () => Promise<void>;
