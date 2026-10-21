@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 export const OverviewTrendAndAlerts: React.FC<{ onNavigate: (tab: string) => void }> = ({ onNavigate }) => {
   const { assessment, alerts, acknowledgeAlert, currentPatient } = useTwin();
@@ -31,10 +32,13 @@ export const OverviewTrendAndAlerts: React.FC<{ onNavigate: (tab: string) => voi
       <div className="card-surface rounded-xl p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-teal-600" />
-              Transparent Vitality Index Deductions
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-teal-600" />
+                Transparent Vitality Index Deductions
+              </h3>
+              <HowCalculatedButton category="trend" itemId="vitality_index" variant="icon" title="How Vitality Index and deductions are calculated" />
+            </div>
             <p className="text-xs text-slate-500">
               Mathematical decomposition of points deducted from 100 based on personal baseline Z-scores.
             </p>
@@ -66,6 +70,12 @@ export const OverviewTrendAndAlerts: React.FC<{ onNavigate: (tab: string) => voi
                     <span className="text-[10px] font-mono px-1.5 py-0.2 rounded font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                       -{f.impact_score} pts
                     </span>
+                    <HowCalculatedButton
+                      category="trend"
+                      itemId={f.metric_type}
+                      variant="icon"
+                      title={`How ${f.metric_type} impact is calculated`}
+                    />
                   </div>
                   <p className="text-[11px] text-slate-600 mt-0.5">{f.rationale}</p>
                 </div>
@@ -129,6 +139,12 @@ export const OverviewTrendAndAlerts: React.FC<{ onNavigate: (tab: string) => voi
                   <div className="flex items-center gap-2">
                     <StatusBadge severity={a.severity} />
                     <span className="font-semibold text-slate-900">{a.title}</span>
+                    <HowCalculatedButton
+                      category="alert"
+                      itemId={a._id}
+                      variant="icon"
+                      title={`How this alert was triggered`}
+                    />
                   </div>
                   <span className="text-[10px] text-slate-400 font-mono">
                     {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -140,9 +156,17 @@ export const OverviewTrendAndAlerts: React.FC<{ onNavigate: (tab: string) => voi
                 </p>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500 truncate max-w-xs">
-                    {a.suggested_action}
-                  </span>
+                  <div className="flex items-center gap-2 truncate max-w-xs">
+                    <span className="text-[11px] text-slate-500 truncate">
+                      {a.suggested_action}
+                    </span>
+                    <HowCalculatedButton
+                      category="alert"
+                      itemId={a._id}
+                      variant="link"
+                      label="Calculation"
+                    />
+                  </div>
                   <button
                     onClick={() => handleAcknowledge(a._id)}
                     disabled={acknowledgingId === a._id}

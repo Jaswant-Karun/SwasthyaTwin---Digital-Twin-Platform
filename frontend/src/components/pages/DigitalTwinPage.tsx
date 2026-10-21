@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 export const DigitalTwinPage: React.FC = () => {
   const { currentPatient, twinState, assessment, latestUpdateInfo } = useTwin();
@@ -146,9 +147,17 @@ export const DigitalTwinPage: React.FC = () => {
             <div key={m.metric_type} className="card-surface rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 capitalize">
-                    {m.metric_type.replace(/_/g, ' ')}
-                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="text-xs font-bold text-slate-900 capitalize">
+                      {m.metric_type.replace(/_/g, ' ')}
+                    </h4>
+                    <HowCalculatedButton
+                      category="metric"
+                      itemId={m.metric_type}
+                      variant="icon"
+                      title={`How ${m.metric_type} is processed`}
+                    />
+                  </div>
                   <span className="text-[10px] text-slate-400 uppercase font-mono">
                     Tier: {m.data_tier}
                   </span>
@@ -171,7 +180,15 @@ export const DigitalTwinPage: React.FC = () => {
               </div>
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                <span>Personal Baseline: <strong className="text-slate-800">{m.baseline_mean.toFixed(1)}</strong></span>
+                <span className="flex items-center gap-1">
+                  Baseline: <strong className="text-slate-800">{m.baseline_mean.toFixed(1)}</strong>
+                  <HowCalculatedButton
+                    category="baseline"
+                    itemId={m.metric_type}
+                    variant="icon"
+                    title={`How ${m.metric_type} baseline is calculated`}
+                  />
+                </span>
                 <span className="font-mono">Z: <strong className={Math.abs(m.z_score) >= 2 ? 'text-rose-600' : 'text-slate-700'}>{m.z_score.toFixed(1)}σ</strong></span>
               </div>
             </div>

@@ -12,6 +12,7 @@ import {
 import { Sliders, Play, RotateCcw, ShieldAlert, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { api } from '../../services/api';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 import type { SimulationResult, InterventionParams } from '../../types';
 
 export const WhatIfSimulator: React.FC = () => {
@@ -269,11 +270,25 @@ export const WhatIfSimulator: React.FC = () => {
         <div className="lg:col-span-2 card-surface rounded-xl p-5 space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-900">Modeled Cardiovascular Adaptation Trajectory</h3>
                 <span className="px-2 py-0.5 rounded text-[9px] font-bold font-mono uppercase bg-amber-100 text-amber-900 border border-amber-300">
                   Simulated Output
                 </span>
+                {simulationResult && (
+                  <HowCalculatedButton
+                    category="simulation"
+                    itemId="simulation_output"
+                    customPayload={{
+                      parameters: params,
+                      baseline_summary: simulationResult.baseline_summary,
+                      projected_outcomes: simulationResult.projected_outcomes
+                    }}
+                    variant="button"
+                    label="How is this simulated?"
+                    title="Examine physiological formula, numerical steps, and data provenance"
+                  />
+                )}
               </div>
               <p className="text-xs text-slate-500">Resting Heart Rate forecast with 90% confidence uncertainty envelope.</p>
             </div>

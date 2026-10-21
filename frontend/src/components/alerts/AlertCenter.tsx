@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 import type { Alert } from '../../types';
 
 export const AlertCenter: React.FC = () => {
@@ -134,6 +135,12 @@ export const AlertCenter: React.FC = () => {
                 <div className="flex items-center gap-2.5">
                   <StatusBadge severity={a.severity} />
                   <h3 className="text-sm font-bold text-slate-900">{a.title}</h3>
+                  <HowCalculatedButton
+                    category="alert"
+                    itemId={a._id}
+                    variant="icon"
+                    title={`How this alert was triggered`}
+                  />
                 </div>
                 <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
@@ -171,9 +178,17 @@ export const AlertCenter: React.FC = () => {
 
               {/* Footer suggested action & acknowledgement */}
               <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="text-xs text-slate-600 max-w-xl">
-                  <strong className="text-slate-900 font-semibold">Recommended Guidance: </strong>
-                  {a.suggested_action}
+                <div className="text-xs text-slate-600 max-w-xl flex items-center gap-2 flex-wrap">
+                  <div>
+                    <strong className="text-slate-900 font-semibold">Recommended Guidance: </strong>
+                    {a.suggested_action}
+                  </div>
+                  <HowCalculatedButton
+                    category="alert"
+                    itemId={a._id}
+                    variant="link"
+                    label="How is this calculated?"
+                  />
                 </div>
 
                 {!a.is_acknowledged ? (

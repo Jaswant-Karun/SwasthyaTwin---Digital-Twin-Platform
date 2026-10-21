@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 export const RiskInsightsPage: React.FC = () => {
   const { currentPatient, assessment, alerts } = useTwin();
@@ -64,8 +65,20 @@ export const RiskInsightsPage: React.FC = () => {
                   <h4 className="text-sm font-bold text-slate-900 capitalize">
                     {factor.rule_name}
                   </h4>
+                  <HowCalculatedButton
+                    category="trend"
+                    itemId={factor.metric_type}
+                    variant="icon"
+                    title={`How ${factor.metric_type} risk deduction is calculated`}
+                  />
                 </div>
                 <div className="flex items-center gap-2 text-xs">
+                  <HowCalculatedButton
+                    category="trend"
+                    itemId={factor.metric_type}
+                    variant="link"
+                    label="How is this calculated?"
+                  />
                   <span className="font-mono text-slate-500">Confidence: <strong className="text-slate-800">High (96%)</strong></span>
                   <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                     -{factor.impact_score} Vitality Points
