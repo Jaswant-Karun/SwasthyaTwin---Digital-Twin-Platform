@@ -8,6 +8,7 @@ interface HowCalculatedButtonProps {
   customPayload?: any;
   variant?: 'link' | 'icon' | 'button' | 'badge';
   label?: string;
+  title?: string;
   className?: string;
   stopPropagation?: boolean;
 }
@@ -18,6 +19,7 @@ export const HowCalculatedButton: React.FC<HowCalculatedButtonProps> = ({
   customPayload,
   variant = 'link',
   label = 'How is this calculated?',
+  title,
   className = '',
   stopPropagation = true
 }) => {
@@ -44,7 +46,7 @@ export const HowCalculatedButton: React.FC<HowCalculatedButtonProps> = ({
         type="button"
         onClick={handleClick}
         aria-label={`How is this ${itemId.replace(/_/g, ' ')} calculated?`}
-        title={`How is this calculated?`}
+        title={title || 'How is this calculated?'}
         className={`p-1 rounded-md text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors inline-flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-teal-500 ${className}`}
       >
         <HelpCircle className="w-3.5 h-3.5" />
