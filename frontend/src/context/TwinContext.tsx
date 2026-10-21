@@ -5,9 +5,12 @@ import {
   HealthAssessment,
   Alert,
   Observation,
-  SystemHealth
+  SystemHealth,
+  CalculationExplanation,
+  PatientExplanationsResponse
 } from '../types';
 import { api, setOfflineDemoMode, isOfflineDemoMode } from '../services/api';
+import { ExplanationModal } from '../components/common/ExplanationModal';
 
 interface DbReadiness {
   ready: boolean;
@@ -71,6 +74,14 @@ interface TwinContextType {
   // Appearance
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+
+  // Explainability & Calculation Metadata
+  patientExplanations: PatientExplanationsResponse | null;
+  activeExplanation: CalculationExplanation | null;
+  isExplanationOpen: boolean;
+  isLoadingExplanation: boolean;
+  openExplanation: (category: string, itemId: string, customPayload?: any) => Promise<void>;
+  closeExplanation: () => void;
 }
 
 const TwinContext = createContext<TwinContextType | undefined>(undefined);
