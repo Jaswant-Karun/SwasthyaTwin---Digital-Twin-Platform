@@ -81,11 +81,27 @@ class PatientService:
     @staticmethod
     def create_patient(db: Database, patient_in: PatientCreate) -> Dict[str, Any]:
         repo = PatientRepository(db)
-        existing = repo.get_by_id(patient_in.patient_id)
-        if existing:
-            raise ValueError(f"Patient with ID '{patient_in.patient_id}' already exists.")
+        
+        generated_id = patient_in.patient_id
+        if not generated_id or not generated_id.strip():
+            existing_docs = list(repo.collection.find({"patient_id": {"$regex": r"^PT-\d+$"}}, {"patient_id": 1}))
+            max_num = 1000
+            for d in existing_docs:
+                try:
+                    num = int(d["patient_id"].split("-")[1])
+                    if num > max_num:
+                        max_num = num
+                except Exception:
+                    pass
+            generated_id = f"PT-{max_num + 1}"
+        else:
+            generated_id = generated_id.strip()
 
-        base = patient_in.to_patient_base()
+        existing = repo.get_by_id(generated_id)
+        if existing:
+            raise ValueError(f"Patient with ID '{generated_id}' already exists.")
+
+        base = patient_in.to_patient_base(generated_id=generated_id)
         doc = base.model_dump()
         doc["full_name"] = base.display_name
         doc["biological_sex"] = base.gender or "other"
@@ -97,8 +113,8 @@ class PatientService:
         audit_repo.record_event({
             "action": "create",
             "resource_type": "patient",
-            "resource_id": patient_in.patient_id,
-            "patient_id": patient_in.patient_id,
+            "resource_id": generated_id,
+            "patient_id": generated_id,
             "actor": "api_client",
             "details": {
                 "display_name": base.display_name,
@@ -107,7 +123,36 @@ class PatientService:
             }
         })
 
-        return PatientService.get_patient(db, patient_in.patient_id)
+        return PatientService.get_patient(db, generated_id)
+
+    @staticmethod
+    def delete_patient(db: Database, patient_id: str, delete_associated_data: bool = True) -> bool:
+        repo = PatientRepository(db)
+        existing = repo.get_by_id(patient_id)
+        if not existing:
+            return False
+
+        if delete_associated_data:
+            db.observations.delete_many({"patient_id": patient_id})
+            db.health_assessments.delete_many({"patient_id": patient_id})
+            db.alerts.delete_many({"patient_id": patient_id})
+            db.simulations.delete_many({"patient_id": patient_id})
+
+        repo.delete(patient_id)
+
+        audit_repo = AuditRepository(db)
+        audit_repo.record_event({
+            "action": "delete_patient",
+            "resource_type": "patient",
+            "resource_id": patient_id,
+            "patient_id": patient_id,
+            "actor": "api_client",
+            "details": {
+                "display_name": existing.get("display_name"),
+                "deleted_associated_data": delete_associated_data
+            }
+        })
+        return True
 
     @staticmethod
     def update_patient(
