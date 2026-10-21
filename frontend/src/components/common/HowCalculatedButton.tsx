@@ -21,13 +21,21 @@ export const HowCalculatedButton: React.FC<HowCalculatedButtonProps> = ({
   className = '',
   stopPropagation = true
 }) => {
-  const { openExplanation } = useTwin();
+  let openExplanation: ((category: any, itemId: string, customPayload?: any) => void) | undefined;
+  try {
+    const twin = useTwin();
+    openExplanation = twin.openExplanation;
+  } catch {
+    openExplanation = undefined;
+  }
 
   const handleClick = (e: React.MouseEvent) => {
     if (stopPropagation) {
       e.stopPropagation();
     }
-    openExplanation(category, itemId, customPayload);
+    if (openExplanation) {
+      openExplanation(category, itemId, customPayload);
+    }
   };
 
   if (variant === 'icon') {

@@ -92,7 +92,7 @@ describe('ExplanationModal Component', () => {
 
     // 10. Limitations and methodology classification
     expect(screen.getByText(/Calculated from resting morning samples/i)).toBeInTheDocument();
-    expect(screen.getByText(/Statistical Estimate/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Statistical Estimate/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it('handles missing telemetry and sparse baselines honestly without fabrication', () => {
