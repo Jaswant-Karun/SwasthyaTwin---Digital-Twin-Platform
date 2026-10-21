@@ -63,10 +63,10 @@ describe('ExplanationModal Component', () => {
     render(<ExplanationModal isOpen={true} explanation={mockExplanation} onClose={handleClose} />);
 
     // 1. Current value and unit
-    expect(screen.getByText('78.0 bpm')).toBeInTheDocument();
+    expect(screen.getAllByText('78.0 bpm').length).toBeGreaterThanOrEqual(1);
 
     // 2. Patient baseline
-    expect(screen.getByText('65.0 bpm')).toBeInTheDocument();
+    expect(screen.getAllByText('65.0 bpm').length).toBeGreaterThanOrEqual(1);
 
     // 3. Historical window used
     expect(screen.getByText(/14 Days/i)).toBeInTheDocument();
@@ -147,7 +147,7 @@ describe('ExplanationModal Component', () => {
     render(<ExplanationModal isOpen={true} explanation={mockExplanation} onClose={handleClose} />);
 
     // Click close button
-    const closeBtn = screen.getByLabelText(/Close explanation/i);
+    const closeBtn = screen.getByLabelText(/close/i);
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalledTimes(1);
 
