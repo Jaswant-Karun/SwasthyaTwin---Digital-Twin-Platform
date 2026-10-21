@@ -59,11 +59,6 @@ def add_observation(
             raise HTTPException(status_code=404, detail=err_msg)
         raise HTTPException(status_code=400, detail=err_msg)
 
-    # Trigger twin state re-assessment
-    try:
-        AssessmentService.evaluate_twin_state(db=db, patient_id=patient_id)
-    except Exception:
-        pass
     return result
 
 @router.put("/{observation_id}", response_model=ObservationResponse)

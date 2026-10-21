@@ -33,6 +33,51 @@ export interface Patient {
   stability_status?: StabilityStatus;
 }
 
+export interface BaselineSummary {
+  mean: number;
+  median: number;
+  std_dev: number;
+  iqr: number;
+  sample_count: number;
+  window_days: number;
+  is_sufficient: boolean;
+  unit: string;
+}
+
+export interface DeviationSummary {
+  delta_absolute: number;
+  delta_percentage: number;
+  z_score: number;
+  status: string;
+  direction: string;
+  relative_is_excluded?: boolean;
+  exclusion_reason?: string;
+}
+
+export interface AssessmentUpdateMetadata {
+  patient_id: string;
+  metric_type: string;
+  observed_value: number;
+  unit: string;
+  observed_at: string;
+  is_first_observation: boolean;
+  sufficiency_message?: string;
+  previous_baseline?: BaselineSummary;
+  updated_baseline?: BaselineSummary;
+  deviation?: DeviationSummary;
+  vitality_index?: number;
+  previous_vitality_index?: number;
+  stability_status?: string;
+  triggered_alert?: {
+    alert_id?: string;
+    severity?: string;
+    title?: string;
+    description?: string;
+    suggested_action?: string;
+  };
+  explanation?: string;
+}
+
 export interface Observation {
   _id: string;
   observation_id?: string;
@@ -47,6 +92,7 @@ export interface Observation {
   data_classification?: DataClassification | string;
   notes?: string;
   metadata?: Record<string, any>;
+  assessment_update?: AssessmentUpdateMetadata;
 }
 
 export interface PatientCreateInput {
