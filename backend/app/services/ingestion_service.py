@@ -77,20 +77,25 @@ class IngestionService:
         except UnitConversionError as ue:
             raise ValueError(f"Unit conversion error: {str(ue)}")
 
-        # 3. Duplicate Detection (within 60-second window for same patient & metric)
-        window_start = obs_time - timedelta(seconds=60)
-        window_end = obs_time + timedelta(seconds=60)
+        # 3. Duplicate Detection (identical measurement timestamp and value)
         dup_query = {
             "patient_id": patient_id,
-            "measurement_type": m_type,
-            "observed_at": {"$gte": window_start, "$lte": window_end}
+            "$or": [{"measurement_type": m_type}, {"metric_type": m_type}],
+            "$or": [{"observed_at": obs_time}, {"timestamp": obs_time}],
+            "value": canon_val
         }
         existing_dup = db.observations.find_one(dup_query)
         if existing_dup:
-            raise ValueError(
-                f"Duplicate observation detected: An observation for '{m_type}' at {obs_time.isoformat()} "
-                f"already exists in the patient record (ID: {existing_dup.get('observation_id')})."
-            )
+            existing_dup["id"] = existing_dup.get("observation_id")
+            existing_dup["_id"] = str(existing_dup.get("_id", existing_dup["id"]))
+            return {
+                "status": "duplicate_retained",
+                "message": f"Duplicate observation for '{m_type}' at {obs_time.isoformat()} with value {canon_val} {canon_unit} already recorded.",
+                "observation": existing_dup,
+                "twin_vitality_index": None,
+                "validation_status": existing_dup.get("validation_status", "valid"),
+                "warnings": ["Duplicate reading detected; retained existing record without duplicating telemetry."]
+            }
 
         # 4. Plausibility & Consistency Audit
         audit = audit_observation_plausibility(
@@ -196,13 +201,15 @@ class IngestionService:
             logger.warning(f"Error updating twin state following ingestion: {e}")
 
         obs_doc["_id"] = str(obs_doc.get("_id", ""))
+        vitality_val = getattr(twin_state, "overall_vitality", getattr(twin_state, "vitality_index", None)) if twin_state else None
         return {
             "status": "success",
             "observation": obs_doc,
-            "twin_vitality_index": twin_state.vitality_index if twin_state else None,
+            "twin_vitality_index": vitality_val,
             "validation_status": audit.validation_status,
             "warnings": audit.warnings
         }
+
 
     @staticmethod
     def preview_and_validate_csv(
