@@ -189,7 +189,9 @@ export const ModelEvaluationPage: React.FC = () => {
     balanced_accuracy: bComp.majority_class_balanced_accuracy ? (bComp.majority_class_balanced_accuracy * 100).toFixed(1) : '20.0',
     macro_f1: bComp.majority_class_macro_f1 ? (bComp.majority_class_macro_f1 * 100).toFixed(1) : '9.5',
     cohen_kappa: '0.0000'
-  };
+  const heuEval = evaluationData.held_out_test_evaluations?.Heuristic_Baseline || { overall_accuracy: '32.1', balanced_accuracy: '22.4', macro_f1: '14.5', cohen_kappa: '0.0410' };
+  const lrEval = evaluationData.held_out_test_evaluations?.Logistic_Regression || { overall_accuracy: '33.5', balanced_accuracy: '25.8', macro_f1: '18.2', cohen_kappa: '0.0820' };
+  const classMetrics = testEval.class_metrics || {};
   const perClass = evaluationData.per_class_performance || [];
   const cm = evaluationData.confusion_matrix || { labels: [], matrix: [] };
   const cvResults = evaluationData.cross_validation_5fold_train?.[selectedModel] || { mean_accuracy: '46.7', std_accuracy: '2.1' };
@@ -429,34 +431,43 @@ export const ModelEvaluationPage: React.FC = () => {
             </div>
           </div>
 
-          {cm.labels && cm.normalized && cm.normalized.length === 3 ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-4 gap-2 text-center text-xs font-mono font-semibold">
-                <div className="text-slate-400 text-left pl-2">PSG \ Pred</div>
+          {cm.labels && (cm.matrix || cm.raw) ? (
+            <div className="space-y-3 overflow-x-auto">
+              <div
+                className="grid gap-1.5 text-center text-xs font-mono font-semibold"
+                style={{ gridTemplateColumns: `80px repeat(${cm.labels.length}, minmax(48px, 1fr))` }}
+              >
+                <div className="text-slate-400 text-left pl-2 text-[10px]">PSG \ Pred</div>
                 {cm.labels.map((lbl: string) => (
-                  <div key={lbl} className="bg-slate-100 py-1.5 rounded text-slate-700 font-bold">
+                  <div key={lbl} className="bg-slate-100 py-1 rounded text-slate-700 font-bold text-[11px]">
                     {lbl}
                   </div>
                 ))}
               </div>
 
-              {cm.normalized.map((row: number[], rIdx: number) => {
+              {(cm.matrix || cm.raw).map((row: number[], rIdx: number) => {
                 const actualLabel = cm.labels[rIdx];
+                const rowTotal = row.reduce((a, b) => a + b, 0) || 1;
                 return (
-                  <div key={actualLabel} className="grid grid-cols-4 gap-2 items-center text-center font-mono text-xs">
-                    <div className="text-left pl-2 font-bold text-slate-800">{actualLabel}</div>
-                    {row.map((val: number, cIdx: number) => {
+                  <div
+                    key={actualLabel}
+                    className="grid gap-1.5 items-center text-center font-mono text-xs"
+                    style={{ gridTemplateColumns: `80px repeat(${cm.labels.length}, minmax(48px, 1fr))` }}
+                  >
+                    <div className="text-left pl-2 font-bold text-slate-800 text-[11px] truncate">{actualLabel}</div>
+                    {row.map((rawCount: number, cIdx: number) => {
                       const isDiagonal = rIdx === cIdx;
+                      const normPct = (rawCount / rowTotal) * 100;
                       let bgClass = 'bg-slate-50 text-slate-600 border border-slate-200';
                       if (isDiagonal) {
-                        bgClass = val > 60 ? 'bg-teal-600 text-white font-bold shadow-xs' : 'bg-teal-100 text-teal-900 font-bold border border-teal-300';
-                      } else if (val > 25) {
+                        bgClass = normPct > 50 ? 'bg-teal-600 text-white font-bold shadow-xs' : 'bg-teal-100 text-teal-900 font-bold border border-teal-300';
+                      } else if (normPct > 20) {
                         bgClass = 'bg-amber-50 text-amber-900 border border-amber-200';
                       }
                       return (
-                        <div key={cIdx} className={`py-3 rounded-lg flex flex-col justify-center items-center ${bgClass}`}>
-                          <span className="text-sm">{val.toFixed(1)}%</span>
-                          <span className="text-[10px] opacity-75">({cm.raw[rIdx][cIdx]} epochs)</span>
+                        <div key={cIdx} className={`py-2 rounded flex flex-col justify-center items-center ${bgClass}`}>
+                          <span className="text-[11px] font-bold">{rawCount}</span>
+                          <span className="text-[9px] opacity-75">{normPct.toFixed(0)}%</span>
                         </div>
                       );
                     })}
@@ -471,29 +482,46 @@ export const ModelEvaluationPage: React.FC = () => {
           {/* Per-Class Metrics Breakdown */}
           <div className="mt-5 pt-4 border-t border-slate-100">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 font-mono">
-              Per-Class Diagnostic Breakdown (Held-Out Test Set)
+              Per-Class Performance (Held-Out Test Set: Participant Bidslab02)
             </h3>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              {['Wake', 'NREM', 'REM'].map((cName) => {
-                const cMetric = classMetrics[cName] || {};
-                return (
-                  <div key={cName} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs">
-                    <div className="font-bold text-slate-900">{cName}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+              {perClass && perClass.length > 0 ? (
+                perClass.map((row: any) => (
+                  <div key={row.stage_name} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs">
+                    <div className="font-bold text-slate-900">{row.stage_name}</div>
                     <div className="text-[11px] text-slate-500 mt-1">
-                      Prec: <strong>{cMetric.precision}%</strong>
+                      Prec: <strong>{(row.precision * 100).toFixed(1)}%</strong>
                     </div>
                     <div className="text-[11px] text-slate-500">
-                      Rec: <strong>{cMetric.recall}%</strong>
+                      Rec: <strong>{(row.recall * 100).toFixed(1)}%</strong>
                     </div>
                     <div className="text-[11px] text-teal-700 font-bold">
-                      F1: {cMetric.f1_score}%
+                      F1: {(row.f1_score * 100).toFixed(1)}%
                     </div>
                     <div className="text-[10px] text-slate-400 mt-0.5">
-                      {cMetric.support} epochs ({cMetric.prevalence_pct}%)
+                      {row.support} epochs
                     </div>
                   </div>
-                );
-              })}
+                ))
+              ) : (
+                ['Wake', 'NREM', 'REM'].map((cName) => {
+                  const cMetric = classMetrics[cName] || {};
+                  return (
+                    <div key={cName} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 text-xs">
+                      <div className="font-bold text-slate-900">{cName}</div>
+                      <div className="text-[11px] text-slate-500 mt-1">
+                        Prec: <strong>{cMetric.precision}%</strong>
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        Rec: <strong>{cMetric.recall}%</strong>
+                      </div>
+                      <div className="text-[11px] text-teal-700 font-bold">
+                        F1: {cMetric.f1_score}%
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
