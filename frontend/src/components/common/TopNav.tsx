@@ -72,27 +72,27 @@ export const TopNav: React.FC<TopNavProps> = ({
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-6 flex items-center justify-between shadow-xs">
+    <header className="h-16 bg-slate-950/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-30 px-4 sm:px-6 flex items-center justify-between shadow-lg">
       {/* Left: Mobile Menu Toggle + Breadcrumbs */}
       <div className="flex items-center gap-3">
         {onToggleMobileMenu && (
           <button
             onClick={onToggleMobileMenu}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 lg:hidden"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 lg:hidden"
             aria-label="Toggle Navigation"
           >
             <Menu className="w-5 h-5" />
           </button>
         )}
 
-        <nav className="flex items-center gap-1.5 text-xs text-slate-500" aria-label="Breadcrumb">
-          <span className="font-semibold text-slate-800">SwasthyaTwin</span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <span className="font-medium text-slate-600 hidden sm:inline">
+        <nav className="flex items-center gap-1.5 text-xs text-slate-400 font-mono" aria-label="Breadcrumb">
+          <span className="font-semibold text-slate-200">SwasthyaTwin</span>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+          <span className="font-medium text-slate-300 hidden sm:inline">
             {currentPatient?.full_name || 'Patient'}
           </span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
-          <span className="font-semibold text-teal-600">
+          <ChevronRight className="w-3.5 h-3.5 text-slate-500 hidden sm:inline" />
+          <span className="font-bold text-cyan-400">
             {getBreadcrumbLabel(activeTab)}
           </span>
         </nav>
@@ -103,26 +103,27 @@ export const TopNav: React.FC<TopNavProps> = ({
         {/* Prominent Methodology Button for Users & Judges */}
         <button
           onClick={() => setActiveTab('methodology')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all ${
             activeTab === 'methodology'
-              ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
-              : 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100 hover:border-teal-300'
+              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-lg shadow-cyan-950/50'
+              : 'bg-slate-900/80 text-slate-300 border-white/10 hover:border-cyan-400/50 hover:text-white'
           }`}
           title="Inspect calculation methodology, formulas, and rules"
         >
-          <BookOpen className="w-3.5 h-3.5 text-teal-600" />
+          <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
           <span>Methodology</span>
         </button>
+
         {/* Patient Selector */}
         <div className="relative">
           <select
             value={currentPatient?.patient_id || ''}
             onChange={(e) => setCurrentPatientId(e.target.value)}
-            className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-800 font-medium py-1.5 px-3 pr-8 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer appearance-none"
+            className="text-xs bg-slate-900/90 hover:bg-slate-800 text-slate-200 font-mono font-bold py-1.5 px-3 pr-8 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-400 cursor-pointer appearance-none shadow-xs"
             aria-label="Select Patient"
           >
             {patients.map((p) => (
-              <option key={p.patient_id} value={p.patient_id}>
+              <option key={p.patient_id} value={p.patient_id} className="bg-slate-900 text-slate-200">
                 {p.full_name} ({p.patient_id})
               </option>
             ))}
@@ -131,13 +132,21 @@ export const TopNav: React.FC<TopNavProps> = ({
         </div>
 
         {/* Date Range Selector */}
-        <div className="hidden md:flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs">
+        <div className="hidden md:flex items-center bg-slate-900/90 rounded-xl p-0.5 border border-white/10 text-xs font-mono">
           {[7, 14, 30, 90].map((days) => (
             <button
               key={days}
               onClick={() => handleRangeChange(days)}
-              className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors ${
+              className={`px-2.5 py-1 rounded-lg font-bold text-xs transition-colors ${
                 effectiveRange === days
+                  ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {days}d
+            </button>
+          ))}
+        </div>
                   ? 'bg-white text-slate-900 shadow-xs font-semibold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
