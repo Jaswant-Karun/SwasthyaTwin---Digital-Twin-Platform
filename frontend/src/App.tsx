@@ -82,6 +82,7 @@ const AppContent: React.FC = () => {
             selectedRange={selectedRangeDays}
             setSelectedRange={setSelectedRangeDays}
             onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onReplayIntro={() => setShowIntro(true)}
           />
 
           {/* Global API Connection Warning (if backend is degraded) */}
