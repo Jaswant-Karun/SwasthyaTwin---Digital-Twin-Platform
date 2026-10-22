@@ -386,3 +386,96 @@ class AssessmentService:
             "generated_at": datetime.now(timezone.utc),
             "forecasts": results
         }
+
+    @staticmethod
+    def get_patient_active_layers(db: Database, patient_id: str) -> Dict[str, Any]:
+        """
+        Calculates active data layers available for a patient based on verified observations.
+        Ensures UI layers are ONLY enabled when relevant measurements actually exist.
+        """
+        cardio_count = db.observations.count_documents({
+            "patient_id": patient_id,
+            "measurement_type": {"$in": ["heart_rate", "resting_heart_rate", "hrv_rmssd"]}
+        })
+        sleep_count = db.observations.count_documents({
+            "patient_id": patient_id,
+            "measurement_type": {"$in": ["sleep_duration_hours", "sleep_duration"]}
+        })
+        activity_count = db.observations.count_documents({
+            "patient_id": patient_id,
+            "measurement_type": "daily_steps"
+        })
+        bp_count = db.observations.count_documents({
+            "patient_id": patient_id,
+            "measurement_type": {"$in": ["blood_pressure_systolic", "systolic_bp"]}
+        })
+        total_obs = db.observations.count_documents({"patient_id": patient_id})
+
+        return {
+            "patient_id": patient_id,
+            "layers": {
+                "cardiovascular": {
+                    "is_active": cardio_count > 0,
+                    "observation_count": cardio_count,
+                    "label": "Cardiovascular Core",
+                    "metrics": ["heart_rate", "hrv_rmssd"]
+                },
+                "sleep": {
+                    "is_active": sleep_count > 0,
+                    "observation_count": sleep_count,
+                    "label": "Sleep Intelligence",
+                    "metrics": ["sleep_duration_hours"]
+                },
+                "activity": {
+                    "is_active": activity_count > 0,
+                    "observation_count": activity_count,
+                    "label": "Activity & Kinetic",
+                    "metrics": ["daily_steps"]
+                },
+                "blood_pressure": {
+                    "is_active": bp_count > 0,
+                    "observation_count": bp_count,
+                    "label": "Blood Pressure & Hemodynamics",
+                    "metrics": ["blood_pressure_systolic", "blood_pressure_diastolic"]
+                },
+                "anomalies": {
+                    "is_active": total_obs >= 14,
+                    "observation_count": total_obs,
+                    "label": "Personalized Anomaly Detection",
+                    "requires_minimum": 14
+                },
+                "forecast": {
+                    "is_active": (cardio_count >= 14 or activity_count >= 14),
+                    "observation_count": max(cardio_count, activity_count),
+                    "label": "Future Trend Forecasting",
+                    "requires_minimum": 14
+                }
+            }
+        }
+
+    @staticmethod
+    def get_patient_health_modules(db: Database, patient_id: str) -> Dict[str, Any]:
+        """
+        Evaluates all six health modules (A-F) for a patient from real MongoDB observations.
+        """
+        all_obs = list(db.observations.find({"patient_id": patient_id}, {"_id": 0}).sort("observed_at", 1))
+
+        sleep_summary = SleepIntelligenceModule.evaluate(patient_id, all_obs)
+        cardio_summary = CardiovascularTrendModule.evaluate(patient_id, all_obs)
+        activity_summary = ActivityIntelligenceModule.evaluate(patient_id, all_obs)
+        bp_summary = BloodPressureTrendModule.evaluate(patient_id, all_obs)
+        anomaly_summary = PersonalizedAnomalyModule.evaluate(patient_id, all_obs)
+        forecast_summary = FutureTrendForecastingModule.forecast(patient_id, "heart_rate", "bpm", all_obs, horizon_days=7)
+
+        return {
+            "patient_id": patient_id,
+            "evaluated_at": datetime.now(timezone.utc),
+            "modules": {
+                "sleep_intelligence": sleep_summary.model_dump(),
+                "cardiovascular_trends": cardio_summary.model_dump(),
+                "activity_intelligence": activity_summary.model_dump(),
+                "blood_pressure_tracking": bp_summary.model_dump(),
+                "personalized_anomalies": anomaly_summary.model_dump(),
+                "trend_forecasting": forecast_summary.model_dump()
+            }
+        }
