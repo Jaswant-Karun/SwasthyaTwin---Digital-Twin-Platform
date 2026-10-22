@@ -626,9 +626,9 @@ class MultiSignalService:
 
         # Sort reverse chronologically: newest timestamp first
         filtered_items.sort(key=lambda x: x.timestamp, reverse=True)
-ue)
 
         # Pagination
+
         paginated_items = filtered_items[skip: skip + limit]
 
         # ----------------------------------------------------------------------
