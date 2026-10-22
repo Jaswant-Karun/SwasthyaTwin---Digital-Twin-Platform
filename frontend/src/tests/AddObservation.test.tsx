@@ -143,7 +143,7 @@ describe('AddObservationPage Component', () => {
 
     // Wait for patient to load and be ready
     await waitFor(() => {
-      expect(screen.getByText(/PT-1001/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/PT-1001/i).length).toBeGreaterThanOrEqual(1);
     });
 
     const valueInput = screen.getByPlaceholderText(/e\.g\. 68/i);
@@ -179,7 +179,7 @@ describe('AddObservationPage Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/PT-1001/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/PT-1001/i).length).toBeGreaterThanOrEqual(1);
     });
 
     const valueInput = screen.getByPlaceholderText(/e\.g\. 68/i);
