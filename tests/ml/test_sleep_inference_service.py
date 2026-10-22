@@ -172,4 +172,4 @@ def test_extreme_heart_rate_bounds_warning():
     }
     validated, warnings = sleep_inference_service.validate_features_payload(feat)
     assert len(warnings) > 0
-    assert any("Extreme heart rate" in w for w in warnings)
+    assert any("Unphysical mean heart rate" in w for w in warnings)
