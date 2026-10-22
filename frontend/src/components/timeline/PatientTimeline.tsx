@@ -515,6 +515,130 @@ export const PatientTimeline: React.FC = () => {
         </div>
       </div>
 
+      {/* Signal C & D: Ground-Truth Supported Physiological Vitals Summary */}
+      <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-950/20 via-slate-900/90 to-slate-900/90 border border-emerald-500/30 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-300">
+              <Activity className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-mono font-bold text-emerald-200 uppercase tracking-wider">
+                Supported Physiological Vitals & Provenance Layer
+              </h3>
+              <p className="text-[11px] text-slate-400 font-sans">
+                Measured cuff hemodynamics, actigraphy step accumulation, and respiratory rate
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold self-start sm:self-auto">
+            ZERO HALLUCINATION GUARANTEE
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-3.5">
+          {/* Blood Pressure Card */}
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-mono text-slate-400">Blood Pressure (Measured)</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                CUFF
+              </span>
+            </div>
+            {summary?.vitals_summary?.latest_blood_pressure?.systolic ? (
+              <div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-extrabold font-mono text-white">
+                    {summary.vitals_summary.latest_blood_pressure.systolic}
+                    {summary.vitals_summary.latest_blood_pressure.diastolic ? `/${summary.vitals_summary.latest_blood_pressure.diastolic}` : ''}
+                  </span>
+                  <span className="text-xs font-mono text-slate-400">mmHg</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-500 mt-1 flex items-center justify-between">
+                  <span>Method: {summary.vitals_summary.latest_blood_pressure.measurement_method}</span>
+                  <span className="text-emerald-400">PROVENANCE: MEASURED</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-slate-500 py-1 font-mono">
+                No verified cuff readings logged
+              </div>
+            )}
+            <p className="text-[10px] text-slate-500 italic pt-1 border-t border-white/5">
+              Never inferred from heart rate or PPG.
+            </p>
+          </div>
+
+          {/* Daily Steps Card */}
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-mono text-slate-400">Daily Activity (Steps)</span>
+              {summary?.vitals_summary?.latest_steps?.is_partial_day ? (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                  PARTIAL DAY
+                </span>
+              ) : (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                  FINALIZED
+                </span>
+              )}
+            </div>
+            {summary?.vitals_summary?.latest_steps?.steps !== undefined ? (
+              <div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-extrabold font-mono text-white">
+                    {summary.vitals_summary.latest_steps.steps.toLocaleString()}
+                  </span>
+                  <span className="text-xs font-mono text-slate-400">steps</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-500 mt-1 flex items-center justify-between">
+                  <span>Status: {summary.vitals_summary.latest_steps.validation_status}</span>
+                  <span className="text-sky-400">PROV: {summary.vitals_summary.latest_steps.provenance?.toUpperCase()}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-slate-500 py-1 font-mono">
+                No activity records logged
+              </div>
+            )}
+            <p className="text-[10px] text-slate-500 italic pt-1 border-t border-white/5">
+              Cumulative pedometer / actigraphy telemetry.
+            </p>
+          </div>
+
+          {/* Respiratory Rate Card */}
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-mono text-slate-400">Respiratory Rate</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                PNEUMO
+              </span>
+            </div>
+            {summary?.vitals_summary?.latest_respiratory_rate?.rate !== undefined ? (
+              <div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-extrabold font-mono text-white">
+                    {summary.vitals_summary.latest_respiratory_rate.rate}
+                  </span>
+                  <span className="text-xs font-mono text-slate-400">breaths/min</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-500 mt-1 flex items-center justify-between">
+                  <span>Method: {summary.vitals_summary.latest_respiratory_rate.measurement_method || 'impedance'}</span>
+                  <span className="text-sky-400">PROV: {summary.vitals_summary.latest_respiratory_rate.provenance?.toUpperCase()}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-slate-500 py-1 font-mono">
+                No respiratory readings logged
+              </div>
+            )}
+            <p className="text-[10px] text-slate-500 italic pt-1 border-t border-white/5">
+              Only displayed when genuine telemetry exists.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 3. Cross-Signal Biological Co-Registration Insight */}
       {crossSignal && (
         <div className="p-4 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 flex items-start gap-3 shadow-sm">
@@ -641,60 +765,217 @@ export const PatientTimeline: React.FC = () => {
         </form>
       )}
 
-      {/* 4. Filter Switcher Rail */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          <button
-            onClick={() => setSignalFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
-              signalFilter === 'all'
-                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                : 'text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800'
-            }`}
-          >
-            All Multi-Signal Events ({timelineData?.total_items || 0})
-          </button>
+      {/* 4. Filter Switcher Rail & Advanced Filtering Bar */}
+      <div className="space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
+          {/* Signal Categorical Filters */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+            <button
+              onClick={() => setSignalFilter('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all ${
+                signalFilter === 'all'
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                  : 'text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800'
+              }`}
+            >
+              All Signals ({timelineData?.total_items || 0})
+            </button>
 
-          <button
-            onClick={() => setSignalFilter('sleep')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
-              signalFilter === 'sleep'
-                ? 'bg-purple-500 text-slate-950 shadow-md shadow-purple-500/20'
-                : 'text-purple-300 hover:text-white bg-purple-950/40 hover:bg-purple-900/40 border border-purple-500/30'
-            }`}
-          >
-            <Moon className="w-3.5 h-3.5" />
-            <span>BiDSleep Sleep ML</span>
-          </button>
+            <button
+              onClick={() => setSignalFilter('sleep')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                signalFilter === 'sleep'
+                  ? 'bg-purple-500 text-slate-950 shadow-md shadow-purple-500/20'
+                  : 'text-purple-300 hover:text-white bg-purple-950/40 hover:bg-purple-900/40 border border-purple-500/30'
+              }`}
+            >
+              <Moon className="w-3.5 h-3.5" />
+              <span>BiDSleep Sleep ML</span>
+            </button>
 
-          <button
-            onClick={() => setSignalFilter('cardio')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
-              signalFilter === 'cardio'
-                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
-                : 'text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/40 border border-rose-500/30'
-            }`}
-          >
-            <Heart className="w-3.5 h-3.5" />
-            <span>Heart-Rate nMAD Flags</span>
-          </button>
+            <button
+              onClick={() => setSignalFilter('cardio')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                signalFilter === 'cardio'
+                  ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
+                  : 'text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/40 border border-rose-500/30'
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5" />
+              <span>Heart-Rate nMAD</span>
+            </button>
 
-          <button
-            onClick={() => setSignalFilter('observations')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
-              signalFilter === 'observations'
-                ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/20'
-                : 'text-teal-300 hover:text-white bg-teal-950/40 hover:bg-teal-900/40 border border-teal-500/30'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Telemetry Observations</span>
-          </button>
+            <button
+              onClick={() => setSignalFilter('blood_pressure')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                signalFilter === 'blood_pressure'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                  : 'text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Blood Pressure</span>
+            </button>
+
+            <button
+              onClick={() => setSignalFilter('steps')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                signalFilter === 'steps'
+                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/20'
+                  : 'text-teal-300 hover:text-white bg-teal-950/40 hover:bg-teal-900/40 border border-teal-500/30'
+              }`}
+            >
+              <Footprints className="w-3.5 h-3.5" />
+              <span>Steps</span>
+            </button>
+
+            <button
+              onClick={() => setSignalFilter('respiratory')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                signalFilter === 'respiratory'
+                  ? 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20'
+                  : 'text-sky-300 hover:text-white bg-sky-950/40 hover:bg-sky-900/40 border border-sky-500/30'
+              }`}
+            >
+              <Wind className="w-3.5 h-3.5" />
+              <span>Respiration</span>
+            </button>
+
+            <button
+              onClick={() => setSignalFilter('observations')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                signalFilter === 'observations'
+                  ? 'bg-slate-700 text-white shadow-md shadow-slate-700/20'
+                  : 'text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>All Observations</span>
+            </button>
+          </div>
+
+          {/* Action / Toggle for Advanced Filter Bar */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
+                showAdvancedFilters || hasActiveAdvancedFilters
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                  : 'text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>Filters {hasActiveAdvancedFilters ? '• Active' : ''}</span>
+            </button>
+
+            {hasActiveAdvancedFilters && (
+              <button
+                onClick={clearAllFilters}
+                title="Reset all filters"
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            <span className="text-[11px] font-mono text-slate-400">
+              {items.length} events
+            </span>
+          </div>
         </div>
 
-        <span className="text-[11px] font-mono text-slate-400 text-right">
-          Displaying {items.length} chronological events
-        </span>
+        {/* Collapsible Advanced Multi-Criteria Panel */}
+        {showAdvancedFilters && (
+          <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3.5 animate-fade-in text-xs font-mono">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              {/* Provenance Filter */}
+              <div>
+                <label className="text-[11px] text-slate-400 block mb-1 font-bold uppercase">
+                  Data Provenance Tier
+                </label>
+                <select
+                  value={provenanceFilter}
+                  onChange={(e) => setProvenanceFilter(e.target.value)}
+                  className="w-full bg-slate-800 text-white text-xs rounded-xl px-2.5 py-2 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                >
+                  <option value="all">All Provenances</option>
+                  <option value="measured">Measured (Sensor / Lab / Cuff)</option>
+                  <option value="derived">Derived (Computed / Aggregated)</option>
+                  <option value="model_predicted">Model Predicted (BiDSleep ML)</option>
+                  <option value="simulated">Simulated (Physiological Twin)</option>
+                  <option value="synthetic">Synthetic (Benchmark / Test)</option>
+                </select>
+              </div>
+
+              {/* Validation Status Filter */}
+              <div>
+                <label className="text-[11px] text-slate-400 block mb-1 font-bold uppercase">
+                  Validation Status
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full bg-slate-800 text-white text-xs rounded-xl px-2.5 py-2 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                >
+                  <option value="all">All Validation Statuses</option>
+                  <option value="valid">Valid (Fully Confirmed)</option>
+                  <option value="partial_day">Partial Day (In Progress)</option>
+                  <option value="questionable">Questionable</option>
+                  <option value="suspect">Suspect / Excursion</option>
+                </select>
+              </div>
+
+              {/* Date Range Start */}
+              <div>
+                <label className="text-[11px] text-slate-400 block mb-1 font-bold uppercase">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-slate-800 text-white text-xs rounded-xl px-2.5 py-2 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                />
+              </div>
+
+              {/* Date Range End */}
+              <div>
+                <label className="text-[11px] text-slate-400 block mb-1 font-bold uppercase">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-slate-800 text-white text-xs rounded-xl px-2.5 py-2 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                />
+              </div>
+            </div>
+
+            {/* Source Text Filter */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800">
+              <div className="w-full sm:w-auto flex items-center gap-2">
+                <span className="text-slate-400 text-[11px]">Source / Device contains:</span>
+                <input
+                  type="text"
+                  placeholder="e.g. cuff, apple_watch, manual"
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className="bg-slate-800 text-white text-xs rounded-lg px-2.5 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-500 font-sans"
+                />
+              </div>
+              {hasActiveAdvancedFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="text-cyan-400 hover:text-cyan-300 text-xs font-mono flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Reset all criteria
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 5. Chronological Multi-Signal Timeline Items Stream */}
