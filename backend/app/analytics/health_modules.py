@@ -129,13 +129,37 @@ class CardiovascularTrendSummary(BaseModel):
 
 class CardiovascularTrendModule:
     @staticmethod
-    def evaluate(patient_id: str, observations: List[Dict[str, Any]]) -> CardiovascularTrendSummary:
+    def evaluate(
+        patient_id: str,
+        observations: List[Dict[str, Any]],
+        min_observations: int = 5,
+        window_days: int = 30
+    ) -> CardiovascularTrendSummary:
+        # 1. Retrieve eligible historical heart-rate observations
+        # Exclude invalid, rejected, or explicitly simulated observations from real-data baseline
         hr_obs = [
             o for o in observations
-            if o.get("measurement_type") in ["heart_rate", "resting_heart_rate"]
+            if (o.get("measurement_type") in ["heart_rate", "resting_heart_rate"] or o.get("metric_type") in ["heart_rate", "resting_heart_rate"])
             and o.get("value") is not None
+            and o.get("data_kind") not in ["simulated"]
+            and o.get("data_tier") not in ["simulated"]
+            and not o.get("is_synthetic", False)
+            and o.get("validation_status") not in ["rejected", "invalid"]
         ]
-        hr_obs.sort(key=lambda o: o.get("observed_at") or o.get("timestamp") or datetime.min)
+
+        # 2. Sort by measurement time
+        def _get_time(o):
+            t = o.get("observed_at") or o.get("timestamp") or datetime.min
+            if isinstance(t, str):
+                try:
+                    t = datetime.fromisoformat(t.replace("Z", "+00:00"))
+                except Exception:
+                    t = datetime.min
+            if isinstance(t, datetime) and t.tzinfo is None:
+                t = t.replace(tzinfo=timezone.utc)
+            return t
+
+        hr_obs.sort(key=_get_time)
 
         if not hr_obs:
             return CardiovascularTrendSummary(
@@ -145,24 +169,33 @@ class CardiovascularTrendModule:
             )
 
         values = [float(o["value"]) for o in hr_obs]
-        timestamps = [o.get("observed_at") or o.get("timestamp") for o in hr_obs]
+        timestamps = [_get_time(o) for o in hr_obs]
         latest_val = round(values[-1], 1)
 
-        baseline = compute_metric_baseline("heart_rate", "bpm", values, timestamps, window_days=30, min_observations=5)
-        has_suff = baseline is not None and baseline.sample_count >= 5
+        # 3. Require a configurable minimum number of observations before showing a personal baseline
+        baseline = compute_metric_baseline(
+            "heart_rate",
+            "bpm",
+            values,
+            timestamps,
+            window_days=window_days,
+            min_observations=min_observations
+        )
+        has_suff = baseline is not None and baseline.sample_count >= min_observations
 
         delta_abs = None
         delta_pct = None
         z = None
         flags = []
 
-        if baseline and baseline.std_dev > 0:
+        if has_suff and baseline and baseline.std_dev > 0:
+            # 4 & 5. Absolute and relative deviations when mathematically appropriate
             delta_abs = round(latest_val - baseline.median, 1)
             delta_pct = round((delta_abs / baseline.median) * 100.0, 1) if baseline.median > 0 else 0.0
             z = round((latest_val - baseline.mean) / baseline.std_dev, 2)
 
-            # Tested explicit pattern detection rules:
-            # 1. Tachycardia pattern: resting HR > 100 bpm
+            # 6. Flag unusual patterns only according to explicit, tested rules
+            # Tachycardia pattern: resting HR > 100 bpm
             if latest_val > 100.0:
                 flags.append(CardiovascularPatternFlag(
                     flag_id="hr_elevated_tachycardia",
@@ -174,7 +207,7 @@ class CardiovascularTrendModule:
                     threshold_criteria="Resting HR > 100 bpm"
                 ))
 
-            # 2. Bradycardia pattern: resting HR < 45 bpm (unless athletic user)
+            # Bradycardia pattern: resting HR < 45 bpm
             if latest_val < 45.0:
                 flags.append(CardiovascularPatternFlag(
                     flag_id="hr_suppressed_bradycardia",
@@ -186,7 +219,7 @@ class CardiovascularTrendModule:
                     threshold_criteria="Resting HR < 45 bpm"
                 ))
 
-            # 3. Statistical Corridor Drift (|z| >= 2.0)
+            # Statistical Corridor Drift (|z| >= 2.0)
             if abs(z) >= 2.0:
                 flags.append(CardiovascularPatternFlag(
                     flag_id="hr_statistical_corridor_drift",
@@ -198,10 +231,9 @@ class CardiovascularTrendModule:
                     threshold_criteria="|z-score| >= 2.0"
                 ))
 
-        # Compute 7-day trend slope if observations span at least 7 days
+        # Compute 7-day trend slope if observations span at least 7 points
         slope_7d = None
         if len(values) >= 7:
-            # Linear regression over recent 7 points
             recent_vals = values[-7:]
             x = np.arange(len(recent_vals))
             slope, _ = np.polyfit(x, recent_vals, 1)
@@ -211,10 +243,10 @@ class CardiovascularTrendModule:
             patient_id=patient_id,
             total_hr_observations=len(hr_obs),
             latest_hr_bpm=latest_val,
-            baseline_median_bpm=round(baseline.median, 1) if baseline else None,
-            baseline_iqr_bpm=round(baseline.iqr, 1) if baseline else None,
-            baseline_mean_bpm=round(baseline.mean, 1) if baseline else None,
-            baseline_std_bpm=round(baseline.std_dev, 1) if baseline else None,
+            baseline_median_bpm=round(baseline.median, 1) if (baseline and has_suff) else None,
+            baseline_iqr_bpm=round(baseline.iqr, 1) if (baseline and has_suff) else None,
+            baseline_mean_bpm=round(baseline.mean, 1) if (baseline and has_suff) else None,
+            baseline_std_bpm=round(baseline.std_dev, 1) if (baseline and has_suff) else None,
             absolute_deviation_bpm=delta_abs,
             relative_deviation_pct=delta_pct,
             z_score=z,

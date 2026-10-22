@@ -37,6 +37,14 @@ def create_indexes(db: Database) -> None:
             ("patient_id", ASCENDING),
             ("data_kind", ASCENDING)
         ])
+        db.observations.create_index([
+            ("patient_id", ASCENDING),
+            ("source_type", ASCENDING)
+        ])
+        db.observations.create_index([
+            ("patient_id", ASCENDING),
+            ("updated_at", DESCENDING)
+        ])
 
         # 3. Health Assessments collection indexes
         db.health_assessments.create_index([("assessment_id", ASCENDING)], unique=True, sparse=True)

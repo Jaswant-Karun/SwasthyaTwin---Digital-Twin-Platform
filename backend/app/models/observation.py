@@ -7,6 +7,7 @@ DataKind = Literal[
     "measured",
     "user_entered",
     "manual_entry",
+    "wearable",
     "wearable_imported",
     "imported_file",
     "device_measurement",
@@ -16,17 +17,19 @@ DataKind = Literal[
 ]
 
 VALID_UNITS = {
-    "heart_rate": ["bpm"],
-    "blood_pressure_systolic": ["mmHg"],
-    "blood_pressure_diastolic": ["mmHg"],
-    "hrv_rmssd": ["ms"],
-    "sleep_duration_hours": ["hours", "hrs", "h"],
-    "daily_steps": ["steps", "count"],
-    "spo2": ["%"],
-    "fasting_blood_glucose": ["mg/dL", "mmol/L"],
-    "respiratory_rate": ["breaths/min", "rpm"],
-    "body_weight": ["kg", "lbs", "lb"],
-    "body_temperature": ["Celsius", "C", "F", "Fahrenheit"]
+    "heart_rate": ["bpm", "beats/min", "hz"],
+    "blood_pressure_systolic": ["mmHg", "mmhg", "kpa", "bar"],
+    "blood_pressure_diastolic": ["mmHg", "mmhg", "kpa", "bar"],
+    "hrv_rmssd": ["ms", "s", "seconds"],
+    "sleep_duration_hours": ["hours", "hrs", "h", "minutes", "min", "m", "seconds", "sec", "s"],
+    "sleep_duration": ["hours", "hrs", "h", "minutes", "min", "m", "seconds", "sec", "s"],
+    "daily_steps": ["steps", "count", "stride"],
+    "steps_count": ["steps", "count", "stride"],
+    "spo2": ["%", "percent", "fraction", "ratio"],
+    "fasting_blood_glucose": ["mg/dL", "mg/dl", "mmol/L", "mmol/l"],
+    "respiratory_rate": ["breaths/min", "rpm", "brpm"],
+    "body_weight": ["kg", "lbs", "lb", "grams", "g"],
+    "body_temperature": ["Celsius", "C", "c", "F", "Fahrenheit", "f"]
 }
 
 PHYSIOLOGICAL_BOUNDS = {
@@ -35,7 +38,9 @@ PHYSIOLOGICAL_BOUNDS = {
     "blood_pressure_diastolic": (25.0, 180.0, "mmHg", "Diastolic Blood Pressure"),
     "hrv_rmssd": (2.0, 350.0, "ms", "Heart Rate Variability (RMSSD)"),
     "sleep_duration_hours": (0.0, 24.0, "hours", "Sleep Duration"),
+    "sleep_duration": (0.0, 24.0, "hours", "Sleep Duration"),
     "daily_steps": (0.0, 120000.0, "steps", "Daily Steps"),
+    "steps_count": (0.0, 120000.0, "steps", "Daily Steps"),
     "spo2": (40.0, 100.0, "%", "Blood Oxygen (SpO2)"),
     "fasting_blood_glucose": (15.0, 800.0, "mg/dL", "Fasting Blood Glucose"),
     "respiratory_rate": (4.0, 70.0, "breaths/min", "Respiratory Rate"),
@@ -57,11 +62,13 @@ def validate_and_normalize_measurement(m_type: str, val: float, unit: str) -> tu
         if clean_type == "fasting_blood_glucose" and clean_unit.lower() == "mmol/l":
             val = round(val * 18.0182, 1)
             clean_unit = "mg/dL"
-        elif clean_type == "sleep_duration_hours" and clean_unit.lower() in ["hrs", "h"]:
+        elif clean_type in ["sleep_duration_hours", "sleep_duration"]:
+            if clean_unit.lower() in ["minutes", "min", "m"]:
+                val = round(val / 60.0, 2)
             clean_unit = "hours"
-        elif clean_type == "daily_steps" and clean_unit.lower() == "count":
+        elif clean_type in ["daily_steps", "steps_count"] and clean_unit.lower() in ["count", "stride"]:
             clean_unit = "steps"
-        elif clean_type == "respiratory_rate" and clean_unit.lower() == "rpm":
+        elif clean_type == "respiratory_rate" and clean_unit.lower() in ["rpm", "brpm"]:
             clean_unit = "breaths/min"
 
         return val, clean_unit
@@ -74,10 +81,11 @@ class ObservationBase(BaseModel):
     unit: str
     observed_at: datetime
     source: str = Field(default="wearable_continuous")
-    source_type: Optional[str] = Field(default=None, description="manual_entry, imported_file, device_measurement, synthetic_demo")
+    source_type: Optional[str] = Field(default=None, description="manual_entry, wearable, imported_file, device_measurement, public_research_dataset, synthetic_demo")
     device_id: Optional[str] = Field(default=None, description="Identifier of device or import batch")
     data_kind: DataKind = Field(default="measured")
     notes: Optional[str] = Field(default=None, max_length=500)
+    paired_observation_id: Optional[str] = Field(default=None, description="Logical ID linking paired observations e.g. SBP and DBP")
     validation_status: str = Field(default="valid", description="valid, confirmed_unusual, valid_with_warnings, flagged, rejected")
     validation_warnings: List[str] = Field(default_factory=list)
     requires_confirmation: bool = Field(default=False)
@@ -87,6 +95,7 @@ class ObservationBase(BaseModel):
     is_synthetic: bool = Field(default=False, description="Explicit synthetic provenance indicator")
     metadata: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_validator("observed_at", mode="before")
     @classmethod
@@ -135,6 +144,7 @@ class ObservationCreate(BaseModel):
     device_id: Optional[str] = None
     confirm_unusual: bool = False
     paired_measurements: Optional[Dict[str, float]] = None
+    paired_observation_id: Optional[str] = None
     data_kind: Optional[DataKind] = None
     data_tier: Optional[str] = None # Support either field name
     notes: Optional[str] = Field(default=None, max_length=500)
@@ -152,9 +162,9 @@ class ObservationCreate(BaseModel):
         if not kind:
             if self.data_tier in ["user_reported", "user_entered", "manual_entry"]:
                 kind = "user_entered"
-            elif self.data_tier in ["wearable_imported", "imported_measured", "imported_file"]:
+            elif self.data_tier in ["wearable", "wearable_imported", "imported_measured", "imported_file"]:
                 kind = "wearable_imported"
-            elif self.data_tier in ["measured", "simulated", "synthetic_demo", "device_measurement"]:
+            elif self.data_tier in ["measured", "simulated", "synthetic_demo", "device_measurement", "public_research_dataset"]:
                 kind = self.data_tier
             else:
                 kind = "user_entered"
@@ -167,10 +177,11 @@ class ObservationCreate(BaseModel):
             unit=normalized_unit,
             observed_at=obs_time,
             source=self.source,
-            source_type=self.source_type or (self.source if self.source in ["manual_entry", "imported_file", "device_measurement", "synthetic_demo"] else "manual_entry"),
+            source_type=self.source_type or (self.source if self.source in ["manual_entry", "wearable", "imported_file", "device_measurement", "public_research_dataset", "synthetic_demo"] else "manual_entry"),
             device_id=self.device_id,
             data_kind=kind,
             notes=self.notes,
+            paired_observation_id=self.paired_observation_id,
             metadata=self.metadata or {}
         )
 
