@@ -147,14 +147,6 @@ export const TopNav: React.FC<TopNavProps> = ({
             </button>
           ))}
         </div>
-                  ? 'bg-white text-slate-900 shadow-xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {days}D
-            </button>
-          ))}
-        </div>
 
         {/* Quick Scan AI Button */}
         <button
