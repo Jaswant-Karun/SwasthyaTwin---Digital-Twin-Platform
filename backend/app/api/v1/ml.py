@@ -272,55 +272,214 @@ from app.ml.inference import inference_engine
 from app.ml.trainer import pipeline_trainer
 from app.ml.validator import InputFeatureValidationError
 
+import os
+import json
+from ml_pipeline.predict import default_predictor, SleepStagePredictor
+from ml_pipeline.config import (
+    MODEL_EVALUATION_PATH,
+    MODEL_METADATA_PATH,
+    PROCESSED_FEATURES_CSV,
+    CORE_FEATURE_COLUMNS,
+    SLEEP_STAGE_MAP,
+    CLASS_3_MAP,
+    CLASS_NAMES_3,
+    CLASS_NAMES_5
+)
+
 class SleepStagePredictRequest(BaseModel):
     hr_mean: float = Field(..., ge=30, le=240, description="Mean heart rate in 30s epoch (bpm)")
     hr_std: float = Field(default=0.0, ge=0, le=60, description="Heart rate standard deviation in epoch (bpm)")
+    hr_median: Optional[float] = Field(default=None, description="Median heart rate (bpm)")
     hr_min: float = Field(..., ge=30, le=240, description="Minimum heart rate in epoch (bpm)")
     hr_max: float = Field(..., ge=30, le=260, description="Maximum heart rate in epoch (bpm)")
+    hr_q25: Optional[float] = Field(default=None, description="25th percentile heart rate (bpm)")
+    hr_q75: Optional[float] = Field(default=None, description="75th percentile heart rate (bpm)")
+    hr_valid_count: float = Field(default=6.0, ge=0, description="Valid PPG sample count in epoch")
     hr_delta_baseline: float = Field(default=0.0, ge=-60, le=60, description="Delta from pre-sleep baseline (bpm)")
     hr_rolling_mean_5m: float = Field(..., ge=30, le=240, description="5-minute rolling mean heart rate (bpm)")
     hr_rolling_std_5m: float = Field(default=0.0, ge=0, le=60, description="5-minute rolling heart rate standard deviation (bpm)")
     time_elapsed_minutes: float = Field(default=0.0, ge=0, le=1440, description="Minutes elapsed since sleep opportunity start")
+    epoch_index: Optional[int] = Field(default=None, description="Optional 30s epoch index")
+
+@router.get("/ml/sleep-stage/status")
+def get_sleep_stage_status():
+    """
+    Returns deployment status, architecture, and feature schema of the BiDSleep ML model.
+    """
+    is_ready = default_predictor.is_ready
+    metadata = default_predictor.metadata
+    return {
+        "status": "ready" if is_ready else "model_unavailable",
+        "model_name": metadata.get("model_name", "BiDSleep Sleep-Stage Classifier"),
+        "model_version": default_predictor.model_version,
+        "model_architecture": metadata.get("model_architecture", "RobustScaler + Class-Weighted RandomForestClassifier"),
+        "features_schema": CORE_FEATURE_COLUMNS,
+        "features_count": len(CORE_FEATURE_COLUMNS),
+        "target_classes_5": CLASS_NAMES_5,
+        "target_classes_3": CLASS_NAMES_3,
+        "training_samples_count": metadata.get("training_samples_count", 0),
+        "validation_samples_count": metadata.get("validation_samples_count", 0),
+        "dataset_attribution": {
+            "name": "BiDSleep v1.0.1 (PhysioNet)",
+            "doi": "10.13026/rees-1092",
+            "citation": "Song, T.-A., Zhang, Y., Zhou, Z., & Dutta, J. (2026). A Multi-Night Instantaneous Heart Rate and Accelerometry Dataset with EEG Sleep Stage Labels.",
+            "license": "ODC-By v1.0"
+        }
+    }
 
 @router.post("/ml/sleep-stage/predict")
 def predict_sleep_stage(req: SleepStagePredictRequest):
     """
-    Predicts 3-class sleep stage (Wake vs. NREM vs. REM) from 30-second wearable photoplethysmography (PPG).
-    Trained on authentic PhysioNet Sleep-Accel recordings aligned with gold-standard polysomnography.
+    Predicts 5-class sleep stage (Wake, N1, N2, N3, REM) and 3-class mapping from 30-second
+    wearable optical heart rate dynamics.
+    Trained on BiDSleep v1.0.1 PhysioNet recordings aligned with polysomnography ground truth.
     """
+    if not default_predictor.is_ready:
+        raise HTTPException(
+            status_code=503,
+            detail="Sleep Stage ML model artifact is unavailable. Train the model using python -m ml_pipeline.train"
+        )
+
+    feat_dict = req.model_dump()
+    # Fill smart defaults for optional quantile fields if not provided
+    if feat_dict["hr_median"] is None:
+        feat_dict["hr_median"] = feat_dict["hr_mean"]
+    if feat_dict["hr_q25"] is None:
+        feat_dict["hr_q25"] = feat_dict["hr_min"] + 0.25 * (feat_dict["hr_max"] - feat_dict["hr_min"])
+    if feat_dict["hr_q75"] is None:
+        feat_dict["hr_q75"] = feat_dict["hr_min"] + 0.75 * (feat_dict["hr_max"] - feat_dict["hr_min"])
+
     try:
-        result = inference_engine.predict_epoch(req.model_dump())
-        return result
-    except InputFeatureValidationError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        pred_res = default_predictor.predict_epoch(feat_dict, epoch_idx=req.epoch_index)
+        
+        # Add 3-class summary
+        stage_5_id = pred_res["predicted_stage_id"]
+        stage_3_id = CLASS_3_MAP.get(stage_5_id, 1)
+        stage_3_name = CLASS_NAMES_3.get(stage_3_id, "NREM")
+
+        # 3-class probabilities
+        probs_5 = pred_res["probabilities"]
+        probs_3 = {
+            "Wake": round(probs_5.get("Wake", 0.0) * 100.0, 2),
+            "NREM": round((probs_5.get("N1", 0.0) + probs_5.get("N2", 0.0) + probs_5.get("N3", 0.0)) * 100.0, 2),
+            "REM": round(probs_5.get("REM", 0.0) * 100.0, 2)
+        }
+
+        return {
+            "predicted_stage_5class": pred_res["predicted_stage_name"],
+            "predicted_stage_id_5class": stage_5_id,
+            "predicted_stage_3class": stage_3_name,
+            "predicted_stage_id_3class": stage_3_id,
+            "confidence_pct": round(pred_res["confidence"] * 100.0, 2),
+            "probabilities_5class": {k: round(v * 100.0, 2) for k, v in probs_5.items()},
+            "probabilities_3class": probs_3,
+            "epoch_index": pred_res["epoch_index"],
+            "model_version": pred_res["model_version"],
+            "feature_schema_version": pred_res["feature_schema_version"],
+            "input_quality_status": pred_res["quality_status"],
+            "input_quality_warnings": pred_res["warnings"],
+            "is_trained_model": True,
+            "is_demo_fixture": False,
+            "limitations": [
+                "Inferred from 30s wearable optical heart rate (PPG) dynamics; not a replacement for 10-20 EEG polysomnography.",
+                "Subject to motion artifacts and sensor contact variations during sleep.",
+                "Non-diagnostic investigational tool; not for medical decision making."
+            ],
+            "clinical_disclaimer": pred_res["disclaimer"]
+        }
+    except ValueError as ve:
+        raise HTTPException(status_code=422, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 
 @router.get("/ml/sleep-stage/evaluation")
 def get_sleep_stage_evaluation():
     """
-    Returns authentic research evaluation results:
-    - Held-out test performance vs. simple baselines
-    - 5-Fold GroupKFold Cross-Validation scores on training participants
-    - Multi-class confusion matrix, precision, recall, F1, and Cohen's Kappa
-    - Dataset provenance, sample counts, and leakage-guard documentation
+    Returns authentic research evaluation results from the held-out test cohort:
+    - Held-out test participant metrics (Macro F1, Balanced Accuracy, Cohen's Kappa)
+    - Majority baseline comparison and lift
+    - Per-class precision, recall, and F1 table
+    - Confusion matrix
+    - Scientific limitations and clinical disclaimers
     """
-    summary = inference_engine.get_model_evaluation_summary()
-    if summary.get("status") == "not_trained":
-        raise HTTPException(status_code=404, detail="Sleep stage ML model has not been trained yet.")
-    return summary
+    if os.path.exists(MODEL_EVALUATION_PATH):
+        try:
+            with open(MODEL_EVALUATION_PATH, "r", encoding="utf-8") as f:
+                eval_data = json.load(f)
+            return eval_data
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to read evaluation report: {e}")
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail="Evaluation report not found. Run `python -m ml_pipeline.evaluate` to generate held-out test evaluation."
+        )
 
-@router.post("/ml/sleep-stage/train")
-def train_sleep_stage_pipeline(max_subjects: Optional[int] = None):
+@router.get("/ml/sleep-stage/research-samples")
+def get_research_hypnogram_samples(subject_id: str = "Bidslab02", night_id: str = "1", limit: int = 120):
     """
-    Triggers execution of the authentic PhysioNet sleep staging pipeline.
-    Parses raw data, performs participant-level partitioning, fits scaler on training cohort only,
-    runs 5-fold GroupKFold CV, evaluates on held-out test subjects, and persists artifacts.
+    Returns a sequence of authentic research epochs from the held-out test cohort (e.g. Bidslab02/1),
+    including continuous Apple Watch heart rate, ground truth expert EEG label, and model-predicted label.
+    Provides the hypnogram data stream for the Digital Twin Sleep Research workspace.
     """
+    if not os.path.exists(PROCESSED_FEATURES_CSV):
+        raise HTTPException(status_code=404, detail="Processed research features not found.")
+
     try:
-        manifest = pipeline_trainer.run_training_pipeline(max_subjects=max_subjects)
-        inference_engine._load_artifacts_if_present()
-        return manifest
+        import pandas as pd
+        df = pd.read_csv(PROCESSED_FEATURES_CSV)
+        filtered = df[(df["subject_id"] == subject_id) & (df["night_id"] == str(night_id))].copy()
+        if filtered.empty:
+            filtered = df[df["subject_id"] == subject_id].copy()
+        if filtered.empty:
+            filtered = df.head(limit).copy()
+        else:
+            filtered = filtered.head(limit).copy()
+
+        # Generate model predictions for these epochs if model is ready
+        samples = []
+        for _, row in filtered.iterrows():
+            feat_dict = {col: float(row[col]) for col in CORE_FEATURE_COLUMNS if col in row}
+            pred_stage_5 = None
+            pred_stage_3 = None
+            confidence = None
+
+            if default_predictor.is_ready:
+                try:
+                    res = default_predictor.predict_epoch(feat_dict, epoch_idx=int(row["epoch_idx"]))
+                    pred_stage_5 = res["predicted_stage_name"]
+                    s5_id = res["predicted_stage_id"]
+                    pred_stage_3 = CLASS_NAMES_3.get(CLASS_3_MAP.get(s5_id, 1), "NREM")
+                    confidence = round(res["confidence"] * 100.0, 1)
+                except Exception:
+                    pass
+
+            samples.append({
+                "sample_id": str(row.get("sample_id", f"{subject_id}_N{night_id}_E{int(row['epoch_idx']):04d}")),
+                "epoch_idx": int(row["epoch_idx"]),
+                "time_elapsed_minutes": round(float(row.get("time_elapsed_minutes", 0.0)), 1),
+                "hr_mean": round(float(row["hr_mean"]), 1),
+                "hr_min": round(float(row["hr_min"]), 1),
+                "hr_max": round(float(row["hr_max"]), 1),
+                "hr_std": round(float(row["hr_std"]), 2),
+                "hr_delta_baseline": round(float(row.get("hr_delta_baseline", 0.0)), 2),
+                "expert_label_5class": str(row.get("stage_name", "Unknown")),
+                "expert_label_3class": str(row.get("stage_3class_name", "Unknown")),
+                "dreem_stage_id": int(row.get("dreem_stage_id", -1)),
+                "model_predicted_5class": pred_stage_5,
+                "model_predicted_3class": pred_stage_3,
+                "confidence_pct": confidence
+            })
+
+        return {
+            "subject_id": subject_id,
+            "night_id": night_id,
+            "sample_count": len(samples),
+            "dataset": "BiDSleep v1.0.1 (PhysioNet)",
+            "data_type": "AUTHENTIC_PUBLIC_RESEARCH_COHORT",
+            "epochs": samples
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Training pipeline error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error reading research samples: {e}")
+
 
