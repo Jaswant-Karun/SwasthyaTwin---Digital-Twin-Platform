@@ -20,6 +20,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import type { Patient, DigitalTwinState } from '../../types';
+import { api } from '../../services/api';
 
 interface SpatialTimelineInspectorProps {
   patient: Patient;
@@ -40,6 +41,8 @@ export const SpatialTimelineInspector: React.FC<SpatialTimelineInspectorProps> =
 }) => {
   // Generate unified longitudinal time-series with observed vs predicted demarcation
   const daysCount = timelineDays || 30;
+  const historyDays = timelineDays || 30;
+  const futureDays = 7;
   const now = new Date();
 
   const metricConfig = {

@@ -1049,6 +1049,10 @@ export const api = {
     return await request<any>(url, {
       method: 'POST'
     });
+  },
+
+  predictPatientTrends: async (patientId: string, horizonDays: number = 7): Promise<any> => {
+    return await request<any>(`/api/v1/patients/${patientId}/predict?horizon_days=${horizonDays}`);
   }
 };
 
