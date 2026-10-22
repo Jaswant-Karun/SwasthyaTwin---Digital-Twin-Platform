@@ -117,8 +117,12 @@ class MultiSignalService:
 
         patient_name = patient.get("full_name") or patient.get("display_name") or "Target Patient"
         now = datetime.now(timezone.utc)
+        filter_source = source
+        filter_status = status
+        filter_data_kind = data_kind
 
         # 1. Fetch raw observations for this patient (strictly isolated by patient_id)
+
         raw_obs = list(
             db.observations.find({"patient_id": patient_id}, {"_id": 0}).sort("observed_at", 1)
         )
