@@ -366,6 +366,12 @@ export const SpatialTimelineInspector: React.FC<SpatialTimelineInspectorProps> =
                         Predicted: {d.predicted} {metricConfig.unit}
                       </div>
                     )}
+                    {d.observed !== null && d.predicted !== null && (
+                      <div className="text-[11px] text-amber-300 font-bold pt-0.5 flex items-center justify-between border-t border-white/10">
+                        <span>Δ (Error vs Actual):</span>
+                        <span>{(d.observed - d.predicted) > 0 ? '+' : ''}{(d.observed - d.predicted).toFixed(1)} {metricConfig.unit}</span>
+                      </div>
+                    )}
                     <div className="text-[10px] text-slate-500 pt-1 border-t border-white/10">
                       Baseline Corridor: {d.baselineMin} – {d.baselineMax} {metricConfig.unit}
                     </div>
