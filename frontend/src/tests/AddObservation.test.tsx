@@ -1,11 +1,31 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AddObservationPage } from '../components/pages/AddObservationPage';
 import { TwinProvider } from '../context/TwinContext';
 import { api } from '../services/api';
+import { MOCK_PATIENTS } from '../services/mockData';
 
 describe('AddObservationPage Component', () => {
+  beforeEach(() => {
+    vi.spyOn(api, 'getPatients').mockResolvedValue(MOCK_PATIENTS);
+    vi.spyOn(api, 'getHealth').mockResolvedValue({
+      status: 'healthy',
+      service: 'SwasthyaTwin',
+      version: '1.0.0',
+      database: { status: 'connected', engine: 'mongodb' }
+    } as any);
+    vi.spyOn(api, 'getReadiness').mockResolvedValue({
+      ready: true,
+      database: 'connected',
+      ping_ms: 5
+    });
+    vi.spyOn(api, 'getTwinState').mockResolvedValue({} as any);
+    vi.spyOn(api, 'getTwinAssessment').mockResolvedValue({} as any);
+    vi.spyOn(api, 'getAlerts').mockResolvedValue([]);
+    vi.spyOn(api, 'getExplanations').mockResolvedValue(null as any);
+  });
+
   it('renders observation sub-tabs including Review Data Quality and single observation form', () => {
     render(
       <TwinProvider>
@@ -121,6 +141,11 @@ describe('AddObservationPage Component', () => {
       </TwinProvider>
     );
 
+    // Wait for patient to load and be ready
+    await waitFor(() => {
+      expect(screen.getByText(/PT-1001/i)).toBeInTheDocument();
+    });
+
     const valueInput = screen.getByPlaceholderText(/e\.g\. 68/i);
     // Resting heart rate bounds are 20 - 300 bpm
     fireEvent.change(valueInput, { target: { value: '999' } });
@@ -128,9 +153,11 @@ describe('AddObservationPage Component', () => {
     const submitBtn = screen.getByRole('button', { name: /Save Observation/i });
     fireEvent.click(submitBtn);
 
-    expect(
-      screen.getByText(/outside plausible physiological bounds/i)
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/outside plausible physiological bounds/i)
+      ).toBeInTheDocument();
+    });
   });
 
   it('triggers suspicious value confirmation modal when a 409 unusual observation conflict is returned', async () => {
@@ -150,6 +177,10 @@ describe('AddObservationPage Component', () => {
         <AddObservationPage />
       </TwinProvider>
     );
+
+    await waitFor(() => {
+      expect(screen.getByText(/PT-1001/i)).toBeInTheDocument();
+    });
 
     const valueInput = screen.getByPlaceholderText(/e\.g\. 68/i);
     fireEvent.change(valueInput, { target: { value: '175' } });
