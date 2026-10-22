@@ -189,6 +189,7 @@ export const ModelEvaluationPage: React.FC = () => {
     balanced_accuracy: bComp.majority_class_balanced_accuracy ? (bComp.majority_class_balanced_accuracy * 100).toFixed(1) : '20.0',
     macro_f1: bComp.majority_class_macro_f1 ? (bComp.majority_class_macro_f1 * 100).toFixed(1) : '9.5',
     cohen_kappa: '0.0000'
+  };
   const heuEval = evaluationData.held_out_test_evaluations?.Heuristic_Baseline || { overall_accuracy: '32.1', balanced_accuracy: '22.4', macro_f1: '14.5', cohen_kappa: '0.0410' };
   const lrEval = evaluationData.held_out_test_evaluations?.Logistic_Regression || { overall_accuracy: '33.5', balanced_accuracy: '25.8', macro_f1: '18.2', cohen_kappa: '0.0820' };
   const classMetrics = testEval.class_metrics || {};
