@@ -58,6 +58,7 @@ export const TopNav: React.FC<TopNavProps> = ({
     switch (tab) {
       case 'overview': return 'Overview Dashboard';
       case 'digital-twin': return 'Digital Twin Profile';
+      case 'ml-studio': return 'ML Training & Phenotyping Studio';
       case 'health-trends': return 'Health Trends & Analytics';
       case 'risk-insights': return 'Risk Insights';
       case 'what-if': return 'What-if Simulator';
