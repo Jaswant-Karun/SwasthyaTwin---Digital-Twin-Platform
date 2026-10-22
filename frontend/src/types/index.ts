@@ -564,4 +564,104 @@ export interface MLModelManifest {
   feature_importance: MLFeatureImportanceItem[];
 }
 
+// Multi-Signal Timeline Intelligence Interfaces
+export interface SleepStageDetail {
+  stage_5class: string;
+  stage_3class: string;
+  stage_display_name: string;
+  confidence_pct: number;
+  probabilities: Record<string, number>;
+  epoch_index?: number;
+  time_elapsed_minutes?: number;
+  ppg_features: Record<string, number>;
+  model_name: string;
+  model_architecture: string;
+  inference_source: string;
+}
+
+export interface CardiovascularAnomalyDetail {
+  measured_heart_rate: number;
+  unit: string;
+  baseline_median?: number;
+  baseline_unit: string;
+  variability_measure: string;
+  variability_value?: number;
+  upper_corridor?: number;
+  lower_corridor?: number;
+  delta_absolute?: number;
+  robust_score?: number;
+  anomaly_status: string;
+  algorithm_version: string;
+  sample_count: number;
+  window_days: number;
+}
+
+export interface PhysiologicalObservationDetail {
+  metric_type: string;
+  value: number;
+  unit: string;
+  source_type: string;
+  data_tier: string;
+  is_synthetic: boolean;
+}
+
+export interface MultiSignalTimelineItem {
+  id: string;
+  signal_type: 'sleep_stage_prediction' | 'heart_rate_statistical_flag' | 'physiological_observation';
+  signal_category: string;
+  signal_badge: string;
+  timestamp: string;
+  title: string;
+  summary: string;
+  status_level: 'normal' | 'elevated' | 'low' | 'review' | 'info' | 'deep_sleep' | 'rem_sleep';
+  status_label: string;
+  primary_metric?: string;
+  primary_value?: string | number;
+  primary_unit?: string;
+  sleep_details?: SleepStageDetail | null;
+  cardiovascular_details?: CardiovascularAnomalyDetail | null;
+  observation_details?: PhysiologicalObservationDetail | null;
+  disclaimer: string;
+}
+
+export interface MultiSignalTimelineResponse {
+  patient_id: string;
+  patient_name: string;
+  generated_at: string;
+  total_items: number;
+  filter_applied: string;
+  summary: {
+    sleep_intelligence: {
+      total_epochs_inferred: number;
+      model_name: string;
+      model_status: string;
+      average_confidence_pct: number;
+      stage_distribution_pct: Record<string, number>;
+      stage_counts: Record<string, number>;
+      deep_sleep_ratio_pct: number;
+      rem_sleep_ratio_pct: number;
+      disclaimer: string;
+    };
+    cardiovascular_intelligence: {
+      baseline_median_bpm?: number;
+      n_mad_variability?: number;
+      upper_corridor_bpm?: number;
+      lower_corridor_bpm?: number;
+      total_observations_analyzed: number;
+      flagged_anomalies_count: number;
+      flagged_rate_pct: number;
+      algorithm_version: string;
+      disclaimer: string;
+    };
+    cross_signal_insight: {
+      title: string;
+      finding: string;
+      synchronized_signals: string[];
+      clinical_separation_guarantee: string;
+    };
+  };
+  items: MultiSignalTimelineItem[];
+}
+
+
 
