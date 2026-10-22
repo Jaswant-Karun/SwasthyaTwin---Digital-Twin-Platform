@@ -578,11 +578,12 @@ class MultiSignalService:
         for item in deduped_items:
             # 1. Signal Filter
             if signal_filter == "sleep":
-                if item.signal_type != "sleep_stage_prediction" and item.primary_metric not in ["sleep_stage", "sleep_duration_hours", "sleep_duration"]:
+                if item.signal_type != "sleep_stage_prediction":
                     continue
             elif signal_filter in ["cardio", "cardiovascular", "heart_rate"]:
-                if item.signal_type != "heart_rate_statistical_flag" and item.primary_metric not in ["heart_rate", "resting_heart_rate"]:
+                if item.signal_type != "heart_rate_statistical_flag":
                     continue
+
             elif signal_filter in ["blood_pressure", "bp"]:
                 if item.primary_metric not in ["blood_pressure_systolic", "blood_pressure_diastolic", "blood_pressure"]:
                     continue
