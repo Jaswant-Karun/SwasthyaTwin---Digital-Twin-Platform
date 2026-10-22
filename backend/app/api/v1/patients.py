@@ -82,3 +82,36 @@ def delete_patient(
         "deleted_patient_id": patient_id,
         "cascade_deleted_data": delete_associated_data
     }
+
+
+@router.get("/{patient_id}/timeline/multi-signal", response_model=MultiSignalTimelineResponse)
+def get_patient_multi_signal_timeline(
+    patient_id: str,
+    signal_filter: str = Query("all", description="Filter by signal: 'all', 'sleep', 'cardio', 'observations'"),
+    limit: int = Query(150, ge=1, le=500, description="Maximum items to return"),
+    skip: int = Query(0, ge=0, description="Offset for pagination"),
+    db: Database = Depends(get_database)
+):
+    """
+    Returns an integrated multi-signal timeline synthesizing:
+    1. BiDSleep Wearable Sleep-Stage ML Model predictions (LightGBM 5-class AASM)
+    2. Cardiovascular nMAD Statistical Anomaly flags (Non-parametric robust median corridor)
+    3. Physiological Telemetry Observations
+
+    Maintains strict separation, distinct badges, and independent audit trails
+    between probabilistic AI inferences and deterministic statistical corridors.
+    """
+    try:
+        return MultiSignalService.get_multi_signal_timeline(
+            db=db,
+            patient_id=patient_id,
+            signal_filter=signal_filter,
+            limit=limit,
+            skip=skip
+        )
+    except ValueError as e:
+        err = str(e)
+        if "not found" in err:
+            raise HTTPException(status_code=404, detail=err)
+        raise HTTPException(status_code=400, detail=err)
+
