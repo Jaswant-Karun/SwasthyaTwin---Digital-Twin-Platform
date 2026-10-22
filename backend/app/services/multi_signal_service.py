@@ -408,10 +408,8 @@ class MultiSignalService:
                             )
                         )
                     )
-        print(f"DEBUG: raw_obs count={len(raw_obs)}, sleep_duration_records={len(sleep_duration_records)}, sleep_items={len(sleep_items)}")
 
         # ----------------------------------------------------------------------
-
         # SIGNAL C: Ingested Physiological Telemetry (BP, Steps, Respiration, etc.)
         # ----------------------------------------------------------------------
         obs_items: List[MultiSignalTimelineItem] = []
@@ -426,9 +424,10 @@ class MultiSignalService:
             val = float(o.get("value", 0.0))
             unit = o.get("unit") or ""
             canon_unit = o.get("canonical_unit") or unit
-            source = o.get("source_type") or o.get("source") or "sensor"
+            obs_source = o.get("source_type") or o.get("source") or "sensor"
             dev_id = o.get("device_id")
             tz_str = o.get("time_zone") or "UTC"
+
 
             # Determine provenance tier
             raw_kind = o.get("data_kind") or o.get("data_tier")
