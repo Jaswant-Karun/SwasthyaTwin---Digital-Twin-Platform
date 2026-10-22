@@ -20,15 +20,22 @@ import { MethodologyPage } from './components/pages/MethodologyPage';
 import { MLStudioPage } from './components/pages/MLStudioPage';
 import { ModelEvaluationPage } from './components/pages/ModelEvaluationPage';
 import { SleepResearchPage } from './components/pages/SleepResearchPage';
-import { AlertCircle, X } from 'lucide-react';
+import { CinematicIntroLoader } from './components/common/CinematicIntroLoader';
+import { AlertCircle, X, Film } from 'lucide-react';
 
 const AppContent: React.FC = () => {
+  const [showIntro, setShowIntro] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const { errorMessage, refreshData, selectedRangeDays, setSelectedRangeDays } = useTwin();
 
   return (
     <div className="min-h-screen flex flex-col spatial-canvas text-slate-100 selection:bg-teal-500 selection:text-slate-950 font-sans">
+      {/* Cinematic Cybernetic Loading Intro */}
+      {showIntro && (
+        <CinematicIntroLoader onComplete={() => setShowIntro(false)} autoTransitionDelayMs={3200} />
+      )}
+
       {/* 1. Compact Demo Disclosure Banner */}
       <DemoBanner />
 
