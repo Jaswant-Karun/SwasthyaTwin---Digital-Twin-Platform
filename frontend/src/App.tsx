@@ -101,6 +101,7 @@ const AppContent: React.FC = () => {
             {activeTab === 'add-patient' && <AddPatientPage onNavigate={setActiveTab} />}
             {activeTab === 'add-observation' && <AddObservationPage onNavigate={setActiveTab} />}
             {activeTab === 'digital-twin' && <DigitalTwinPage />}
+            {activeTab === 'ml-studio' && <MLStudioPage />}
             {activeTab === 'health-trends' && <HealthTrendsPage />}
             {activeTab === 'risk-insights' && <RiskInsightsPage />}
             {activeTab === 'what-if' && <WhatIfSimulator />}
