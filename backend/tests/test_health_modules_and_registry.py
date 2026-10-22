@@ -410,8 +410,8 @@ def test_suspicious_input_requires_confirmation_flow(test_client: TestClient):
     assert res_unusual.status_code == 409
     data = res_unusual.json()["detail"]
     assert data["status"] == "requires_confirmation"
-    assert data["entered_value"] == 150.0
-    assert "confirmation_prompt" in data
+    assert data["original_value"] == 150.0
+    assert "action_required" in data
 
     # Confirm unusual reading explicitly
     res_confirmed = test_client.post(f"/api/v1/patients/{pid}/observations?confirm_unusual=true", json={
