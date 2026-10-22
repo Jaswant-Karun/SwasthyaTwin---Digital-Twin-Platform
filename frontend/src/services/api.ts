@@ -1066,6 +1066,25 @@ export const api = {
 
   predictPatientTrends: async (patientId: string, horizonDays: number = 7): Promise<any> => {
     return await request<any>(`/api/v1/patients/${patientId}/predict?horizon_days=${horizonDays}`);
+  },
+
+  // Health Modules & Layer Gating
+  getHealthModules: async (patientId: string): Promise<any> => {
+    return await request<any>(`/api/v1/patients/${patientId}/twin/modules`);
+  },
+
+  getActiveLayers: async (patientId: string): Promise<any> => {
+    return await request<any>(`/api/v1/patients/${patientId}/twin/layers`);
+  },
+
+  // Machine Learning Model Registry
+  getModelRegistry: async (category?: string): Promise<any> => {
+    const url = category ? `/api/v1/ml/registry?category=${category}` : '/api/v1/ml/registry';
+    return await request<any>(url);
+  },
+
+  getModelRegistryTask: async (taskId: string): Promise<any> => {
+    return await request<any>(`/api/v1/ml/registry/${taskId}`);
   }
 };
 
