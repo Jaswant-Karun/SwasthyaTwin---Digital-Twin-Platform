@@ -126,3 +126,37 @@ def predict_patient_trends(
     """
     forecasts = AssessmentService.get_patient_predictions(db=db, patient_id=patient_id, horizon_days=horizon_days)
     return forecasts
+
+@router.get("/patients/{patient_id}/twin/modules")
+def get_patient_health_modules(
+    patient_id: str,
+    db: Database = Depends(get_database)
+):
+    """
+    Evaluates all six health modules:
+    - Module A: Sleep Intelligence
+    - Module B: Cardiovascular Trend Analysis
+    - Module C: Activity Intelligence
+    - Module D: Blood Pressure Trend Tracking
+    - Module E: Personalized Anomaly Detection
+    - Module F: Future Trend Forecasting
+    """
+    patient = db.patients.find_one({"patient_id": patient_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
+    return AssessmentService.get_patient_health_modules(db=db, patient_id=patient_id)
+
+@router.get("/patients/{patient_id}/twin/layers")
+def get_patient_active_layers(
+    patient_id: str,
+    db: Database = Depends(get_database)
+):
+    """
+    Returns active data layers available for a patient based on verified observations.
+    Used by the Spatial Digital Twin to only enable layers when relevant measurements exist.
+    """
+    patient = db.patients.find_one({"patient_id": patient_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
+    return AssessmentService.get_patient_active_layers(db=db, patient_id=patient_id)
+
