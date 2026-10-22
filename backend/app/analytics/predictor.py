@@ -155,3 +155,120 @@ def train_and_forecast_metric(
             "Evaluated on held-out temporal validation window. Not a certified clinical diagnostic prognosis."
         )
     )
+
+
+def forecast_metric_with_safeguards(
+    metric_type: str,
+    unit: str,
+    observations: List[Dict[str, Any]],
+    horizon_days: int = 7
+) -> Dict[str, Any]:
+    """
+    Safeguarded time-series forecasting pipeline.
+    Validates feature availability, freshness, units, missingness, and supported ranges
+    before inference. Returns structured response with status, warnings, prediction, units,
+    model_version, and limitations. Never produces confident predictions from corrupt or insufficient data.
+    """
+    warnings: List[str] = []
+    limitations: List[str] = [
+        "Forecasting is an autoregressive extrapolation of personal historical trend, not a medical diagnosis.",
+        "Model requires at least 14 validated historical observations to capture temporal slope and variance.",
+        "Missing days are not assumed to be zero; gaps in telemetry increase forecast uncertainty."
+    ]
+
+    # 1. Feature Availability and Missingness Check
+    if not observations or len(observations) < 14:
+        obs_count = len(observations) if observations else 0
+        return {
+            "status": "insufficient_features",
+            "warnings": [
+                f"Prediction withheld for '{metric_type}': Insufficient longitudinal observations.",
+                f"Found {obs_count} valid observations; minimum required is 14.",
+                "Missing observations cannot be zero-imputed or artificially fabricated."
+            ],
+            "prediction": None,
+            "units": unit,
+            "model_version": "v1.2-autoregressive-trend",
+            "limitations": limitations
+        }
+
+    # 2. Physiological Bounds and Unit Check
+    from app.analytics.plausibility_checker import HARD_LIMITS
+    clean_type = metric_type.lower()
+    for o in observations:
+        v = o.get("value")
+        if v is not None and clean_type in HARD_LIMITS:
+            min_h, max_h, u = HARD_LIMITS[clean_type]
+            if float(v) < min_h or float(v) > max_h:
+                return {
+                    "status": "input_quality_rejection",
+                    "warnings": [
+                        f"Prediction aborted: Outlier observation value {v} {unit} is outside human physiological bounds ({min_h} - {max_h} {u}).",
+                        "Prediction model requires uncorrupted telemetry."
+                    ],
+                    "prediction": None,
+                    "units": unit,
+                    "model_version": "v1.2-autoregressive-trend",
+                    "limitations": limitations
+                }
+
+    # 3. Freshness Check
+    sorted_obs = sorted(
+        observations,
+        key=lambda o: o.get("observed_at") or o.get("timestamp") or datetime.min
+    )
+    last_time = sorted_obs[-1].get("observed_at") or sorted_obs[-1].get("timestamp")
+    if isinstance(last_time, str):
+        last_time = datetime.fromisoformat(last_time.replace("Z", "+00:00"))
+    if last_time and last_time.tzinfo is None:
+        last_time = last_time.replace(tzinfo=timezone.utc)
+
+    now_utc = datetime.now(timezone.utc)
+    if last_time:
+        staleness_days = (now_utc - last_time).total_seconds() / 86400.0
+        if staleness_days > 90:
+            return {
+                "status": "stale_data",
+                "warnings": [
+                    f"Prediction unavailable for '{metric_type}': Historical observations have expired.",
+                    f"Latest observation was recorded {int(staleness_days)} days ago (limit: 90 days).",
+                    "Extrapolating from expired data would produce misleading health forecasts."
+                ],
+                "prediction": None,
+                "units": unit,
+                "model_version": "v1.2-autoregressive-trend",
+                "limitations": limitations
+            }
+        elif staleness_days > 30:
+            warnings.append(
+                f"Input freshness warning: Latest observation is {int(staleness_days)} days old. "
+                "Prediction accuracy may be reduced."
+            )
+
+    # 4. Run Model
+    forecast_result = train_and_forecast_metric(
+        metric_type=metric_type,
+        unit=unit,
+        observations=observations,
+        horizon_days=horizon_days
+    )
+
+    if not forecast_result:
+        return {
+            "status": "insufficient_features",
+            "warnings": warnings + ["Model failed to converge on the provided time-series slice."],
+            "prediction": None,
+            "units": unit,
+            "model_version": "v1.2-autoregressive-trend",
+            "limitations": limitations
+        }
+
+    return {
+        "status": "ready",
+        "warnings": warnings,
+        "prediction": forecast_result.model_dump(),
+        "units": unit,
+        "model_version": forecast_result.model_version,
+        "limitations": limitations
+    }
+
