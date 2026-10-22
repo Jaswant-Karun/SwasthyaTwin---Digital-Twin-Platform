@@ -1,7 +1,7 @@
 {
   "version": "2.4.0-ml-ensemble",
-  "trained_at": "2026-10-22T16:29:07.964888+00:00",
-  "training_duration_seconds": 2.96,
+  "trained_at": "2026-10-22T16:52:47.883422+00:00",
+  "training_duration_seconds": 2.45,
   "dataset_summary": {
     "total_samples": 400,
     "train_samples": 300,
