@@ -41,7 +41,7 @@
   }
 }
 
-/* Clinical SaaS surface styling */
+/* Clinical & Spatial SaaS surface styling */
 .card-surface {
   background-color: #ffffff;
   border: 1px solid #e2e8f0;
@@ -53,9 +53,48 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
 }
 
+/* Spatial Midnight Navy & Graphite Theme */
+.spatial-canvas {
+  background-color: #060a14;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(13, 148, 136, 0.15), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(37, 99, 235, 0.08), transparent 60%),
+    linear-gradient(to bottom, #060a14 0%, #090e1a 100%);
+}
+
+.spatial-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.spatial-panel {
+  background: rgba(13, 20, 36, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.spatial-panel-active {
+  background: rgba(15, 25, 46, 0.88);
+  border-color: rgba(45, 212, 191, 0.3);
+  box-shadow: 0 0 20px -3px rgba(45, 212, 191, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+.spatial-glow-teal {
+  box-shadow: 0 0 25px -4px rgba(20, 184, 166, 0.35);
+}
+
+.spatial-glow-cyan {
+  box-shadow: 0 0 25px -4px rgba(6, 182, 212, 0.35);
+}
+
 /* Midnight navy sidebar background */
 .sidebar-navy {
-  background-color: #0b132b;
+  background-color: #080d1a;
+  background-image: linear-gradient(180deg, #090e1c 0%, #060a14 100%);
 }
 
 /* Custom slick scrollbars */
@@ -67,9 +106,44 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(45, 212, 191, 0.4);
 }
+
+/* Subtle holographic pulse animations for digital twin node points */
+@keyframes spatial-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+.animate-spatial-pulse {
+  animation: spatial-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes scan-sweep {
+  0% {
+    top: 0%;
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0.2;
+  }
+}
+
+.animate-scan-sweep {
+  animation: scan-sweep 4s linear infinite;
+}
+
