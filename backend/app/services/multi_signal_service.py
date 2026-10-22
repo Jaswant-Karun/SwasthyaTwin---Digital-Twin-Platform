@@ -553,7 +553,9 @@ class MultiSignalService:
         # Deduplicate on (patient_id, primary_metric, timestamp_to_second)
         # ----------------------------------------------------------------------
         raw_combined = cardio_items + sleep_items + obs_items
+        print(f"DEBUG: cardio={len(cardio_items)}, sleep={len(sleep_items)}, obs={len(obs_items)}, raw_combined={len(raw_combined)}")
         deduped_items: List[MultiSignalTimelineItem] = []
+
         seen_keys = set()
 
         for item in raw_combined:
