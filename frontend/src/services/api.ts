@@ -66,15 +66,19 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
     if (!res.ok) {
       let errorDetail = `HTTP Error ${res.status}`;
+      let errorData: any = null;
       try {
         const errorJson = await res.json();
-        errorDetail = errorJson.detail || errorDetail;
+        errorData = errorJson.detail || errorJson;
+        errorDetail = typeof errorData === 'string' ? errorData : (errorData.message || JSON.stringify(errorData));
       } catch {
-        // Fallback to HTTP status text
         errorDetail = res.statusText || errorDetail;
       }
-      throw new ApiError(errorDetail, res.status, endpoint, errorDetail);
+      const err = new ApiError(errorDetail, res.status, endpoint, errorDetail);
+      (err as any).data = errorData;
+      throw err;
     }
+
 
     return await res.json();
   } catch (err: any) {
@@ -233,7 +237,11 @@ export const api = {
     );
   },
 
-  addObservation: async (patientId: string, obs: ObservationCreateInput | Partial<Observation>): Promise<Observation> => {
+  addObservation: async (
+    patientId: string,
+    obs: ObservationCreateInput | Partial<Observation>,
+    confirmUnusual: boolean = false
+  ): Promise<Observation> => {
     if (explicitOfflineDemo) {
       return {
         _id: `obs_mock_${Date.now()}`,
@@ -247,11 +255,37 @@ export const api = {
         data_classification: (obs as any).data_classification || 'user_entered'
       };
     }
-    return await request<Observation>(`/api/v1/patients/${patientId}/observations`, {
+    const query = confirmUnusual ? '?confirm_unusual=true' : '';
+    return await request<Observation>(`/api/v1/patients/${patientId}/observations${query}`, {
       method: 'POST',
       body: JSON.stringify(obs)
     });
   },
+
+  previewObservation: async (
+    patientId: string,
+    data: { measurement_type: string; value: number; unit: string; observed_at?: string; paired_measurements?: Record<string, number> }
+  ): Promise<any> => {
+    return await request<any>(`/api/v1/patients/${patientId}/observations/preview`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  previewCSV: async (patientId: string, rows: any[]): Promise<any> => {
+    return await request<any>(`/api/v1/patients/${patientId}/observations/csv/preview`, {
+      method: 'POST',
+      body: JSON.stringify({ rows })
+    });
+  },
+
+  confirmCSV: async (patientId: string, validatedRows: any[], confirmUnusualAll: boolean = false): Promise<any> => {
+    return await request<any>(`/api/v1/patients/${patientId}/observations/csv/confirm?confirm_unusual_all=${confirmUnusualAll}`, {
+      method: 'POST',
+      body: JSON.stringify({ validated_rows: validatedRows })
+    });
+  },
+
 
   updateObservation: async (
     patientId: string,

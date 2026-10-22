@@ -50,44 +50,44 @@ const SUPPORTED_METRICS: MetricMeta[] = [
     label: 'Resting Heart Rate',
     defaultUnit: 'bpm',
     allowedUnits: ['bpm'],
-    min: 30,
-    max: 220,
+    min: 20,
+    max: 300,
     step: 1,
     placeholder: 'e.g. 68',
-    help: 'Normal adult resting range: 50-90 bpm.'
+    help: 'Normal adult resting range: 50-90 bpm (AHA standard).'
   },
   {
     type: 'systolic_blood_pressure',
     label: 'Systolic Blood Pressure',
     defaultUnit: 'mmHg',
-    allowedUnits: ['mmHg'],
-    min: 60,
-    max: 260,
+    allowedUnits: ['mmHg', 'kPa'],
+    min: 30,
+    max: 300,
     step: 1,
     placeholder: 'e.g. 120',
-    help: 'Normal adult resting range: 90-129 mmHg.'
+    help: 'Normal adult resting range: 90-129 mmHg. Auto-converts kPa (1 kPa = 7.50062 mmHg).'
   },
   {
     type: 'diastolic_blood_pressure',
     label: 'Diastolic Blood Pressure',
     defaultUnit: 'mmHg',
-    allowedUnits: ['mmHg'],
-    min: 40,
-    max: 160,
+    allowedUnits: ['mmHg', 'kPa'],
+    min: 20,
+    max: 200,
     step: 1,
     placeholder: 'e.g. 80',
-    help: 'Normal adult resting range: 60-84 mmHg.'
+    help: 'Normal adult resting range: 60-84 mmHg. Must be lower than systolic pressure.'
   },
   {
     type: 'sleep_duration',
     label: 'Sleep Duration',
     defaultUnit: 'hours',
-    allowedUnits: ['hours', 'hrs', 'h'],
+    allowedUnits: ['hours', 'minutes', 'hrs', 'h', 'min'],
     min: 0,
     max: 24,
     step: 0.1,
     placeholder: 'e.g. 7.5',
-    help: 'Normal nightly duration: 6-9 hours.'
+    help: 'Normal nightly duration: 6-9 hours. Auto-converts minutes to hours.'
   },
   {
     type: 'daily_steps',
@@ -105,19 +105,19 @@ const SUPPORTED_METRICS: MetricMeta[] = [
     label: 'Respiratory Rate',
     defaultUnit: 'breaths/min',
     allowedUnits: ['breaths/min', 'rpm'],
-    min: 4,
-    max: 60,
+    min: 3,
+    max: 80,
     step: 1,
     placeholder: 'e.g. 15',
-    help: 'Normal resting breathing rate: 12-20 breaths/min.'
+    help: 'Normal resting breathing rate: 12-20 breaths/min (WHO / ATS).'
   },
   {
     type: 'hrv_rmssd',
     label: 'HRV (RMSSD)',
     defaultUnit: 'ms',
     allowedUnits: ['ms'],
-    min: 5,
-    max: 250,
+    min: 1,
+    max: 500,
     step: 1,
     placeholder: 'e.g. 42',
     help: 'Heart rate variability parasympathetic marker.'
@@ -127,24 +127,47 @@ const SUPPORTED_METRICS: MetricMeta[] = [
     label: 'Fasting Blood Glucose',
     defaultUnit: 'mg/dL',
     allowedUnits: ['mg/dL', 'mmol/L'],
-    min: 30,
-    max: 600,
+    min: 10,
+    max: 1500,
     step: 1,
     placeholder: 'e.g. 95',
-    help: 'Normal fasting range: 70-99 mg/dL (or ~4.0-5.5 mmol/L).'
+    help: 'Normal fasting range: 70-99 mg/dL. Auto-converts mmol/L (1 mmol/L = 18.0182 mg/dL).'
   },
   {
     type: 'oxygen_saturation',
     label: 'Oxygen Saturation (SpO2)',
     defaultUnit: '%',
     allowedUnits: ['%'],
-    min: 70,
+    min: 50,
     max: 100,
     step: 1,
     placeholder: 'e.g. 98',
     help: 'Normal room-air pulse oximetry: 95-100%.'
+  },
+  {
+    type: 'body_temperature',
+    label: 'Body Temperature',
+    defaultUnit: 'C',
+    allowedUnits: ['C', 'F'],
+    min: 30,
+    max: 45,
+    step: 0.1,
+    placeholder: 'e.g. 36.8',
+    help: 'Normal body temp: 36.1-37.2°C (97.0-99.0°F). Auto-converts °F to °C.'
+  },
+  {
+    type: 'weight',
+    label: 'Body Weight',
+    defaultUnit: 'kg',
+    allowedUnits: ['kg', 'lbs'],
+    min: 1,
+    max: 500,
+    step: 0.1,
+    placeholder: 'e.g. 70',
+    help: 'Normal adult weight in kg or lbs. Auto-converts lbs to kg (÷ 2.20462).'
   }
 ];
+
 
 interface AddObservationPageProps {
   onNavigate?: (tab: string) => void;
@@ -164,7 +187,7 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
 
   // Navigation tab inside this page
   const [activeSubTab, setActiveSubTab] = useState<
-    'ai_scan' | 'single' | 'lifestyle' | 'csv' | 'history'
+    'ai_scan' | 'single' | 'lifestyle' | 'csv' | 'history' | 'data_quality'
   >('single');
 
   // Single Observation Form State
@@ -188,6 +211,22 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
   const [isSingleSubmitting, setIsSingleSubmitting] = useState(false);
   const [singleSuccess, setSingleSuccess] = useState<Observation | null>(null);
   const [singleError, setSingleError] = useState<string | null>(null);
+
+  // Suspicious Value Confirmation Modal State
+  const [suspiciousModal, setSuspiciousModal] = useState<{
+    isOpen: boolean;
+    patientId: string;
+    metricType: string;
+    value: number;
+    unit: string;
+    timestamp: string;
+    source: string;
+    dataClassification: string;
+    notes?: string;
+    warnings: string[];
+    suggestedCorrection?: number | null;
+  } | null>(null);
+  const [isConfirmingUnusual, setIsConfirmingUnusual] = useState(false);
 
   // AI Plausibility & Typo Guard State
   const [plausibilityResult, setPlausibilityResult] = useState<InputPlausibilityResult | null>(null);
@@ -226,11 +265,13 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
   const [lifestyleSuccessMsg, setLifestyleSuccessMsg] = useState<string | null>(null);
   const [lifestyleError, setLifestyleError] = useState<string | null>(null);
 
-  // CSV Import State
+  // CSV Import State with Ingestion Service Pre-Verification
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState('');
   const [validationResult, setValidationResult] =
     useState<CSVValidationResult | null>(null);
+  const [csvPreviewResult, setCsvPreviewResult] = useState<any | null>(null);
+  const [confirmUnusualAllCSV, setConfirmUnusualAllCSV] = useState(false);
   const [isValidatingCsv, setIsValidatingCsv] = useState(false);
   const [isImportingCsv, setIsImportingCsv] = useState(false);
   const [csvSuccessMsg, setCsvSuccessMsg] = useState<string | null>(null);
@@ -245,6 +286,10 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
   const [isUpdatingObs, setIsUpdatingObs] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
+  // Data Quality Review & Prediction Safeguards State
+  const [mlSafeguardData, setMlSafeguardData] = useState<any | null>(null);
+  const [isLoadingSafeguard, setIsLoadingSafeguard] = useState(false);
+
   // Sync selected patient
   useEffect(() => {
     if (currentPatient && currentPatient.patient_id !== selectedPatientId) {
@@ -257,7 +302,23 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
     if (activeSubTab === 'history' && selectedPatientId) {
       loadHistory();
     }
+    if (activeSubTab === 'data_quality' && selectedPatientId) {
+      loadSafeguardData();
+    }
   }, [activeSubTab, selectedPatientId]);
+
+  const loadSafeguardData = async () => {
+    if (!selectedPatientId) return;
+    setIsLoadingSafeguard(true);
+    try {
+      const res = await api.getMLPrediction(selectedPatientId);
+      setMlSafeguardData(res);
+    } catch (err: any) {
+      console.warn('Failed to load safeguard data:', err);
+    } finally {
+      setIsLoadingSafeguard(false);
+    }
+  };
 
   const loadHistory = async () => {
     if (!selectedPatientId) return;
@@ -334,20 +395,91 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
         notes: notes.trim() || undefined
       };
 
-      const saved = await logObservation(payload);
-      if (saved) {
-        setSingleSuccess(saved);
-        setValue('');
-        setNotes('');
-        // Reload history if on that tab
-        if (activeSubTab === 'history') {
-          loadHistory();
+      try {
+        const saved = await api.addObservation(selectedPatientId, payload, false);
+        if (saved) {
+          setSingleSuccess(saved);
+          setValue('');
+          setNotes('');
+          if (activeSubTab === 'history') {
+            loadHistory();
+          }
+        }
+      } catch (err: any) {
+        // Check for 409 Conflict / Unusual value requiring user confirmation
+        if (
+          err.status === 409 ||
+          err.data?.requires_confirmation ||
+          err.data?.detail?.requires_confirmation ||
+          (typeof err.message === 'string' && err.message.includes('Unusual observation requires user confirmation'))
+        ) {
+          const detail = err.data?.detail || err.data || {};
+          const warnings = Array.isArray(detail.warnings)
+            ? detail.warnings
+            : Array.isArray(err.data?.warnings)
+            ? err.data.warnings
+            : [err.message || 'Value is outside typical resting corridors, but technically plausible.'];
+          const suggested = detail.suggested_correction ?? err.data?.suggested_correction ?? null;
+
+          setSuspiciousModal({
+            isOpen: true,
+            patientId: selectedPatientId,
+            metricType,
+            value: numVal,
+            unit,
+            timestamp: isoTime,
+            source,
+            dataClassification,
+            notes: notes.trim() || undefined,
+            warnings,
+            suggestedCorrection: suggested
+          });
+          return;
+        } else {
+          throw err;
         }
       }
     } catch (err: any) {
       setSingleError(err.message || 'Failed to persist observation to MongoDB.');
     } finally {
       setIsSingleSubmitting(false);
+    }
+  };
+
+  // Confirm Suspicious / Unusual Value Action
+  const handleConfirmSuspiciousValue = async () => {
+    if (!suspiciousModal) return;
+    setIsConfirmingUnusual(true);
+    setSingleError(null);
+    try {
+      const payload = {
+        patient_id: suspiciousModal.patientId,
+        metric_type: suspiciousModal.metricType,
+        value: suspiciousModal.value,
+        unit: suspiciousModal.unit,
+        timestamp: suspiciousModal.timestamp,
+        source: suspiciousModal.source,
+        data_tier: 'user_reported' as any,
+        data_classification: suspiciousModal.dataClassification,
+        notes: suspiciousModal.notes,
+        confirmed_by_user: true
+      };
+
+      const saved = await api.addObservation(suspiciousModal.patientId, payload, true);
+      if (saved) {
+        setSingleSuccess(saved);
+        setValue('');
+        setNotes('');
+        setSuspiciousModal(null);
+        if (activeSubTab === 'history') {
+          loadHistory();
+        }
+      }
+    } catch (err: any) {
+      setSingleError(err.message || 'Failed to confirm unusual value.');
+      setSuspiciousModal(null);
+    } finally {
+      setIsConfirmingUnusual(false);
     }
   };
 
@@ -442,6 +574,7 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
     if (!file) return;
     setCsvFile(file);
     setValidationResult(null);
+    setCsvPreviewResult(null);
     setCsvSuccessMsg(null);
     setCsvError(null);
 
@@ -462,6 +595,7 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
 
     setIsValidatingCsv(true);
     setCsvError(null);
+    setCsvPreviewResult(null);
     try {
       const lines = rawCsv
         .split('\n')
@@ -476,15 +610,15 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
 
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
       const pIdIdx = headers.indexOf('patient_id');
-      const mTypeIdx = headers.indexOf('metric_type');
+      const mTypeIdx = headers.indexOf('metric_type') !== -1 ? headers.indexOf('metric_type') : headers.indexOf('measurement_type');
       const valIdx = headers.indexOf('value');
       const unitIdx = headers.indexOf('unit');
-      const timeIdx = headers.indexOf('timestamp');
-      const srcIdx = headers.indexOf('source');
+      const timeIdx = headers.indexOf('timestamp') !== -1 ? headers.indexOf('timestamp') : headers.indexOf('observed_at');
+      const srcIdx = headers.indexOf('source') !== -1 ? headers.indexOf('source') : headers.indexOf('source_type');
       const notesIdx = headers.indexOf('notes');
 
       if (valIdx === -1 || mTypeIdx === -1) {
-        setCsvError('CSV must include at least "metric_type" and "value" columns.');
+        setCsvError('CSV must include at least "metric_type" (or "measurement_type") and "value" columns.');
         setIsValidatingCsv(false);
         return;
       }
@@ -496,17 +630,27 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
 
         parsedRows.push({
           patient_id: pIdIdx !== -1 && cols[pIdIdx] ? cols[pIdIdx] : selectedPatientId,
+          measurement_type: cols[mTypeIdx] || '',
           metric_type: cols[mTypeIdx] || '',
           value: parseFloat(cols[valIdx]),
           unit: unitIdx !== -1 && cols[unitIdx] ? cols[unitIdx] : '',
+          observed_at: timeIdx !== -1 && cols[timeIdx] ? cols[timeIdx] : new Date().toISOString(),
           timestamp: timeIdx !== -1 && cols[timeIdx] ? cols[timeIdx] : new Date().toISOString(),
           source: srcIdx !== -1 && cols[srcIdx] ? cols[srcIdx] : 'wearable_csv_import',
+          source_type: srcIdx !== -1 && cols[srcIdx] ? cols[srcIdx] : 'imported_file',
           notes: notesIdx !== -1 && cols[notesIdx] ? cols[notesIdx] : undefined
         });
       }
 
-      const result = await validateCSV(parsedRows);
-      setValidationResult(result);
+      // First try backend validated ingestion service preview
+      try {
+        const previewRes = await api.previewCSV(selectedPatientId, parsedRows);
+        setCsvPreviewResult(previewRes);
+      } catch (backendErr) {
+        // Fallback to client verification
+        const result = await validateCSV(parsedRows);
+        setValidationResult(result);
+      }
     } catch (err: any) {
       setCsvError(err.message || 'Failed to validate CSV with backend engine.');
     } finally {
@@ -515,35 +659,41 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
   };
 
   const handleImportCsv = async () => {
-    if (!validationResult || validationResult.valid_rows === 0) return;
     setIsImportingCsv(true);
     setCsvError(null);
     setCsvSuccessMsg(null);
     try {
-      const validRows = validationResult.rows
-        .filter(r => r.is_valid && !r.is_duplicate)
-        .map(r => ({
-          patient_id: r.patient_id,
-          metric_type: r.metric_type,
-          value: r.value,
-          unit: r.unit,
-          timestamp: r.timestamp,
-          source: r.source || 'wearable_csv_import',
-          notes: r.notes
-        }));
+      if (csvPreviewResult && csvPreviewResult.all_rows) {
+        const res = await api.confirmCSV(selectedPatientId, csvPreviewResult.all_rows, confirmUnusualAllCSV);
+        setCsvSuccessMsg(
+          `Successfully persisted ${res.inserted_count || res.imported_count || csvPreviewResult.valid_rows_count} verified observations into MongoDB. Twin recalculated.`
+        );
+        setCsvPreviewResult(null);
+        setCsvFile(null);
+      } else if (validationResult && validationResult.valid_rows > 0) {
+        const validRows = validationResult.rows
+          .filter(r => r.is_valid && !r.is_duplicate)
+          .map(r => ({
+            patient_id: r.patient_id,
+            metric_type: r.metric_type,
+            value: r.value,
+            unit: r.unit,
+            timestamp: r.timestamp,
+            source: r.source || 'wearable_csv_import',
+            notes: r.notes
+          }));
 
-      const res = await importCSV(validRows);
-      setCsvSuccessMsg(
-        `Successfully persisted ${res.imported_count} observations into MongoDB. Twin recalculated.`
-      );
-      setValidationResult(null);
-      setCsvFile(null);
+        const res = await importCSV(validRows);
+        setCsvSuccessMsg(
+          `Successfully persisted ${res.imported_count} observations into MongoDB. Twin recalculated.`
+        );
     } catch (err: any) {
       setCsvError(err.message || 'Failed to import CSV rows.');
     } finally {
       setIsImportingCsv(false);
     }
   };
+
 
   // Observation Edit Modal (Audit Trail)
   const openEditObsModal = (obs: Observation) => {
@@ -645,7 +795,8 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
           { id: 'single', label: 'Single Observation', icon: PlusCircle },
           { id: 'lifestyle', label: 'Daily Lifestyle Log', icon: Calendar },
           { id: 'csv', label: 'Wearable CSV Import', icon: FileSpreadsheet },
-          { id: 'history', label: 'Data History & Corrections', icon: Clock }
+          { id: 'history', label: 'Data History & Corrections', icon: Clock },
+          { id: 'data_quality', label: 'Review Data Quality', icon: Shield, badge: 'AUDIT' }
         ].map(tab => {
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.id;
@@ -1314,89 +1465,219 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
             </div>
           )}
 
-          {validationResult && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4">
+          {/* CSV Preview with Ingestion Engine Analysis */}
+          {(csvPreviewResult || validationResult) && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4 animate-fade-in">
               <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                    CSV Pre-Import Verification
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700">
-                    Total: {validationResult.total_rows} rows
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                    Valid: {validationResult.valid_rows}
-                  </span>
-                  {validationResult.invalid_rows > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-800">
-                      Invalid: {validationResult.invalid_rows}
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                      <FileSpreadsheet className="w-4 h-4 text-teal-600" />
+                      CSV Ingestion Pre-Verification
                     </span>
-                  )}
-                  {validationResult.duplicate_rows > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800">
-                      Duplicates: {validationResult.duplicate_rows}
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700">
+                      Total: {csvPreviewResult?.total_rows ?? validationResult?.total_rows}
                     </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                      Valid: {csvPreviewResult?.valid_rows_count ?? validationResult?.valid_rows}
+                    </span>
+                    {((csvPreviewResult?.unusual_rows_count ?? 0) > 0) && (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800">
+                        Unusual: {csvPreviewResult?.unusual_rows_count}
+                      </span>
+                    )}
+                    {((csvPreviewResult?.rejected_rows_count ?? validationResult?.invalid_rows ?? 0) > 0) && (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-800">
+                        Rejected: {csvPreviewResult?.rejected_rows_count ?? validationResult?.invalid_rows}
+                      </span>
+                    )}
+                    {((csvPreviewResult?.duplicate_rows_count ?? validationResult?.duplicate_rows ?? 0) > 0) && (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-orange-100 text-orange-800">
+                        Duplicates: {csvPreviewResult?.duplicate_rows_count ?? validationResult?.duplicate_rows}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Detected Columns */}
+                  {csvPreviewResult?.detected_columns && (
+                    <div className="flex flex-wrap items-center gap-1 text-[11px] text-slate-600">
+                      <span className="font-semibold text-slate-500">Detected Columns:</span>
+                      {csvPreviewResult.detected_columns.map((col: string) => (
+                        <span key={col} className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono font-medium">
+                          {col}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
 
-                <button
-                  onClick={handleImportCsv}
-                  disabled={isImportingCsv || validationResult.valid_rows === 0}
-                  className="flex items-center gap-2 px-5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white text-xs font-bold transition-colors"
-                >
-                  {isImportingCsv ? 'Importing...' : `Confirm Import of ${validationResult.valid_rows - validationResult.duplicate_rows} Rows`}
-                </button>
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                  {((csvPreviewResult?.unusual_rows_count ?? 0) > 0) && (
+                    <label className="flex items-center gap-1.5 text-xs text-amber-900 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={confirmUnusualAllCSV}
+                        onChange={e => setConfirmUnusualAllCSV(e.target.checked)}
+                        className="rounded text-teal-600 focus:ring-teal-500"
+                      />
+                      <span>Confirm {csvPreviewResult.unusual_rows_count} unusual readings in batch</span>
+                    </label>
+                  )}
+
+                  <button
+                    onClick={handleImportCsv}
+                    disabled={isImportingCsv || ((csvPreviewResult?.valid_rows_count ?? validationResult?.valid_rows) === 0)}
+                    className="flex items-center gap-2 px-5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white text-xs font-bold transition-colors"
+                  >
+                    {isImportingCsv ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Importing into MongoDB...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>
+                          Confirm Import ({csvPreviewResult?.valid_rows_count ?? validationResult?.valid_rows} Rows)
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
+              {/* Proposed Unit Mappings Banner */}
+              {csvPreviewResult?.proposed_unit_conversions && csvPreviewResult.proposed_unit_conversions.length > 0 && (
+                <div className="mx-5 p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 text-xs space-y-1.5">
+                  <div className="font-bold flex items-center gap-1.5 text-blue-900">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
+                    Proposed Canonical Unit Conversions ({csvPreviewResult.proposed_unit_conversions.length} detected)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {csvPreviewResult.proposed_unit_conversions.map((conv: any, i: number) => (
+                      <div key={i} className="p-2 rounded-lg bg-white border border-blue-200 text-[11px] font-mono">
+                        <span className="font-bold text-blue-900 block">Row #{conv.row}: {conv.metric}</span>
+                        <span className="text-slate-600">{conv.from_unit} → <strong className="text-teal-700">{conv.to_unit}</strong></span>
+                        <div className="text-[10px] text-slate-400 mt-0.5">{conv.note}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Valid & Unusual Rows Table */}
               <div className="overflow-x-auto max-h-96">
                 <table className="w-full text-left text-xs text-slate-600">
                   <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[11px] sticky top-0 border-b border-slate-200">
                     <tr>
                       <th className="px-4 py-2.5">Row</th>
-                      <th className="px-4 py-2.5">Patient</th>
                       <th className="px-4 py-2.5">Metric Type</th>
-                      <th className="px-4 py-2.5">Value & Unit</th>
+                      <th className="px-4 py-2.5">Entered Value</th>
+                      <th className="px-4 py-2.5">Canonical Value</th>
                       <th className="px-4 py-2.5">Timestamp</th>
-                      <th className="px-4 py-2.5">Status</th>
+                      <th className="px-4 py-2.5">Status & Warnings</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {validationResult.rows.map(r => (
-                      <tr
-                        key={r.row_index}
-                        className={!r.is_valid ? 'bg-rose-50/50' : r.is_duplicate ? 'bg-amber-50/40' : ''}
-                      >
-                        <td className="px-4 py-2 font-mono text-slate-500">#{r.row_index}</td>
-                        <td className="px-4 py-2 font-mono">{r.patient_id}</td>
-                        <td className="px-4 py-2 font-medium text-slate-900">{r.metric_type}</td>
-                        <td className="px-4 py-2 font-mono font-bold text-slate-900">
-                          {r.value} {r.unit}
-                        </td>
-                        <td className="px-4 py-2 text-slate-500 text-[11px]">
-                          {new Date(r.timestamp).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2">
-                          {!r.is_valid ? (
-                            <span className="text-rose-600 font-semibold text-[11px] flex items-center gap-1">
-                              <AlertTriangle className="w-3.5 h-3.5 inline" />
-                              {r.errors.join('; ')}
-                            </span>
-                          ) : r.is_duplicate ? (
-                            <span className="text-amber-700 font-semibold text-[11px]">
-                              Duplicate timestamp
-                            </span>
-                          ) : (
-                            <span className="text-emerald-700 font-semibold text-[11px] flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5 inline" />
-                              Valid for import
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {csvPreviewResult ? (
+                      csvPreviewResult.validated_rows.map((r: any) => (
+                        <tr
+                          key={r.row_number}
+                          className={!r.is_valid ? 'bg-rose-50/50' : r.is_unusual ? 'bg-amber-50/40' : ''}
+                        >
+                          <td className="px-4 py-2 font-mono text-slate-500">#{r.row_number}</td>
+                          <td className="px-4 py-2 font-medium text-slate-900">{r.measurement_type}</td>
+                          <td className="px-4 py-2 font-mono text-slate-600">
+                            {r.original_value} {r.original_unit}
+                          </td>
+                          <td className="px-4 py-2 font-mono font-bold text-slate-900">
+                            {r.canonical_value} {r.canonical_unit}
+                          </td>
+                          <td className="px-4 py-2 text-slate-500 text-[11px] font-mono">
+                            {new Date(r.observed_at).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2">
+                            {!r.is_valid ? (
+                              <span className="text-rose-600 font-semibold text-[11px] flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5 inline shrink-0" />
+                                {r.errors.join('; ')}
+                              </span>
+                            ) : r.is_unusual ? (
+                              <div className="space-y-0.5">
+                                <span className="text-amber-800 font-semibold text-[11px] flex items-center gap-1">
+                                  <AlertTriangle className="w-3.5 h-3.5 inline shrink-0 text-amber-600" />
+                                  Unusual measurement
+                                </span>
+                                {r.warnings.map((w: string, wi: number) => (
+                                  <div key={wi} className="text-[10px] text-amber-700">{w}</div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-emerald-700 font-semibold text-[11px] flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 inline shrink-0" />
+                                Valid for import
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      validationResult?.rows.map(r => (
+                        <tr
+                          key={r.row_index}
+                          className={!r.is_valid ? 'bg-rose-50/50' : r.is_duplicate ? 'bg-amber-50/40' : ''}
+                        >
+                          <td className="px-4 py-2 font-mono text-slate-500">#{r.row_index}</td>
+                          <td className="px-4 py-2 font-medium text-slate-900">{r.metric_type}</td>
+                          <td className="px-4 py-2 font-mono text-slate-600">{r.value} {r.unit}</td>
+                          <td className="px-4 py-2 font-mono font-bold text-slate-900">{r.value} {r.unit}</td>
+                          <td className="px-4 py-2 text-slate-500 text-[11px]">
+                            {new Date(r.timestamp).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2">
+                            {!r.is_valid ? (
+                              <span className="text-rose-600 font-semibold text-[11px] flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5 inline" />
+                                {r.errors.join('; ')}
+                              </span>
+                            ) : (
+                              <span className="text-emerald-700 font-semibold text-[11px] flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 inline" />
+                                Valid for import
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
+
+              {/* Rejected Rows Section with Exact Reasons */}
+              {csvPreviewResult?.rejected_samples && csvPreviewResult.rejected_samples.length > 0 && (
+                <div className="p-4 bg-rose-50/70 border-t border-rose-200 space-y-2">
+                  <div className="font-bold text-xs text-rose-900 flex items-center gap-1.5 uppercase tracking-wide">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    Rejected Rows ({csvPreviewResult.rejected_rows_count} rows will NOT be imported)
+                  </div>
+                  <div className="space-y-1.5 text-xs text-rose-800">
+                    {csvPreviewResult.rejected_samples.map((rej: any, idx: number) => (
+                      <div key={idx} className="p-2 rounded bg-white border border-rose-200 flex items-start justify-between gap-3 font-mono text-[11px]">
+                        <div>
+                          <strong className="text-rose-950">Row #{rej.row_number}: {rej.measurement_type} = {rej.original_value} {rej.original_unit}</strong>
+                          <div className="text-rose-700 mt-0.5">{rej.errors.join('; ')}</div>
+                        </div>
+                        {rej.suggested_correction && (
+                          <span className="text-[10px] bg-rose-100 text-rose-900 px-2 py-0.5 rounded font-sans font-semibold">
+                            Suggested: {rej.suggested_correction}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

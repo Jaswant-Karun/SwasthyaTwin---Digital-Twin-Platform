@@ -154,6 +154,14 @@ class IngestionService:
         # 5. Build Observation Record
         obs_id = f"obs_{uuid.uuid4().hex[:12]}"
         creation_now = datetime.now(timezone.utc)
+
+        # Retrieve prior baseline before inserting new observation
+        from app.core.config import settings
+        window_days = patient.get("baseline_window_days", settings.DEFAULT_BASELINE_DAYS)
+        prev_baselines = AssessmentService.get_patient_baselines(db, patient_id=patient_id, window_days=window_days)
+        prev_base = prev_baselines.get(m_type)
+        prev_asmt = db.health_assessments.find_one({"patient_id": patient_id}, sort=[("assessed_at", -1)])
+        prev_vitality = prev_asmt.get("vitality_index") if prev_asmt else None
         
         # Determine data_kind tag
         data_kind = "user_entered"
@@ -197,6 +205,15 @@ class IngestionService:
 
         # 6. Insert into MongoDB
         db.observations.insert_one(obs_doc)
+
+        # Increment patient total_observations_count
+        db.patients.update_one(
+            {"patient_id": patient_id},
+            {
+                "$inc": {"total_observations_count": 1},
+                "$set": {"updated_at": creation_now}
+            }
+        )
 
         # 7. Audit Log
         AuditRepository.log_action(
@@ -245,6 +262,8 @@ class IngestionService:
                 patient=patient,
                 obs=base_obs,
                 twin_state=twin_state,
+                prev_base=prev_base,
+                prev_vitality=prev_vitality,
                 is_first_obs=is_first_obs
             )
         except Exception as e:
@@ -260,6 +279,7 @@ class IngestionService:
             "validation_status": audit.validation_status,
             "warnings": audit.warnings
         }
+
 
 
 
