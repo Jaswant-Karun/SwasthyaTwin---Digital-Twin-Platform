@@ -88,6 +88,28 @@ class IngestionService:
         if existing_dup:
             existing_dup["id"] = existing_dup.get("observation_id")
             existing_dup["_id"] = str(existing_dup.get("_id", existing_dup["id"]))
+            try:
+                from app.services.observation_service import ObservationService
+                twin_state = AssessmentService.evaluate_twin_state(db=db, patient_id=patient_id)
+                base_obs = ObservationBase(
+                    observation_id=existing_dup["id"],
+                    patient_id=patient_id,
+                    measurement_type=m_type,
+                    value=canon_val,
+                    unit=canon_unit,
+                    observed_at=obs_time,
+                    source=source_type,
+                    data_kind="measured"
+                )
+                existing_dup["assessment_update"] = ObservationService._build_assessment_update(
+                    db=db,
+                    patient=patient,
+                    obs=base_obs,
+                    twin_state=twin_state,
+                    is_duplicate=True
+                )
+            except Exception:
+                pass
             return {
                 "status": "duplicate_retained",
                 "message": f"Duplicate observation for '{m_type}' at {obs_time.isoformat()} with value {canon_val} {canon_unit} already recorded.",
@@ -195,11 +217,40 @@ class IngestionService:
 
         # 8. Trigger real-time digital twin re-evaluation
         twin_state = None
+        asmt_update = None
         try:
+            from app.services.observation_service import ObservationService
+            prev_obs_count = db.observations.count_documents({
+                "patient_id": patient_id,
+                "$or": [{"measurement_type": m_type}, {"metric_type": m_type}],
+                "observation_id": {"$ne": obs_id},
+                "data_kind": {"$ne": "simulated"},
+                "data_tier": {"$ne": "simulated"}
+            })
+            is_first_obs = (prev_obs_count == 0)
+
             twin_state = AssessmentService.evaluate_twin_state(db=db, patient_id=patient_id)
+            base_obs = ObservationBase(
+                observation_id=obs_id,
+                patient_id=patient_id,
+                measurement_type=m_type,
+                value=canon_val,
+                unit=canon_unit,
+                observed_at=obs_time,
+                source=source_type,
+                data_kind=data_kind
+            )
+            asmt_update = ObservationService._build_assessment_update(
+                db=db,
+                patient=patient,
+                obs=base_obs,
+                twin_state=twin_state,
+                is_first_obs=is_first_obs
+            )
         except Exception as e:
             logger.warning(f"Error updating twin state following ingestion: {e}")
 
+        obs_doc["assessment_update"] = asmt_update
         obs_doc["_id"] = str(obs_doc.get("_id", ""))
         vitality_val = getattr(twin_state, "overall_vitality", getattr(twin_state, "vitality_index", None)) if twin_state else None
         return {
@@ -209,6 +260,8 @@ class IngestionService:
             "validation_status": audit.validation_status,
             "warnings": audit.warnings
         }
+
+
 
 
     @staticmethod
