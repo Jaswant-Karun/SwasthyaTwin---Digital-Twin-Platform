@@ -1058,6 +1058,13 @@ export const api = {
     });
   },
 
+  predictSleepStageSequence: async (epochs: any[]): Promise<any> => {
+    return await request<any>('/api/v1/ml/sleep-stage/predict-sequence', {
+      method: 'POST',
+      body: JSON.stringify({ epochs })
+    });
+  },
+
   trainSleepStagePipeline: async (maxSubjects?: number): Promise<any> => {
     const url = maxSubjects ? `/api/v1/ml/sleep-stage/train?max_subjects=${maxSubjects}` : '/api/v1/ml/sleep-stage/train';
     return await request<any>(url, {
