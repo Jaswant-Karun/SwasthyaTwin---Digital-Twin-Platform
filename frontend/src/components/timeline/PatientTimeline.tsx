@@ -71,6 +71,14 @@ const STAGE_THEMES: Record<string, { bg: string; text: string; border: string; g
   }
 };
 
+const STAGE_DISPLAY_NAMES: Record<string, string> = {
+  Wake: 'Stage Wake (Awake / Arousal)',
+  N1: 'Stage N1 (Light Transitional Sleep)',
+  N2: 'Stage N2 (Stable Light Sleep)',
+  N3: 'Stage N3 (Deep Slow-Wave Sleep)',
+  REM: 'Stage REM (Rapid Eye Movement / Dreaming)'
+};
+
 export const PatientTimeline: React.FC = () => {
   const { currentPatient, logObservation, newlyAddedObservationId } = useTwin();
   const [timelineData, setTimelineData] = useState<MultiSignalTimelineResponse | null>(null);
