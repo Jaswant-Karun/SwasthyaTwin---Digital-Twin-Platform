@@ -97,14 +97,12 @@ describe('AddObservationPage Component', () => {
     );
 
     // Select Fasting Blood Glucose
-    const selects = screen.getAllByRole('combobox');
-    // Measurement Type is the second select (first is patient)
-    const metricSelect = selects[1];
+    const metricSelect = screen.getByLabelText(/Measurement Type/i);
     fireEvent.change(metricSelect, { target: { value: 'blood_glucose' } });
 
     // Verify unit selector has mg/dL and mmol/L
     expect(screen.getByText(/Auto-converts mmol\/L/i)).toBeInTheDocument();
-    const unitSelect = selects[2];
+    const unitSelect = screen.getByLabelText(/Unit/i);
     expect(unitSelect).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'mmol/L' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'mg/dL' })).toBeInTheDocument();

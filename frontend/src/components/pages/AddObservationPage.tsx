@@ -192,7 +192,7 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
 
   // Single Observation Form State
   const [selectedPatientId, setSelectedPatientId] = useState(
-    currentPatient?.patient_id || ''
+    currentPatient?.patient_id || 'PT-1001'
   );
   const [metricType, setMetricType] = useState('resting_heart_rate');
   const [value, setValue] = useState('');
@@ -1075,10 +1075,11 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  <label htmlFor="measurement_type_select" className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Measurement Type <span className="text-rose-500">*</span>
                   </label>
                   <select
+                    id="measurement_type_select"
                     value={metricType}
                     onChange={e => handleMetricTypeChange(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-xs text-slate-900 outline-hidden bg-white"
@@ -1160,10 +1161,11 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  <label htmlFor="unit_select" className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Unit <span className="text-slate-400 font-normal">(auto-selected)</span>
                   </label>
                   <select
+                    id="unit_select"
                     value={unit}
                     onChange={e => setUnit(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-xs text-slate-900 bg-white"
