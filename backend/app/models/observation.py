@@ -3,7 +3,17 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, Literal
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
-DataKind = Literal["measured", "user_entered", "wearable_imported", "synthetic_demo", "simulated"]
+DataKind = Literal[
+    "measured",
+    "user_entered",
+    "manual_entry",
+    "wearable_imported",
+    "imported_file",
+    "device_measurement",
+    "public_research_dataset",
+    "synthetic_demo",
+    "simulated"
+]
 
 VALID_UNITS = {
     "heart_rate": ["bpm"],
@@ -14,54 +24,47 @@ VALID_UNITS = {
     "daily_steps": ["steps", "count"],
     "spo2": ["%"],
     "fasting_blood_glucose": ["mg/dL", "mmol/L"],
-    "respiratory_rate": ["breaths/min", "rpm"]
+    "respiratory_rate": ["breaths/min", "rpm"],
+    "body_weight": ["kg", "lbs", "lb"],
+    "body_temperature": ["Celsius", "C", "F", "Fahrenheit"]
 }
 
 PHYSIOLOGICAL_BOUNDS = {
-    "heart_rate": (30.0, 240.0, "bpm", "Resting Heart Rate"),
-    "blood_pressure_systolic": (50.0, 260.0, "mmHg", "Systolic Blood Pressure"),
-    "blood_pressure_diastolic": (30.0, 160.0, "mmHg", "Diastolic Blood Pressure"),
-    "hrv_rmssd": (5.0, 300.0, "ms", "Heart Rate Variability (RMSSD)"),
+    "heart_rate": (25.0, 260.0, "bpm", "Resting Heart Rate"),
+    "blood_pressure_systolic": (45.0, 300.0, "mmHg", "Systolic Blood Pressure"),
+    "blood_pressure_diastolic": (25.0, 180.0, "mmHg", "Diastolic Blood Pressure"),
+    "hrv_rmssd": (2.0, 350.0, "ms", "Heart Rate Variability (RMSSD)"),
     "sleep_duration_hours": (0.0, 24.0, "hours", "Sleep Duration"),
     "daily_steps": (0.0, 120000.0, "steps", "Daily Steps"),
-    "spo2": (50.0, 100.0, "%", "Blood Oxygen (SpO2)"),
-    "fasting_blood_glucose": (20.0, 600.0, "mg/dL", "Fasting Blood Glucose"),
-    "respiratory_rate": (4.0, 60.0, "breaths/min", "Respiratory Rate")
+    "spo2": (40.0, 100.0, "%", "Blood Oxygen (SpO2)"),
+    "fasting_blood_glucose": (15.0, 800.0, "mg/dL", "Fasting Blood Glucose"),
+    "respiratory_rate": (4.0, 70.0, "breaths/min", "Respiratory Rate"),
+    "body_weight": (15.0, 450.0, "kg", "Body Weight"),
+    "body_temperature": (28.0, 44.0, "Celsius", "Body Temperature")
 }
 
 def validate_and_normalize_measurement(m_type: str, val: float, unit: str) -> tuple[float, str]:
     """Validate physiological plausibility and auto-normalize units without false alarm disease labeling."""
-    clean_type = m_type.strip().lower()
-    clean_unit = unit.strip()
+    from app.analytics.unit_converter import convert_to_canonical_unit
+    try:
+        val, canon_unit, _, _ = convert_to_canonical_unit(m_type, val, unit)
+        return val, canon_unit
+    except Exception:
+        clean_type = m_type.strip().lower()
+        clean_unit = unit.strip()
 
-    # Supported Unit Conversions
-    if clean_type == "fasting_blood_glucose" and clean_unit.lower() == "mmol/l":
-        val = round(val * 18.0182, 1)
-        clean_unit = "mg/dL"
-    elif clean_type == "sleep_duration_hours" and clean_unit.lower() in ["hrs", "h"]:
-        clean_unit = "hours"
-    elif clean_type == "daily_steps" and clean_unit.lower() == "count":
-        clean_unit = "steps"
-    elif clean_type == "respiratory_rate" and clean_unit.lower() == "rpm":
-        clean_unit = "breaths/min"
+        # Supported Unit Conversions
+        if clean_type == "fasting_blood_glucose" and clean_unit.lower() == "mmol/l":
+            val = round(val * 18.0182, 1)
+            clean_unit = "mg/dL"
+        elif clean_type == "sleep_duration_hours" and clean_unit.lower() in ["hrs", "h"]:
+            clean_unit = "hours"
+        elif clean_type == "daily_steps" and clean_unit.lower() == "count":
+            clean_unit = "steps"
+        elif clean_type == "respiratory_rate" and clean_unit.lower() == "rpm":
+            clean_unit = "breaths/min"
 
-    # Unit validation
-    if clean_type in VALID_UNITS:
-        allowed = VALID_UNITS[clean_type]
-        if not any(clean_unit.lower() == a.lower() for a in allowed):
-            raise ValueError(
-                f"Invalid unit '{clean_unit}' for measurement type '{clean_type}'. Supported units: {allowed}"
-            )
-
-    # Range validation
-    if clean_type in PHYSIOLOGICAL_BOUNDS:
-        min_v, max_v, std_unit, label = PHYSIOLOGICAL_BOUNDS[clean_type]
-        if val < min_v or val > max_v:
-            raise ValueError(
-                f"{label} value {val} {clean_unit} is outside physiologically plausible range ({min_v} to {max_v} {std_unit}). Please check for data entry error."
-            )
-
-    return val, clean_unit
+        return val, clean_unit
 
 class ObservationBase(BaseModel):
     observation_id: str = Field(default_factory=lambda: f"obs_{uuid.uuid4().hex[:12]}")
@@ -71,8 +74,15 @@ class ObservationBase(BaseModel):
     unit: str
     observed_at: datetime
     source: str = Field(default="wearable_continuous")
+    source_type: Optional[str] = Field(default=None, description="manual_entry, imported_file, device_measurement, synthetic_demo")
+    device_id: Optional[str] = Field(default=None, description="Identifier of device or import batch")
     data_kind: DataKind = Field(default="measured")
     notes: Optional[str] = Field(default=None, max_length=500)
+    validation_status: str = Field(default="valid", description="valid, confirmed_unusual, valid_with_warnings, flagged, rejected")
+    validation_warnings: List[str] = Field(default_factory=list)
+    requires_confirmation: bool = Field(default=False)
+    confirmed_by_user: bool = Field(default=False)
+    edit_history: List[Dict[str, Any]] = Field(default_factory=list)
     demo_data: bool = Field(default=False, description="Flag indicating synthetic demonstration record")
     is_synthetic: bool = Field(default=False, description="Explicit synthetic provenance indicator")
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -121,6 +131,10 @@ class ObservationCreate(BaseModel):
     observed_at: Optional[datetime] = None
     timestamp: Optional[datetime] = None # Support either field name
     source: str = "manual_entry"
+    source_type: Optional[str] = None
+    device_id: Optional[str] = None
+    confirm_unusual: bool = False
+    paired_measurements: Optional[Dict[str, float]] = None
     data_kind: Optional[DataKind] = None
     data_tier: Optional[str] = None # Support either field name
     notes: Optional[str] = Field(default=None, max_length=500)
@@ -136,11 +150,11 @@ class ObservationCreate(BaseModel):
         # Map data_tier to data_kind
         kind = self.data_kind
         if not kind:
-            if self.data_tier in ["user_reported", "user_entered"]:
+            if self.data_tier in ["user_reported", "user_entered", "manual_entry"]:
                 kind = "user_entered"
-            elif self.data_tier in ["wearable_imported", "imported_measured"]:
+            elif self.data_tier in ["wearable_imported", "imported_measured", "imported_file"]:
                 kind = "wearable_imported"
-            elif self.data_tier in ["measured", "simulated", "synthetic_demo"]:
+            elif self.data_tier in ["measured", "simulated", "synthetic_demo", "device_measurement"]:
                 kind = self.data_tier
             else:
                 kind = "user_entered"
@@ -153,6 +167,8 @@ class ObservationCreate(BaseModel):
             unit=normalized_unit,
             observed_at=obs_time,
             source=self.source,
+            source_type=self.source_type or (self.source if self.source in ["manual_entry", "imported_file", "device_measurement", "synthetic_demo"] else "manual_entry"),
+            device_id=self.device_id,
             data_kind=kind,
             notes=self.notes,
             metadata=self.metadata or {}
