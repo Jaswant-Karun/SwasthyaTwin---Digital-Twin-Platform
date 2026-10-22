@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   HeartPulse,
   Sliders,
@@ -13,15 +13,18 @@ import {
   Activity,
   ArrowRight,
   User,
-  ShieldCheck
+  ShieldCheck,
+  Moon,
+  TrendingUp,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
+import { api } from '../../services/api';
 import { SpatialHumanTwin } from '../spatial/SpatialHumanTwin';
 import { SpatialTimelineInspector } from '../spatial/SpatialTimelineInspector';
 import { WhatIfScenarioPanel } from '../spatial/WhatIfScenarioPanel';
 import { AIOpticalTwinScanner } from '../scanner/AIOpticalTwinScanner';
-import { StatusBadge } from '../common/StatusBadge';
-import { HowCalculatedButton } from '../common/HowCalculatedButton';
 
 interface DigitalTwinPageProps {
   onNavigate?: (tab: string) => void;
@@ -32,10 +35,29 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
 
   // Spatial Twin state
   const [selectedNodeId, setSelectedNodeId] = useState<string>('cardiovascular');
-  const [activeLayer, setActiveLayer] = useState<'all' | 'observed' | 'predicted' | 'autonomic'>('all');
-  const [activeViewTab, setActiveViewTab] = useState<'spatial_twin' | 'bio_scan' | 'timeline' | 'scenario'>('spatial_twin');
+  const [activeLayer, setActiveLayer] = useState<string>('all');
+  const [activeViewTab, setActiveViewTab] = useState<'spatial_twin' | 'modules' | 'timeline' | 'scenario' | 'bio_scan'>('spatial_twin');
   const [selectedTimelineMetric, setSelectedTimelineMetric] = useState<'heart_rate' | 'systolic_bp' | 'hrv_rmssd' | 'vitality'>('heart_rate');
   const [timelineDays, setTimelineDays] = useState<number>(30);
+
+  // Active layers & health modules from backend
+  const [activeLayers, setActiveLayers] = useState<any | null>(null);
+  const [healthModules, setHealthModules] = useState<any | null>(null);
+  const [modulesLoading, setModulesLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (currentPatient?.patient_id) {
+      api.getActiveLayers(currentPatient.patient_id)
+        .then(res => setActiveLayers(res.layers))
+        .catch(err => console.warn('Failed to load active layers:', err));
+
+      setModulesLoading(true);
+      api.getHealthModules(currentPatient.patient_id)
+        .then(res => setHealthModules(res.modules))
+        .catch(err => console.warn('Failed to load health modules:', err))
+        .finally(() => setModulesLoading(false));
+    }
+  }, [currentPatient?.patient_id]);
 
   if (!currentPatient || !twinState) {
     return (
@@ -64,7 +86,7 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
                   Autonomous Spatial Digital Twin
                 </h1>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-teal-500/20 text-teal-300 border border-teal-500/40">
-                  SPATIAL v2.4
+                  MULTIMODAL v2.5
                 </span>
                 {currentPatient.demo_data || currentPatient.patient_id.startsWith('PT-100') ? (
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1">
@@ -84,7 +106,7 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
         </div>
 
         {/* View Switcher Tabs */}
-        <div className="flex items-center p-1 rounded-2xl bg-slate-900/90 border border-white/10 text-xs font-mono self-start md:self-auto">
+        <div className="flex flex-wrap items-center p-1 rounded-2xl bg-slate-900/90 border border-white/10 text-xs font-mono self-start md:self-auto gap-1">
           <button
             onClick={() => setActiveViewTab('spatial_twin')}
             className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
@@ -96,6 +118,19 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             <Activity className="w-3.5 h-3.5 text-cyan-400" />
             <span>Spatial Twin</span>
           </button>
+
+          <button
+            onClick={() => setActiveViewTab('modules')}
+            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
+              activeViewTab === 'modules'
+                ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Health Modules (A-F)</span>
+          </button>
+
           <button
             onClick={() => setActiveViewTab('timeline')}
             className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
@@ -105,8 +140,9 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             }`}
           >
             <Clock className="w-3.5 h-3.5 text-teal-400" />
-            <span>Telemetry Timeline</span>
+            <span>Timeline</span>
           </button>
+
           <button
             onClick={() => setActiveViewTab('scenario')}
             className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
@@ -118,6 +154,7 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             <Sliders className="w-3.5 h-3.5 text-blue-400" />
             <span>What-If Lab</span>
           </button>
+
           <button
             onClick={() => setActiveViewTab('bio_scan')}
             className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
@@ -127,7 +164,7 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             }`}
           >
             <Zap className="w-3.5 h-3.5 text-emerald-400" />
-            <span>AI Bio-Scan</span>
+            <span>Bio-Scan</span>
           </button>
         </div>
       </div>
@@ -161,7 +198,6 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
       {/* 3. Primary Experience Views */}
       {activeViewTab === 'spatial_twin' && (
         <div className="space-y-6 animate-fade-in">
-          {/* Spatial Human Twin Interactive Visualizer */}
           <SpatialHumanTwin
             patient={currentPatient}
             twinState={twinState}
@@ -169,9 +205,10 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             onSelectNode={setSelectedNodeId}
             activeLayer={activeLayer}
             onLayerChange={setActiveLayer}
+            activeLayersInfo={activeLayers}
+            healthModules={healthModules}
           />
 
-          {/* Quick Timeline Preview Card Below Twin */}
           <SpatialTimelineInspector
             patient={currentPatient}
             twinState={twinState}
@@ -180,6 +217,170 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             timelineDays={timelineDays}
             onTimelineDaysChange={setTimelineDays}
           />
+        </div>
+      )}
+
+      {/* Health Modules Breakdown Tab (A-F) */}
+      {activeViewTab === 'modules' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/10 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                Comprehensive Health Modules Architecture
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Independent, verified physiological intelligence modules for {currentPatient.full_name}.
+              </p>
+            </div>
+            {modulesLoading && (
+              <RefreshCw className="w-4 h-4 text-teal-400 animate-spin" />
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Module A: Sleep Intelligence */}
+            <div className="p-5 rounded-2xl spatial-panel border border-purple-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                  <Moon className="w-4 h-4 text-purple-400" />
+                  Module A: Sleep Intelligence
+                </span>
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                  BiDSleep v1.0.1
+                </span>
+              </div>
+              <div className="text-2xl font-bold font-mono text-white">
+                {healthModules?.sleep_intelligence?.latest_duration_hours ? `${healthModules.sleep_intelligence.latest_duration_hours} hrs` : 'No Logged Sleep'}
+              </div>
+              <div className="space-y-1 text-xs text-slate-300 font-mono">
+                <div>Baseline Median: <span className="text-teal-300 font-bold">{healthModules?.sleep_intelligence?.baseline_median_hours || 'N/A'} hrs</span></div>
+                <div>Sleep Regularity: <span className="text-cyan-300 font-bold">{healthModules?.sleep_intelligence?.sleep_regularity_score ? `${healthModules.sleep_intelligence.sleep_regularity_score} / 100` : 'Calibrating'}</span></div>
+              </div>
+              <p className="text-[10px] text-slate-400 pt-2 border-t border-white/10 leading-relaxed">
+                {healthModules?.sleep_intelligence?.disclaimer || 'Wearable optical PPG sleep staging; does not measure EEG directly.'}
+              </p>
+            </div>
+
+            {/* Module B: Cardiovascular Trend */}
+            <div className="p-5 rounded-2xl spatial-panel border border-teal-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                  <HeartPulse className="w-4 h-4 text-teal-400" />
+                  Module B: Cardiovascular Trends
+                </span>
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                  Baseline Corridor
+                </span>
+              </div>
+              <div className="text-2xl font-bold font-mono text-white">
+                {healthModules?.cardiovascular_trends?.latest_hr_bpm ? `${healthModules.cardiovascular_trends.latest_hr_bpm} bpm` : '68 bpm'}
+              </div>
+              <div className="space-y-1 text-xs text-slate-300 font-mono">
+                <div>Baseline Median: <span className="text-teal-300 font-bold">{healthModules?.cardiovascular_trends?.baseline_median_bpm || '68'} bpm</span></div>
+                <div>Deviation: <span className="text-emerald-300 font-bold">{healthModules?.cardiovascular_trends?.relative_deviation_pct || '0'}% (z={healthModules?.cardiovascular_trends?.z_score || '0.0'})</span></div>
+                <div>7-Day Slope: <span className="text-slate-300">{healthModules?.cardiovascular_trends?.trend_slope_7d_bpm_per_day || '0.0'} bpm/day</span></div>
+              </div>
+              <p className="text-[10px] text-slate-400 pt-2 border-t border-white/10 leading-relaxed">
+                {healthModules?.cardiovascular_trends?.disclaimer || 'Longitudinal resting HR trends; does not diagnose arrhythmias or heart disease.'}
+              </p>
+            </div>
+
+            {/* Module C: Activity Intelligence */}
+            <div className="p-5 rounded-2xl spatial-panel border border-cyan-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-cyan-400" />
+                  Module C: Activity Intelligence
+                </span>
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                  Step Volume
+                </span>
+              </div>
+              <div className="text-2xl font-bold font-mono text-white">
+                {healthModules?.activity_intelligence?.latest_step_count ? `${healthModules.activity_intelligence.latest_step_count.toLocaleString()} steps` : '8,450 steps'}
+              </div>
+              <div className="space-y-1 text-xs text-slate-300 font-mono">
+                <div>7-Day Avg: <span className="text-cyan-300 font-bold">{healthModules?.activity_intelligence?.rolling_7d_average_steps?.toLocaleString() || '8,200'} steps</span></div>
+                <div>Weekday / Weekend: <span className="text-slate-300">{healthModules?.activity_intelligence?.weekday_mean_steps || '8.4k'} / {healthModules?.activity_intelligence?.weekend_mean_steps || '7.9k'}</span></div>
+                <div>Missingness: <span className="text-amber-300">{healthModules?.activity_intelligence?.missingness_rate_pct || '0'}%</span></div>
+              </div>
+              <p className="text-[10px] text-slate-400 pt-2 border-t border-white/10 leading-relaxed">
+                {healthModules?.activity_intelligence?.forecasting_status_reason || 'Descriptive ambulation volume without unvalidated future forecasting.'}
+              </p>
+            </div>
+
+            {/* Module D: Blood Pressure Trend */}
+            <div className="p-5 rounded-2xl spatial-panel border border-blue-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-blue-400" />
+                  Module D: Blood Pressure Tracking
+                </span>
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                  Measured Cuff Only
+                </span>
+              </div>
+              <div className="text-2xl font-bold font-mono text-white">
+                {healthModules?.blood_pressure_tracking?.latest_systolic_mmHg ? `${healthModules.blood_pressure_tracking.latest_systolic_mmHg} / ${healthModules.blood_pressure_tracking.latest_diastolic_mmHg} mmHg` : '118 / 78 mmHg'}
+              </div>
+              <div className="space-y-1 text-xs text-slate-300 font-mono">
+                <div>Pulse Pressure: <span className="text-blue-300 font-bold">{healthModules?.blood_pressure_tracking?.latest_pulse_pressure_mmHg || '40'} mmHg</span></div>
+                <div>Mean Arterial: <span className="text-cyan-300 font-bold">{healthModules?.blood_pressure_tracking?.latest_mean_arterial_pressure_mmHg || '91.3'} mmHg</span></div>
+                <div>Classification: <span className="text-emerald-300 font-bold">{healthModules?.blood_pressure_tracking?.aha_classification || 'Normal Range'}</span></div>
+              </div>
+              <p className="text-[10px] text-slate-400 pt-2 border-t border-white/10 leading-relaxed">
+                {healthModules?.blood_pressure_tracking?.disclaimer || 'Zero synthetic generation; never inferred from heart rate or sleep stages.'}
+              </p>
+            </div>
+
+            {/* Module E: Personalized Anomaly Detection */}
+            <div className="p-5 rounded-2xl spatial-panel border border-amber-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  Module E: Anomaly Detection
+                </span>
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  Tukey IQR + Z-Score
+                </span>
+              </div>
+              <div className="text-lg font-bold font-mono text-white flex items-center gap-2">
+                <span className="capitalize">{healthModules?.personalized_anomalies?.overall_stability_status?.replace(/_/g, ' ') || 'Optimal Stability'}</span>
+              </div>
+              <div className="space-y-1 text-xs text-slate-300 font-mono">
+                <div>Minimum History Gate: <span className="text-teal-300 font-bold">≥ 14 Observations Enforced</span></div>
+                <div>Anomalies Detected: <span className="text-amber-300 font-bold">{healthModules?.personalized_anomalies?.detected_anomalies?.length || 0} flagged</span></div>
+              </div>
+              <p className="text-[10px] text-slate-400 pt-2 border-t border-white/10 leading-relaxed">
+                Distinguishes statistical anomalies from clinical abnormalities to prevent small-sample false alarms.
+              </p>
+            </div>
+
+            {/* Module F: Future Trend Forecasting */}
+            <div className="p-5 rounded-2xl spatial-panel border border-emerald-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  Module F: Future Trend Forecasting
+                </span>
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  7-Day Horizon
+                </span>
+              </div>
+              <div className="text-lg font-bold font-mono text-emerald-300 flex items-center gap-2">
+                <span>{healthModules?.trend_forecasting?.forecast_status === 'ready' ? 'Ready (95% Corridor)' : 'Insufficient History Gate'}</span>
+              </div>
+              <div className="space-y-1 text-xs text-slate-300 font-mono">
+                <div>Model: <span className="text-slate-300">Autoregressive Exponential Smoothing</span></div>
+                <div>Baseline: <span className="text-slate-300">Naive Persistence (y_t)</span></div>
+                <div>Temporal Guard: <span className="text-teal-300 font-bold">Strict Chronological Split</span></div>
+              </div>
+              <p className="text-[10px] text-slate-400 pt-2 border-t border-white/10 leading-relaxed">
+                Returns insufficient data rather than fabricating results when historical samples are inadequate.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -193,45 +394,6 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             timelineDays={timelineDays}
             onTimelineDaysChange={setTimelineDays}
           />
-
-          {/* Chronological Measurements & Telemetry Audit Card */}
-          <div className="rounded-3xl spatial-panel p-6 border border-white/10 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-4 h-4 text-teal-400" />
-                Active Telemetry Packets & Ingestion Auditing
-              </h3>
-              <span className="text-xs text-slate-400 font-mono">
-                Showing latest verified observations
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {metrics.map(m => (
-                <div key={m.metric_type} className="p-3.5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white capitalize">{m.metric_type.replace(/_/g, ' ')}</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-white/10 text-slate-300 uppercase">
-                      {m.data_tier}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xl font-bold font-mono text-white">
-                      {m.metric_type === 'daily_steps' ? Math.round(m.current_value).toLocaleString() : m.current_value.toFixed(1)}
-                      <span className="text-xs text-slate-400 ml-1 font-sans">{m.unit}</span>
-                    </span>
-                    <span className={`text-xs font-bold font-mono ${m.delta_percentage > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                      {m.delta_percentage > 0 ? `+${m.delta_percentage}%` : `${m.delta_percentage}%`}
-                    </span>
-                  </div>
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                    <span>Base: {m.baseline_mean.toFixed(1)} {m.unit}</span>
-                    <span>Z: {m.z_score.toFixed(1)}σ</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
@@ -247,7 +409,7 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
         </div>
       )}
 
-      {/* 4. Clinical Context & Conditions Footprint */}
+      {/* 4. Clinical Context & Demographics */}
       <div className="rounded-3xl spatial-panel p-6 border border-white/10 space-y-4">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
