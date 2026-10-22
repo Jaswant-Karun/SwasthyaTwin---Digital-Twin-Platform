@@ -54,6 +54,8 @@ export const SleepResearchPage: React.FC = () => {
   const [modelStatus, setModelStatus] = useState<any>(null);
   const [selectedEpoch, setSelectedEpoch] = useState<ResearchEpoch | null>(null);
 
+  const [evaluationData, setEvaluationData] = useState<any | null>(null);
+
   // Live Sandbox state
   const [sandboxHrMean, setSandboxHrMean] = useState<number>(58.0);
   const [sandboxHrStd, setSandboxHrStd] = useState<number>(1.4);
@@ -65,6 +67,7 @@ export const SleepResearchPage: React.FC = () => {
   useEffect(() => {
     loadResearchData();
     loadStatus();
+    loadEvaluation();
   }, [selectedSubject, selectedNight]);
 
   const loadStatus = async () => {
@@ -73,6 +76,15 @@ export const SleepResearchPage: React.FC = () => {
       setModelStatus(st);
     } catch (e) {
       console.warn('Failed to load sleep stage model status', e);
+    }
+  };
+
+  const loadEvaluation = async () => {
+    try {
+      const ev = await api.getSleepStageEvaluation();
+      setEvaluationData(ev);
+    } catch (e) {
+      console.warn('Failed to load sleep stage evaluation', e);
     }
   };
 
@@ -98,6 +110,7 @@ export const SleepResearchPage: React.FC = () => {
     let hrStd = sandboxHrStd;
     let hrDelta = sandboxHrDelta;
     let timeMin = sandboxTimeMin;
+    let validCount = 6.0;
 
     if (preset === 'deep') {
       hrMean = 52.0;
@@ -114,6 +127,12 @@ export const SleepResearchPage: React.FC = () => {
       hrStd = 6.5;
       hrDelta = +14.0;
       timeMin = 15.0;
+    } else if (preset === 'dropout') {
+      hrMean = 58.0;
+      hrStd = 1.0;
+      hrDelta = -2.0;
+      timeMin = 60.0;
+      validCount = 0.5; // Deliberate optical sensor dropout (< 2.0 valid samples)
     }
 
     setSandboxHrMean(hrMean);
@@ -127,6 +146,7 @@ export const SleepResearchPage: React.FC = () => {
         hr_std: hrStd,
         hr_min: hrMean - 3.0,
         hr_max: hrMean + 4.0,
+        hr_valid_count: validCount,
         hr_delta_baseline: hrDelta,
         hr_rolling_mean_5m: hrMean,
         hr_rolling_std_5m: hrStd,
