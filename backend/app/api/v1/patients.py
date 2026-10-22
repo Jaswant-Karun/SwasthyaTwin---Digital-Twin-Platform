@@ -87,25 +87,35 @@ def delete_patient(
 @router.get("/{patient_id}/timeline/multi-signal", response_model=MultiSignalTimelineResponse)
 def get_patient_multi_signal_timeline(
     patient_id: str,
-    signal_filter: str = Query("all", description="Filter by signal: 'all', 'sleep', 'cardio', 'observations'"),
+    signal_filter: str = Query("all", description="Filter by signal: 'all', 'sleep', 'cardio', 'blood_pressure', 'steps', 'respiratory', 'observations'"),
+    start_date: Optional[str] = Query(None, description="ISO format start date filter"),
+    end_date: Optional[str] = Query(None, description="ISO format end date filter"),
+    source: Optional[str] = Query(None, description="Filter by device or origin source"),
+    status: Optional[str] = Query(None, description="Filter by status level e.g. 'elevated', 'low', 'normal', 'review'"),
+    data_kind: Optional[str] = Query(None, description="Filter by provenance: 'measured', 'derived', 'model_predicted', 'simulated', 'synthetic'"),
     limit: int = Query(150, ge=1, le=500, description="Maximum items to return"),
     skip: int = Query(0, ge=0, description="Offset for pagination"),
     db: Database = Depends(get_database)
 ):
     """
     Returns an integrated multi-signal timeline synthesizing:
-    1. BiDSleep Wearable Sleep-Stage ML Model predictions (LightGBM 5-class AASM)
+    1. BiDSleep Wearable Sleep-Stage ML Model predictions (5-class AASM)
     2. Cardiovascular nMAD Statistical Anomaly flags (Non-parametric robust median corridor)
-    3. Physiological Telemetry Observations
+    3. Physiological Telemetry Observations (BP, Steps, Respiration, etc.)
 
     Maintains strict separation, distinct badges, and independent audit trails
-    between probabilistic AI inferences and deterministic statistical corridors.
+    between probabilistic AI inferences, deterministic statistical corridors, and measured telemetry.
     """
     try:
         return MultiSignalService.get_multi_signal_timeline(
             db=db,
             patient_id=patient_id,
             signal_filter=signal_filter,
+            start_date=start_date,
+            end_date=end_date,
+            source=source,
+            status=status,
+            data_kind=data_kind,
             limit=limit,
             skip=skip
         )
