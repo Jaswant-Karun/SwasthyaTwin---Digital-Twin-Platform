@@ -7,6 +7,14 @@ from app.analytics.baseline_calculator import compute_all_baselines
 from app.analytics.anomaly_detector import detect_deviations, evaluate_alerts
 from app.analytics.trend_indicator import calculate_health_stability_index, CANONICAL_METRIC_WEIGHTS
 from app.analytics.predictor import train_and_forecast_metric
+from app.analytics.health_modules import (
+    SleepIntelligenceModule,
+    CardiovascularTrendModule,
+    ActivityIntelligenceModule,
+    BloodPressureTrendModule,
+    PersonalizedAnomalyModule,
+    FutureTrendForecastingModule
+)
 from app.models.assessment import (
     HealthAssessmentResponse,
     DigitalTwinStateResponse,
