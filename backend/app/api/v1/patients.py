@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pymongo.database import Database
 from app.api.deps import get_database
 from app.models.patient import PatientCreate, PatientUpdate, PatientResponse
+from app.models.multi_signal import MultiSignalTimelineResponse
 from app.services.patient_service import PatientService
+from app.services.multi_signal_service import MultiSignalService
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
