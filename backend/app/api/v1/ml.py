@@ -355,7 +355,7 @@ def predict_sleep_stage(req: SleepStagePredictRequest):
         # Add 3-class summary
         stage_5_id = pred_res["predicted_stage_id"]
         stage_3_id = CLASS_3_MAP.get(stage_5_id, 1)
-        stage_3_name = CLASS_NAMES_3.get(stage_3_id, "NREM")
+        stage_3_name = CLASS_NAMES_3[stage_3_id] if (0 <= stage_3_id < len(CLASS_NAMES_3)) else "NREM"
 
         # 3-class probabilities
         probs_5 = pred_res["probabilities"]
