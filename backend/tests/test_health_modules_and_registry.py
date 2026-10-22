@@ -299,3 +299,211 @@ def test_health_modules_endpoint_and_patient_isolation(test_client: TestClient, 
     mods_b = res_b.json()["modules"]
     assert mods_b["activity_intelligence"]["latest_step_count"] == 9200
     assert mods_b["cardiovascular_trends"]["total_hr_observations"] == 0  # Zero leakage from Patient A!
+
+
+# --- 11. Phase A & B: Unit Conversion, Malformed Input & Plausibility Tests ---
+
+def test_unit_conversions_and_normalizations(test_client: TestClient):
+    pid = "PT-UNIT-01"
+    test_client.post("/api/v1/patients", json={"patient_id": pid, "full_name": "Unit Conversion Test"})
+
+    # 1. Sleep duration in minutes -> canonical hours (450 min = 7.5 hrs)
+    res_sleep = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "sleep_duration",
+        "value": 450.0,
+        "unit": "minutes",
+        "observed_at": datetime.now(timezone.utc).isoformat()
+    })
+    assert res_sleep.status_code == 201
+    assert res_sleep.json()["unit"] == "hours"
+    assert res_sleep.json()["value"] == 7.5
+
+    # 2. Blood pressure in kPa -> canonical mmHg (16.0 kPa = 120.0 mmHg)
+    res_bp = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "blood_pressure_systolic",
+        "value": 16.0,
+        "unit": "kPa",
+        "observed_at": datetime.now(timezone.utc).isoformat()
+    })
+    assert res_bp.status_code == 201
+    assert res_bp.json()["unit"] == "mmHg"
+    assert abs(res_bp.json()["value"] - 120.0) <= 0.5
+
+    # 3. Respiratory rate in rpm -> canonical breaths/min
+    res_resp = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "respiratory_rate",
+        "value": 16.0,
+        "unit": "rpm",
+        "observed_at": datetime.now(timezone.utc).isoformat()
+    })
+    assert res_resp.status_code == 201
+    assert res_resp.json()["unit"] == "breaths/min"
+    assert res_resp.json()["value"] == 16.0
+
+    # 4. Fasting blood glucose in mmol/L -> canonical mg/dL (5.5 mmol/L = ~99.1 mg/dL)
+    res_glu = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "fasting_blood_glucose",
+        "value": 5.5,
+        "unit": "mmol/L",
+        "observed_at": datetime.now(timezone.utc).isoformat()
+    })
+    assert res_glu.status_code == 201
+    assert res_glu.json()["unit"] == "mg/dL"
+    assert abs(res_glu.json()["value"] - 99.1) <= 0.5
+
+
+def test_malformed_and_impossible_inputs_rejected(test_client: TestClient):
+    pid = "PT-MALFORM-01"
+    test_client.post("/api/v1/patients", json={"patient_id": pid, "full_name": "Malformed Input Test"})
+
+    # 1. Impossible physiological value (800 bpm HR)
+    res_high_hr = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "heart_rate",
+        "value": 800.0,
+        "unit": "bpm",
+        "observed_at": datetime.now(timezone.utc).isoformat()
+    })
+    assert res_high_hr.status_code == 400
+    assert "not physiologically plausible" in res_high_hr.json()["detail"].lower()
+
+    # 2. Impossible future timestamp (1 hour in the future)
+    future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    res_future = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "heart_rate",
+        "value": 72.0,
+        "unit": "bpm",
+        "observed_at": future_time
+    })
+    assert res_future.status_code == 400
+    assert "future timestamp" in res_future.json()["detail"].lower()
+
+    # 3. Impossible pre-1970 timestamp
+    res_old = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "heart_rate",
+        "value": 72.0,
+        "unit": "bpm",
+        "observed_at": "1960-01-01T00:00:00Z"
+    })
+    assert res_old.status_code == 400
+    assert "precedes epoch" in res_old.json()["detail"].lower()
+
+
+def test_suspicious_input_requires_confirmation_flow(test_client: TestClient):
+    pid = "PT-SUSP-01"
+    test_client.post("/api/v1/patients", json={"patient_id": pid, "full_name": "Suspicious Input Test"})
+
+    # Resting HR 150 bpm is unusual / suspicious -> should return 409 Conflict
+    res_unusual = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "heart_rate",
+        "value": 150.0,
+        "unit": "bpm",
+        "observed_at": datetime.now(timezone.utc).isoformat()
+    })
+    assert res_unusual.status_code == 409
+    data = res_unusual.json()["detail"]
+    assert data["status"] == "requires_confirmation"
+    assert data["entered_value"] == 150.0
+    assert "confirmation_prompt" in data
+
+    # Confirm unusual reading explicitly
+    res_confirmed = test_client.post(f"/api/v1/patients/{pid}/observations?confirm_unusual=true", json={
+        "patient_id": pid,
+        "measurement_type": "heart_rate",
+        "value": 150.0,
+        "unit": "bpm",
+        "observed_at": datetime.now(timezone.utc).isoformat()
+    })
+    assert res_confirmed.status_code == 201
+    assert res_confirmed.json()["validation_status"] == "confirmed_unusual"
+    assert res_confirmed.json()["value"] == 150.0
+
+
+def test_inconsistent_blood_pressure_pair_rejected(test_client: TestClient):
+    pid = "PT-BP-PAIR-01"
+    test_client.post("/api/v1/patients", json={"patient_id": pid, "full_name": "BP Pair Test"})
+
+    # SBP <= DBP (Systolic 80, Diastolic 120) must be rejected
+    res_reversed = test_client.post(f"/api/v1/patients/{pid}/observations", json={
+        "patient_id": pid,
+        "measurement_type": "blood_pressure_systolic",
+        "value": 80.0,
+        "unit": "mmHg",
+        "paired_measurements": {"blood_pressure_diastolic": 120.0},
+        "observed_at": datetime.now(timezone.utc).isoformat()
+    })
+    assert res_reversed.status_code == 400
+    assert "must be strictly greater" in res_reversed.json()["detail"].lower()
+
+
+# --- 12. Phase C: Cardiovascular Baseline, Simulation Exclusion & Flags Tests ---
+
+def test_cardiovascular_baseline_insufficient_data_gating():
+    base_time = datetime(2026, 10, 1, tzinfo=timezone.utc)
+    # Only 3 observations (< min_observations=5)
+    obs = [
+        {"measurement_type": "heart_rate", "value": 70.0, "observed_at": base_time + timedelta(days=i)}
+        for i in range(3)
+    ]
+    summary = CardiovascularTrendModule.evaluate("PT-CARDIO-SUFF", obs, min_observations=5)
+    assert summary.total_hr_observations == 3
+    assert summary.has_sufficient_data is False
+    assert summary.baseline_median_bpm is None
+    assert summary.baseline_iqr_bpm is None
+
+
+def test_cardiovascular_baseline_excludes_simulated_and_rejected():
+    base_time = datetime(2026, 10, 1, tzinfo=timezone.utc)
+    obs = [
+        # 6 valid measured points at 60 bpm
+        {"measurement_type": "heart_rate", "value": 60.0, "observed_at": base_time + timedelta(days=i), "data_kind": "measured", "validation_status": "valid"}
+        for i in range(6)
+    ]
+    # 5 simulated points at 120 bpm (must NOT contaminate real baseline)
+    for i in range(5):
+        obs.append({
+            "measurement_type": "heart_rate",
+            "value": 120.0,
+            "observed_at": base_time + timedelta(days=10 + i),
+            "data_kind": "simulated",
+            "validation_status": "valid"
+        })
+    # 2 rejected points at 250 bpm (must NOT contaminate real baseline)
+    obs.append({
+        "measurement_type": "heart_rate",
+        "value": 250.0,
+        "observed_at": base_time + timedelta(days=20),
+        "data_kind": "measured",
+        "validation_status": "rejected"
+    })
+
+    summary = CardiovascularTrendModule.evaluate("PT-SIM-EXCL", obs, min_observations=5)
+    assert summary.total_hr_observations == 6  # Only the 6 real measured observations!
+    assert summary.has_sufficient_data is True
+    assert summary.baseline_median_bpm == 60.0
+    assert summary.latest_hr_bpm == 60.0
+
+
+def test_cardiovascular_bradycardia_and_corridor_drift_flags():
+    base_time = datetime(2026, 10, 1, tzinfo=timezone.utc)
+    # 7 baseline observations at 65 bpm (std_dev ~ 2.0)
+    obs = [
+        {"measurement_type": "heart_rate", "value": 65.0 + (i % 3), "observed_at": base_time + timedelta(days=i)}
+        for i in range(7)
+    ]
+    # Add acute bradycardia reading: 40 bpm (< 45 bpm threshold and |z| > 2)
+    obs.append({"measurement_type": "heart_rate", "value": 40.0, "observed_at": base_time + timedelta(days=8)})
+
+    summary = CardiovascularTrendModule.evaluate("PT-BRADY-FLAG", obs, min_observations=5)
+    flag_ids = [f.flag_id for f in summary.active_flags]
+    assert "hr_suppressed_bradycardia" in flag_ids
+    assert "hr_statistical_corridor_drift" in flag_ids
+    assert summary.absolute_deviation_bpm < 0
+    assert summary.relative_deviation_pct < 0
