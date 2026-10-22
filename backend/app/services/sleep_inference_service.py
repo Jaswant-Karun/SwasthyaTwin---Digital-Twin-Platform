@@ -215,7 +215,9 @@ class SleepInferenceService:
                 "predicted_stage_id_5class": 5,
                 "predicted_stage_3class": "Unknown",
                 "predicted_stage_id_3class": -1,
+                "predicted_stage_id": -1,
                 "confidence_pct": 0.0,
+                "class_probabilities": {"Wake": 0.0, "NREM": 0.0, "REM": 0.0},
                 "probabilities_5class": {k: 0.0 for k in CLASS_NAMES_5},
                 "probabilities_3class": {"Wake": 0.0, "NREM": 0.0, "REM": 0.0},
                 "epoch_index": epoch_idx,
@@ -224,6 +226,16 @@ class SleepInferenceService:
                 "input_quality_warnings": warnings + ["Insufficient valid optical samples in 30s epoch (valid_count < 2.0)."],
                 "is_trained_model": True,
                 "is_demo_fixture": False,
+                "model_metadata": {
+                    "algorithm": "Random_Forest",
+                    "model_version": self.model_version,
+                    "target_unit": "sleep_stage_3class",
+                    "target_classes_5": CLASS_NAMES_5,
+                    "limitations": [
+                        "Inadequate signal coverage; optical samples below minimum reliability threshold.",
+                        "Non-diagnostic research output."
+                    ]
+                },
                 "limitations": [
                     "Inferred from 30s wearable optical heart rate (PPG) dynamics; not a replacement for 10-20 EEG polysomnography.",
                     "Optical PPG signal quality is degraded by sensor loose contact or active body motion.",
@@ -254,12 +266,14 @@ class SleepInferenceService:
         }
 
         return {
-            "predicted_stage_name": stage_5_name,
+            "predicted_stage_name": stage_3_name,
             "predicted_stage_5class": stage_5_name,
             "predicted_stage_id_5class": stage_5_id,
             "predicted_stage_3class": stage_3_name,
             "predicted_stage_id_3class": stage_3_id,
+            "predicted_stage_id": stage_3_id,
             "confidence_pct": round(raw_res["confidence"] * 100.0, 2),
+            "class_probabilities": probs_3,
             "probabilities_5class": {k: round(v * 100.0, 2) for k, v in probs_5.items()},
             "probabilities_3class": probs_3,
             "epoch_index": epoch_idx,
@@ -268,6 +282,19 @@ class SleepInferenceService:
             "input_quality_warnings": raw_res["warnings"] + warnings,
             "is_trained_model": True,
             "is_demo_fixture": False,
+            "model_metadata": {
+                "algorithm": "Random_Forest",
+                "model_version": self.model_version,
+                "dataset_version": "1.0.1",
+                "target_unit": "sleep_stage_3class",
+                "target_classes_5": CLASS_NAMES_5,
+                "evaluation_reference": "/api/v1/ml/sleep-stage/evaluation",
+                "limitations": [
+                    "Inferred from 30s wearable optical heart rate (PPG) dynamics; not a replacement for 10-20 EEG polysomnography.",
+                    "Subject to motion artifacts and sensor contact variations during sleep.",
+                    "Non-diagnostic investigational tool; not for medical decision making."
+                ]
+            },
             "limitations": [
                 "Inferred from 30s wearable optical heart rate (PPG) dynamics; not a replacement for 10-20 EEG polysomnography.",
                 "Subject to motion artifacts and sensor contact variations during sleep.",
