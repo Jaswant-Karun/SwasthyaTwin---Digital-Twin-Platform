@@ -458,4 +458,84 @@ export interface AIScanResult {
   clinical_disclaimer: string;
 }
 
+export interface MLClusterSummary {
+  cluster_id: number;
+  name: string;
+  archetype: string;
+  summary: string;
+  color: string;
+  profile: {
+    heart_rate: number;
+    systolic_bp: number;
+    diastolic_bp: number;
+    pulse_pressure: number;
+    hrv_rmssd: number;
+    sleep_duration: number;
+    daily_steps: number;
+  };
+}
+
+export interface MLFeatureImportanceItem {
+  feature: string;
+  display_name: string;
+  importance_pct: number;
+}
+
+export interface MLModelManifest {
+  version: string;
+  trained_at: string;
+  training_duration_seconds: number;
+  dataset_summary: {
+    total_samples: number;
+    train_samples: number;
+    test_samples: number;
+    features_count: number;
+    feature_names: string[];
+  };
+  classification_metrics: {
+    algorithm: string;
+    test_accuracy: number;
+    test_precision: number;
+    test_recall: number;
+    test_f1_score: number;
+    roc_auc_ovr: number;
+    cross_validation_5fold: {
+      fold_scores: number[];
+      mean_score: number;
+      std_score: number;
+    };
+    confusion_matrix: number[][];
+    class_labels: string[];
+  };
+  baseline_comparison: {
+    algorithm: string;
+    test_accuracy: number;
+    test_f1_score: number;
+    accuracy_improvement_pct: number;
+  };
+  regression_metrics: {
+    algorithm: string;
+    mae: number;
+    rmse: number;
+    r2_score: number;
+    target: string;
+  };
+  unsupervised_phenotypes: {
+    algorithm: string;
+    clusters: MLClusterSummary[];
+  };
+  dimensionality_reduction: {
+    algorithm: string;
+    explained_variance_ratio: number[];
+    total_explained_variance_pct: number;
+    sample_scatter_points: Array<{
+      x: number;
+      y: number;
+      cluster: number;
+      risk_class: number;
+    }>;
+  };
+  feature_importance: MLFeatureImportanceItem[];
+}
+
 

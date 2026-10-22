@@ -17,7 +17,8 @@ import {
   CSVValidationResult,
   InputPlausibilityResult,
   MLPredictionResult,
-  AIScanResult
+  AIScanResult,
+  MLModelManifest
 } from '../types';
 import {
   MOCK_PATIENTS,
@@ -965,5 +966,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data)
     });
+  },
+
+  getMLModelInfo: async (): Promise<MLModelManifest> => {
+    return await request<MLModelManifest>('/api/v1/ml/model-info');
+  },
+
+  trainMLModel: async (params?: { n_samples?: number; test_size?: number; random_state?: number }): Promise<MLModelManifest> => {
+    return await request<MLModelManifest>('/api/v1/ml/train', {
+      method: 'POST',
+      body: JSON.stringify(params || { n_samples: 2500, test_size: 0.20, random_state: 42 })
+    });
   }
 };
+
