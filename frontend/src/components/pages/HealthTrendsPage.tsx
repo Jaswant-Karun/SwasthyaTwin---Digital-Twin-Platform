@@ -1,47 +1,83 @@
 import React, { useState } from 'react';
-import { LineChart as LineChartIcon, Heart, Activity, Moon, Footprints, Calendar } from 'lucide-react';
+import { LineChart as LineChartIcon, Heart, Activity, Calendar } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { InteractiveHistoricalChart } from '../charts/InteractiveHistoricalChart';
+import { CardiovascularIntelligenceWorkspace } from '../cardiovascular/CardiovascularIntelligenceWorkspace';
 
 export const HealthTrendsPage: React.FC = () => {
   const { currentPatient } = useTwin();
   const [selectedRange, setSelectedRange] = useState<number>(30);
+  const [activeSubTab, setActiveSubTab] = useState<'cardio-intelligence' | 'multisignal'>('cardio-intelligence');
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Sub-tab Switcher */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <LineChartIcon className="w-6 h-6 text-teal-600" />
-            Longitudinal Health Trends & Dynamics
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+            <LineChartIcon className="w-6 h-6 text-teal-400" />
+            Longitudinal Health Dynamics & Anomaly Intelligence
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             Evaluate time-series trajectories benchmarked strictly against {currentPatient?.full_name}’s own biological baseline.
           </p>
         </div>
 
-        {/* Global Date Range for Trends */}
-        <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-slate-200 text-xs shadow-2xs">
-          <Calendar className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
-          {[7, 14, 30, 90].map(days => (
-            <button
-              key={days}
-              onClick={() => setSelectedRange(days)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                selectedRange === days
-                  ? 'bg-teal-50 text-teal-800 border border-teal-200 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Last {days} Days
-            </button>
-          ))}
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs">
+          <button
+            onClick={() => setActiveSubTab('cardio-intelligence')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
+              activeSubTab === 'cardio-intelligence'
+                ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30 shadow-xs'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Heart className="w-3.5 h-3.5 text-teal-400" />
+            Cardiovascular Intelligence
+          </button>
+          <button
+            onClick={() => setActiveSubTab('multisignal')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
+              activeSubTab === 'multisignal'
+                ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30 shadow-xs'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5 text-sky-400" />
+            Multi-Signal Trends
+          </button>
         </div>
       </div>
 
-      {/* Main Multi-Metric Time-series Visualizer */}
-      <InteractiveHistoricalChart initialDays={selectedRange} />
+      {activeSubTab === 'cardio-intelligence' ? (
+        <CardiovascularIntelligenceWorkspace
+          patientId={currentPatient?.patient_id || 'PT-1001'}
+          patientName={currentPatient?.full_name}
+        />
+      ) : (
+        <>
+          <div className="flex justify-end">
+            <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs shadow-2xs">
+              <Calendar className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
+              {[7, 14, 30, 90].map(days => (
+                <button
+                  key={days}
+                  onClick={() => setSelectedRange(days)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                    selectedRange === days
+                      ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Last {days} Days
+                </button>
+              ))}
+            </div>
+          </div>
+          <InteractiveHistoricalChart initialDays={selectedRange} />
+        </>
+      )}
 
       {/* Analytical Guidance Panel */}
       <div className="card-surface rounded-xl p-5 space-y-3">

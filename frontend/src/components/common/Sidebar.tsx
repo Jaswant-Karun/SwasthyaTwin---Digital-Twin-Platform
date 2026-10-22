@@ -38,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'digital-twin', label: 'AI Digital Twin', icon: HeartPulse, badgeText: 'LIVE' },
     { id: 'ml-studio', label: 'ML Training Studio', icon: Brain, badgeText: 'AI' },
     { id: 'model-evaluation', label: 'Model Evaluation', icon: BarChart3, badgeText: 'ML' },
-    { id: 'health-trends', label: 'Health Trends', icon: LineChart },
+    { id: 'health-trends', label: 'Cardio & Trends', icon: LineChart, badgeText: 'nMAD' },
     { id: 'risk-insights', label: 'Risk Insights', icon: ShieldAlert },
     { id: 'what-if', label: 'What-if Simulator', icon: Sliders },
     { id: 'timeline', label: 'Patient Timeline', icon: Clock },

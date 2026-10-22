@@ -1085,6 +1085,44 @@ export const api = {
 
   getModelRegistryTask: async (taskId: string): Promise<any> => {
     return await request<any>(`/api/v1/ml/registry/${taskId}`);
+  },
+
+  // Cardiovascular Intelligence & Personalized Heart-Rate Anomaly Engine
+  getCardiovascularBaseline: async (patientId: string, windowDays: number = 30, minObservations: number = 10): Promise<any> => {
+    return await request<any>(`/api/v1/patients/${patientId}/cardiovascular/baseline?window_days=${windowDays}&min_observations=${minObservations}`);
+  },
+
+  getCardiovascularAnomalies: async (
+    patientId: string,
+    params?: {
+      windowDays?: number;
+      minObservations?: number;
+      limit?: number;
+      skip?: number;
+      status?: string;
+      source?: string;
+    }
+  ): Promise<any> => {
+    const q = new URLSearchParams();
+    if (params?.windowDays) q.set('window_days', String(params.windowDays));
+    if (params?.minObservations) q.set('min_observations', String(params.minObservations));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.skip) q.set('skip', String(params.skip));
+    if (params?.status && params.status !== 'all') q.set('status', params.status);
+    if (params?.source && params.source !== 'all') q.set('source', params.source);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return await request<any>(`/api/v1/patients/${patientId}/cardiovascular/anomalies${qs}`);
+  },
+
+  getCardiovascularExplanation: async (
+    patientId: string,
+    observationId: string,
+    windowDays: number = 30,
+    minObservations: number = 10
+  ): Promise<any> => {
+    return await request<any>(
+      `/api/v1/patients/${patientId}/cardiovascular/anomalies/${observationId}/explanation?window_days=${windowDays}&min_observations=${minObservations}`
+    );
   }
 };
 

@@ -1,0 +1,155 @@
+{
+  "evaluation_title": "SwasthyaTwin Heart-Rate Anomaly Detection Operational Evaluation",
+  "evaluation_timestamp": "2026-10-22T18:37:42.197175+00:00",
+  "algorithm_version": "v1.2.0-robust-mad",
+  "parameters": {
+    "window_days": 30,
+    "min_observations": 10,
+    "z_threshold": 2.5,
+    "variability_measure": "Normalized Median Absolute Deviation (nMAD)",
+    "variability_scale_factor": 1.4826
+  },
+  "operational_statistics": {
+    "total_patients_analyzed": 5,
+    "total_raw_observations": 439,
+    "total_eligible_observations": 439,
+    "total_excluded_by_quality": 0,
+    "exclusion_rate_pct": 0.0,
+    "total_population_flags": 64,
+    "total_personalized_flags": 35,
+    "total_within_range": 354,
+    "total_insufficient_history": 50
+  },
+  "patient_breakdown": [
+    {
+      "patient_id": "PT-1001",
+      "full_name": "Aarav Mehta",
+      "total_records": 89,
+      "eligible_records": 89,
+      "excluded_records": 0,
+      "exclusion_rate_pct": 0.0,
+      "population_detector": {
+        "rules": "Resting HR < 50 bpm OR > 100 bpm",
+        "flagged_count": 0,
+        "flag_rate_pct": 0.0
+      },
+      "personalized_nmad_detector": {
+        "algorithm": "v1.2.0-robust-mad",
+        "rules": "Modified Z >= 2.5 against 30d median baseline",
+        "total_evaluated": 89,
+        "unusual_high_count": 11,
+        "unusual_low_count": 2,
+        "total_flagged": 13,
+        "flag_rate_pct": 14.6,
+        "within_personal_range_count": 66,
+        "insufficient_data_count": 10,
+        "review_data_quality_count": 0
+      }
+    },
+    {
+      "patient_id": "PT-1002",
+      "full_name": "Priya Sharma",
+      "total_records": 89,
+      "eligible_records": 89,
+      "excluded_records": 0,
+      "exclusion_rate_pct": 0.0,
+      "population_detector": {
+        "rules": "Resting HR < 50 bpm OR > 100 bpm",
+        "flagged_count": 0,
+        "flag_rate_pct": 0.0
+      },
+      "personalized_nmad_detector": {
+        "algorithm": "v1.2.0-robust-mad",
+        "rules": "Modified Z >= 2.5 against 30d median baseline",
+        "total_evaluated": 89,
+        "unusual_high_count": 1,
+        "unusual_low_count": 2,
+        "total_flagged": 3,
+        "flag_rate_pct": 3.4,
+        "within_personal_range_count": 76,
+        "insufficient_data_count": 10,
+        "review_data_quality_count": 0
+      }
+    },
+    {
+      "patient_id": "PT-1003",
+      "full_name": "Devan Nair",
+      "total_records": 89,
+      "eligible_records": 89,
+      "excluded_records": 0,
+      "exclusion_rate_pct": 0.0,
+      "population_detector": {
+        "rules": "Resting HR < 50 bpm OR > 100 bpm",
+        "flagged_count": 64,
+        "flag_rate_pct": 71.9
+      },
+      "personalized_nmad_detector": {
+        "algorithm": "v1.2.0-robust-mad",
+        "rules": "Modified Z >= 2.5 against 30d median baseline",
+        "total_evaluated": 89,
+        "unusual_high_count": 10,
+        "unusual_low_count": 1,
+        "total_flagged": 11,
+        "flag_rate_pct": 12.4,
+        "within_personal_range_count": 68,
+        "insufficient_data_count": 10,
+        "review_data_quality_count": 0
+      }
+    },
+    {
+      "patient_id": "PT-1004",
+      "full_name": "Sunita Rao",
+      "total_records": 81,
+      "eligible_records": 81,
+      "excluded_records": 0,
+      "exclusion_rate_pct": 0.0,
+      "population_detector": {
+        "rules": "Resting HR < 50 bpm OR > 100 bpm",
+        "flagged_count": 0,
+        "flag_rate_pct": 0.0
+      },
+      "personalized_nmad_detector": {
+        "algorithm": "v1.2.0-robust-mad",
+        "rules": "Modified Z >= 2.5 against 30d median baseline",
+        "total_evaluated": 81,
+        "unusual_high_count": 0,
+        "unusual_low_count": 1,
+        "total_flagged": 1,
+        "flag_rate_pct": 1.2,
+        "within_personal_range_count": 70,
+        "insufficient_data_count": 10,
+        "review_data_quality_count": 0
+      }
+    },
+    {
+      "patient_id": "PT-1005",
+      "full_name": "Kabir Sen",
+      "total_records": 91,
+      "eligible_records": 91,
+      "excluded_records": 0,
+      "exclusion_rate_pct": 0.0,
+      "population_detector": {
+        "rules": "Resting HR < 50 bpm OR > 100 bpm",
+        "flagged_count": 0,
+        "flag_rate_pct": 0.0
+      },
+      "personalized_nmad_detector": {
+        "algorithm": "v1.2.0-robust-mad",
+        "rules": "Modified Z >= 2.5 against 30d median baseline",
+        "total_evaluated": 91,
+        "unusual_high_count": 7,
+        "unusual_low_count": 0,
+        "total_flagged": 7,
+        "flag_rate_pct": 7.7,
+        "within_personal_range_count": 74,
+        "insufficient_data_count": 10,
+        "review_data_quality_count": 0
+      }
+    }
+  ],
+  "honest_validation_disclosure": {
+    "supervised_ground_truth_status": "UNAVAILABLE",
+    "justification": "No independently reviewed clinician gold-standard anomaly labels are attached to ordinary continuous wearable HR streams. As per medical ML best practices, supervised precision, recall, ROC-AUC, and F1 metrics are explicitly withheld rather than manufactured with synthetic labels.",
+    "clinical_boundary": "Anomalies detected are statistical deviations from personal resting distributions, intended for wellness reflection and health self-awareness, not clinical diagnosis of acute coronary syndrome or arrhythmias."
+  }
+}

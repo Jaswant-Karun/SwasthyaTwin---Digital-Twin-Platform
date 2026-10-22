@@ -18,6 +18,7 @@ from app.api.v1.seed import router as seed_router
 from app.api.v1.audit import router as audit_router
 from app.api.v1.explanations import router as explanations_router
 from app.api.v1.ml import router as ml_router
+from app.api.v1.cardiovascular import router as cardiovascular_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -90,5 +91,6 @@ for prefix in [settings.API_V1_STR, "/api"]:
     app.include_router(audit_router, prefix=prefix)
     app.include_router(explanations_router, prefix=prefix)
     app.include_router(ml_router, prefix=prefix)
+    app.include_router(cardiovascular_router, prefix=prefix)
 
 
