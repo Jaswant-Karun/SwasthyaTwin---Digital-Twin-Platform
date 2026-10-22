@@ -48,7 +48,9 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 
-# Database / Local storage
+# Database / Local storage / Large Datasets
 data/
+**/data/raw/
+**/bidsleep*
 mongo-data/
 *.sqlite
