@@ -2,7 +2,7 @@
 FastAPI Endpoints for Machine Learning Health Intelligence & Live AI Optical Scanning
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pymongo.database import Database
