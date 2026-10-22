@@ -80,6 +80,10 @@ class MultiSignalSummary(BaseModel):
     cross_signal_insight: Dict[str, Any] = Field(default_factory=dict)
 
 
+# Alias for backward/forward compatibility
+MultiSignalItem = MultiSignalTimelineItem
+
+
 class MultiSignalTimelineResponse(BaseModel):
     patient_id: str
     patient_name: str
@@ -87,4 +91,5 @@ class MultiSignalTimelineResponse(BaseModel):
     total_items: int
     filter_applied: str
     summary: MultiSignalSummary
-    items: List[MultiSignalItem]
+    items: List[MultiSignalTimelineItem]
+
