@@ -201,3 +201,63 @@ def get_ml_model_info():
     if not manifest:
         manifest = ml_health_engine.retrain_models()
     return manifest
+
+
+# --- Authentic PhysioNet Sleep Staging ML Pipeline Endpoints ---
+
+from app.ml.inference import inference_engine
+from app.ml.trainer import pipeline_trainer
+from app.ml.validator import InputFeatureValidationError
+
+class SleepStagePredictRequest(BaseModel):
+    hr_mean: float = Field(..., ge=30, le=240, description="Mean heart rate in 30s epoch (bpm)")
+    hr_std: float = Field(default=0.0, ge=0, le=60, description="Heart rate standard deviation in epoch (bpm)")
+    hr_min: float = Field(..., ge=30, le=240, description="Minimum heart rate in epoch (bpm)")
+    hr_max: float = Field(..., ge=30, le=260, description="Maximum heart rate in epoch (bpm)")
+    hr_delta_baseline: float = Field(default=0.0, ge=-60, le=60, description="Delta from pre-sleep baseline (bpm)")
+    hr_rolling_mean_5m: float = Field(..., ge=30, le=240, description="5-minute rolling mean heart rate (bpm)")
+    hr_rolling_std_5m: float = Field(default=0.0, ge=0, le=60, description="5-minute rolling heart rate standard deviation (bpm)")
+    time_elapsed_minutes: float = Field(default=0.0, ge=0, le=1440, description="Minutes elapsed since sleep opportunity start")
+
+@router.post("/ml/sleep-stage/predict")
+def predict_sleep_stage(req: SleepStagePredictRequest):
+    """
+    Predicts 3-class sleep stage (Wake vs. NREM vs. REM) from 30-second wearable photoplethysmography (PPG).
+    Trained on authentic PhysioNet Sleep-Accel recordings aligned with gold-standard polysomnography.
+    """
+    try:
+        result = inference_engine.predict_epoch(req.model_dump())
+        return result
+    except InputFeatureValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
+
+@router.get("/ml/sleep-stage/evaluation")
+def get_sleep_stage_evaluation():
+    """
+    Returns authentic research evaluation results:
+    - Held-out test performance vs. simple baselines
+    - 5-Fold GroupKFold Cross-Validation scores on training participants
+    - Multi-class confusion matrix, precision, recall, F1, and Cohen's Kappa
+    - Dataset provenance, sample counts, and leakage-guard documentation
+    """
+    summary = inference_engine.get_model_evaluation_summary()
+    if summary.get("status") == "not_trained":
+        raise HTTPException(status_code=404, detail="Sleep stage ML model has not been trained yet.")
+    return summary
+
+@router.post("/ml/sleep-stage/train")
+def train_sleep_stage_pipeline(max_subjects: Optional[int] = None):
+    """
+    Triggers execution of the authentic PhysioNet sleep staging pipeline.
+    Parses raw data, performs participant-level partitioning, fits scaler on training cohort only,
+    runs 5-fold GroupKFold CV, evaluates on held-out test subjects, and persists artifacts.
+    """
+    try:
+        manifest = pipeline_trainer.run_training_pipeline(max_subjects=max_subjects)
+        inference_engine._load_artifacts_if_present()
+        return manifest
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Training pipeline error: {str(e)}")
+
