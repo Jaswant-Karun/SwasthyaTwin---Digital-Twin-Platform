@@ -18,7 +18,8 @@ import {
   InputPlausibilityResult,
   MLPredictionResult,
   AIScanResult,
-  MLModelManifest
+  MLModelManifest,
+  MultiSignalTimelineResponse
 } from '../types';
 import {
   MOCK_PATIENTS,
@@ -1123,6 +1124,23 @@ export const api = {
     return await request<any>(
       `/api/v1/patients/${patientId}/cardiovascular/anomalies/${observationId}/explanation?window_days=${windowDays}&min_observations=${minObservations}`
     );
+  },
+
+  // Multi-Signal Integrated Health Intelligence
+  getMultiSignalTimeline: async (
+    patientId: string,
+    params?: {
+      signal_filter?: string;
+      limit?: number;
+      skip?: number;
+    }
+  ): Promise<MultiSignalTimelineResponse> => {
+    const q = new URLSearchParams();
+    if (params?.signal_filter && params.signal_filter !== 'all') q.set('signal_filter', params.signal_filter);
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.skip) q.set('skip', String(params.skip));
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return await request<MultiSignalTimelineResponse>(`/api/v1/patients/${patientId}/timeline/multi-signal${qs}`);
   }
 };
 
