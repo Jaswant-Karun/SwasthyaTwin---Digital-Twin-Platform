@@ -372,6 +372,7 @@ def predict_sleep_stage(req: SleepStagePredictRequest):
         }
 
         return {
+            "predicted_stage_name": stage_3_name,
             "predicted_stage_5class": pred_res["predicted_stage_name"],
             "predicted_stage_id_5class": stage_5_id,
             "predicted_stage_3class": stage_3_name,
@@ -386,6 +387,13 @@ def predict_sleep_stage(req: SleepStagePredictRequest):
             "input_quality_warnings": pred_res["warnings"],
             "is_trained_model": True,
             "is_demo_fixture": False,
+            "model_metadata": {
+                "name": default_predictor.metadata.get("model_name", "BiDSleep Sleep-Stage Classifier"),
+                "version": pred_res["model_version"],
+                "feature_schema_version": pred_res["feature_schema_version"],
+                "selected_algorithm": "RandomForestClassifier",
+                "target_unit": "sleep_stage_3class_and_5class"
+            },
             "limitations": [
                 "Inferred from 30s wearable optical heart rate (PPG) dynamics; not a replacement for 10-20 EEG polysomnography.",
                 "Subject to motion artifacts and sensor contact variations during sleep.",
@@ -408,18 +416,44 @@ def get_sleep_stage_evaluation():
     - Confusion matrix
     - Scientific limitations and clinical disclaimers
     """
+    manifest = getattr(inference_engine, "manifest", None)
+    if not manifest:
+        manifest_path = os.path.join(inference_engine.artifacts_dir, "model_manifest.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    manifest = json.load(f)
+            except Exception:
+                manifest = None
+
+    bidsleep_eval = None
     if os.path.exists(MODEL_EVALUATION_PATH):
         try:
             with open(MODEL_EVALUATION_PATH, "r", encoding="utf-8") as f:
-                eval_data = json.load(f)
-            return eval_data
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to read evaluation report: {e}")
-    else:
-        raise HTTPException(
-            status_code=404,
-            detail="Evaluation report not found. Run `python -m ml_pipeline.evaluate` to generate held-out test evaluation."
-        )
+                bidsleep_eval = json.load(f)
+        except Exception:
+            bidsleep_eval = None
+
+    if bidsleep_eval and manifest:
+        combined = dict(manifest)
+        # Attach BiDSleep evaluation metrics
+        combined["bidsleep_evaluation"] = bidsleep_eval
+        combined["metrics"] = bidsleep_eval.get("metrics")
+        combined["per_class_performance"] = bidsleep_eval.get("per_class_performance")
+        combined["bidsleep_confusion_matrix"] = bidsleep_eval.get("confusion_matrix")
+        combined["cohort_counts"] = bidsleep_eval.get("cohort_counts")
+        return combined
+
+    if bidsleep_eval:
+        return bidsleep_eval
+
+    if manifest:
+        return manifest
+
+    raise HTTPException(
+        status_code=404,
+        detail="Evaluation report not found. Run `python -m ml_pipeline.evaluate` to generate held-out test evaluation."
+    )
 
 @router.get("/ml/sleep-stage/research-samples")
 def get_research_hypnogram_samples(subject_id: str = "Bidslab02", night_id: str = "1", limit: int = 120):
