@@ -18,6 +18,7 @@ import { DataSourcesPage } from './components/pages/DataSourcesPage';
 import { SettingsPage } from './components/pages/SettingsPage';
 import { MethodologyPage } from './components/pages/MethodologyPage';
 import { MLStudioPage } from './components/pages/MLStudioPage';
+import { ModelEvaluationPage } from './components/pages/ModelEvaluationPage';
 import { AlertCircle, X } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -102,6 +103,7 @@ const AppContent: React.FC = () => {
             {activeTab === 'add-observation' && <AddObservationPage onNavigate={setActiveTab} />}
             {activeTab === 'digital-twin' && <DigitalTwinPage />}
             {activeTab === 'ml-studio' && <MLStudioPage />}
+            {activeTab === 'model-evaluation' && <ModelEvaluationPage />}
             {activeTab === 'health-trends' && <HealthTrendsPage />}
             {activeTab === 'risk-insights' && <RiskInsightsPage />}
             {activeTab === 'what-if' && <WhatIfSimulator />}
