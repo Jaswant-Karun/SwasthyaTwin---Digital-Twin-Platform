@@ -273,7 +273,13 @@ from app.ml.trainer import pipeline_trainer
 from app.ml.validator import InputFeatureValidationError
 
 import os
+import sys
 import json
+
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
 from ml_pipeline.predict import default_predictor, SleepStagePredictor
 from ml_pipeline.config import (
     MODEL_EVALUATION_PATH,
