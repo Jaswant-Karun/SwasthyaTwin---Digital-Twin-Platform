@@ -5,6 +5,10 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 DataKind = Literal[
     "measured",
+    "derived",
+    "model_predicted",
+    "simulated",
+    "synthetic",
     "user_entered",
     "manual_entry",
     "wearable",
@@ -12,8 +16,7 @@ DataKind = Literal[
     "imported_file",
     "device_measurement",
     "public_research_dataset",
-    "synthetic_demo",
-    "simulated"
+    "synthetic_demo"
 ]
 
 VALID_UNITS = {
@@ -79,14 +82,17 @@ class ObservationBase(BaseModel):
     measurement_type: str = Field(..., description="e.g. heart_rate, blood_pressure_systolic, sleep_duration_hours")
     value: float
     unit: str
+    canonical_unit: Optional[str] = Field(default=None, description="Standardized canonical unit")
     observed_at: datetime
+    time_zone: Optional[str] = Field(default=None, description="Origin time zone identifier e.g. 'UTC', 'Asia/Kolkata'")
     source: str = Field(default="wearable_continuous")
     source_type: Optional[str] = Field(default=None, description="manual_entry, wearable, imported_file, device_measurement, public_research_dataset, synthetic_demo")
     device_id: Optional[str] = Field(default=None, description="Identifier of device or import batch")
+    measurement_method: Optional[str] = Field(default=None, description="optical_ppg, oscillometric_cuff, pedometer, dreem_eeg, manual_entry")
     data_kind: DataKind = Field(default="measured")
     notes: Optional[str] = Field(default=None, max_length=500)
     paired_observation_id: Optional[str] = Field(default=None, description="Logical ID linking paired observations e.g. SBP and DBP")
-    validation_status: str = Field(default="valid", description="valid, confirmed_unusual, valid_with_warnings, flagged, rejected")
+    validation_status: str = Field(default="valid", description="valid, confirmed_unusual, valid_with_warnings, flagged, rejected, partial_day")
     validation_warnings: List[str] = Field(default_factory=list)
     requires_confirmation: bool = Field(default=False)
     confirmed_by_user: bool = Field(default=False)
@@ -137,11 +143,14 @@ class ObservationCreate(BaseModel):
     metric_type: Optional[str] = None # Support either field name
     value: float
     unit: str
+    canonical_unit: Optional[str] = None
     observed_at: Optional[datetime] = None
     timestamp: Optional[datetime] = None # Support either field name
+    time_zone: Optional[str] = None
     source: str = "manual_entry"
     source_type: Optional[str] = None
     device_id: Optional[str] = None
+    measurement_method: Optional[str] = None
     confirm_unusual: bool = False
     paired_measurements: Optional[Dict[str, float]] = None
     paired_observation_id: Optional[str] = None
@@ -164,10 +173,26 @@ class ObservationCreate(BaseModel):
                 kind = "user_entered"
             elif self.data_tier in ["wearable", "wearable_imported", "imported_measured", "imported_file"]:
                 kind = "wearable_imported"
-            elif self.data_tier in ["measured", "simulated", "synthetic_demo", "device_measurement", "public_research_dataset"]:
+            elif self.data_tier in ["measured", "derived", "model_predicted", "simulated", "synthetic", "synthetic_demo", "device_measurement", "public_research_dataset"]:
                 kind = self.data_tier
             else:
                 kind = "user_entered"
+
+        # Determine default measurement method if unspecified
+        method = self.measurement_method
+        if not method:
+            if "heart_rate" in m_type:
+                method = "optical_ppg" if "wearable" in self.source else "oscillometric"
+            elif "blood_pressure" in m_type:
+                method = "oscillometric_cuff"
+            elif "steps" in m_type:
+                method = "pedometer"
+            elif "respiratory" in m_type:
+                method = "impedance_pneumography" if "wearable" in self.source else "manual_count"
+            elif "sleep" in m_type:
+                method = "actigraphy"
+            else:
+                method = "manual_entry" if "manual" in self.source else "sensor"
 
         return ObservationBase(
             observation_id=observation_id or f"obs_{uuid.uuid4().hex[:12]}",
@@ -175,10 +200,13 @@ class ObservationCreate(BaseModel):
             measurement_type=m_type,
             value=normalized_val,
             unit=normalized_unit,
+            canonical_unit=self.canonical_unit or normalized_unit,
             observed_at=obs_time,
+            time_zone=self.time_zone,
             source=self.source,
             source_type=self.source_type or (self.source if self.source in ["manual_entry", "wearable", "imported_file", "device_measurement", "public_research_dataset", "synthetic_demo"] else "manual_entry"),
             device_id=self.device_id,
+            measurement_method=method,
             data_kind=kind,
             notes=self.notes,
             paired_observation_id=self.paired_observation_id,

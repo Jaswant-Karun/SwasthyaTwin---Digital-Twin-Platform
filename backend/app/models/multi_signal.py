@@ -57,7 +57,9 @@ class MultiSignalTimelineItem(BaseModel):
     signal_type: str = Field(..., description="'sleep_stage_prediction' | 'heart_rate_statistical_flag' | 'physiological_observation'")
     signal_category: str = Field(..., description="Human-readable category, e.g. 'BiDSleep Wearable Sleep ML', 'Cardiovascular Anomaly Intelligence'")
     signal_badge: str = Field(..., description="Short badge text for UI tag, e.g. 'BiDSLEEP ML', 'nMAD STATS', 'TELEMETRY'")
+    data_provenance: str = Field(default="measured", description="'measured' | 'derived' | 'model_predicted' | 'simulated' | 'synthetic'")
     timestamp: datetime
+    time_zone: Optional[str] = None
     title: str
     summary: str
     status_level: str = Field("normal", description="'normal' | 'elevated' | 'low' | 'review' | 'info' | 'deep_sleep' | 'rem_sleep'")
@@ -65,6 +67,10 @@ class MultiSignalTimelineItem(BaseModel):
     primary_metric: Optional[str] = None
     primary_value: Optional[Union[str, float, int]] = None
     primary_unit: Optional[str] = None
+    canonical_unit: Optional[str] = None
+    source_device: Optional[str] = None
+    measurement_method: Optional[str] = None
+    validation_status: str = Field(default="valid", description="'valid' | 'valid_with_warnings' | 'confirmed_unusual' | 'flagged' | 'partial_day'")
     
     # Mutually exclusive detail objects for each signal modality
     sleep_details: Optional[SleepStageDetail] = None
