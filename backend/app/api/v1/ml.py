@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pymongo.database import Database
 from app.api.deps import get_database
 from app.analytics.ml_health_engine import ml_health_engine
+from app.analytics.prediction_safeguards import PredictionSafeguards
 from app.services.observation_service import ObservationService
 from app.services.assessment_service import AssessmentService
 from app.models.observation import ObservationCreate
@@ -67,7 +68,11 @@ def get_patient_ml_prediction(
 ):
     """
     Runs the trained Machine Learning ensemble on the patient's current multi-modal twin telemetry.
-    Predicts 14-day risk tier, continuous vitality trajectory delta, clinical phenotype, and top driving factors.
+    Applies strict Prediction Safeguards:
+    1. Checks feature availability and forbids zero-imputation.
+    2. Validates freshness and flags or withholds expired telemetry.
+    3. Verifies physiological ranges and consistency.
+    4. Returns structured response with status, warnings, prediction, units, model_version, and limitations.
     """
     patient = db.patients.find_one({"patient_id": patient_id})
     if not patient:
@@ -75,11 +80,51 @@ def get_patient_ml_prediction(
 
     twin_state = AssessmentService.evaluate_twin_state(db=db, patient_id=patient_id)
     
-    # Extract latest metrics for ML model
+    # Extract latest metrics for ML model and their timestamps/sources
     current_metrics = {}
+    metric_timestamps = {}
+    metric_sources = {}
     if twin_state and twin_state.metrics:
         for m_type, m_val in twin_state.metrics.items():
             current_metrics[m_type] = m_val.current_value
+            latest_obs = db.observations.find_one(
+                {"patient_id": patient_id, "measurement_type": m_type},
+                sort=[("observed_at", -1)]
+            )
+            if latest_obs:
+                metric_timestamps[m_type] = latest_obs.get("observed_at") or latest_obs.get("timestamp")
+                metric_sources[m_type] = latest_obs.get("source_type") or latest_obs.get("source", "unknown")
+
+    # Run Prediction Safeguards pre-inference audit
+    audit = PredictionSafeguards.audit_features_for_inference(
+        patient_id=patient_id,
+        features=current_metrics,
+        feature_timestamps=metric_timestamps,
+        feature_sources=metric_sources
+    )
+
+    provenance_meta = {
+        "patient_id": patient_id,
+        "is_synthetic": bool(patient.get("is_synthetic") or patient.get("demo_data")),
+        "feature_sources": metric_sources,
+        "features_evaluated": list(current_metrics.keys()),
+        "missing_features": audit["missing_features"],
+        "stale_features": audit["stale_features"]
+    }
+
+    if not audit["is_ready"]:
+        res = PredictionSafeguards.format_safeguarded_response(
+            status=audit["status"],
+            warnings=audit["warnings"],
+            prediction=None,
+            units=None,
+            model_version="2.4.0-safeguarded",
+            limitations=audit["limitations"],
+            patient_id=patient_id,
+            data_provenance=provenance_meta
+        )
+        res["patient_name"] = patient.get("display_name") or patient.get("full_name") or patient_id
+        return res
 
     max_z = 0.5
     if twin_state and twin_state.metrics:
@@ -92,9 +137,27 @@ def get_patient_ml_prediction(
         age=patient.get("age", 38),
         baseline_z_max=max_z
     )
-    prediction["patient_id"] = patient_id
-    prediction["patient_name"] = patient.get("display_name") or patient.get("full_name") or patient_id
-    return prediction
+
+    safeguarded_res = PredictionSafeguards.format_safeguarded_response(
+        status="ready",
+        warnings=audit["warnings"],
+        prediction=prediction,
+        units={
+            "vitality_delta": "points",
+            "risk_probabilities": "%",
+            "pca_coordinates": "dimensionless"
+        },
+        model_version=prediction.get("model_metadata", {}).get("version", "2.4.0"),
+        limitations=audit["limitations"],
+        patient_id=patient_id,
+        data_provenance=provenance_meta
+    )
+    # Backward compatibility: flatten prediction properties to root
+    for k, v in prediction.items():
+        if k not in safeguarded_res:
+            safeguarded_res[k] = v
+    safeguarded_res["patient_name"] = patient.get("display_name") or patient.get("full_name") or patient_id
+    return safeguarded_res
 
 @router.post("/patients/{patient_id}/ai-scan")
 def process_ai_optical_scan(
