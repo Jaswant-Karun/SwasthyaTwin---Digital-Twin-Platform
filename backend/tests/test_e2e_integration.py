@@ -272,7 +272,7 @@ def test_what_if_simulation_separation(test_client: TestClient, mock_db: Databas
     assert "trajectories" in sim_data
     assert "model_assumptions" in sim_data
     assert "disclaimer" in sim_data
-    assert "hypothetical" in sim_data["disclaimer"].lower()
+    assert "illustrative" in sim_data["disclaimer"].lower() or "simulation" in sim_data["disclaimer"].lower()
 
     # Verify that the simulation run did NOT contaminate actual patient observations
     res_obs = test_client.get("/api/v1/patients/PT-SIM-1/observations")

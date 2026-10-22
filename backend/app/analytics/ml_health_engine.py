@@ -163,9 +163,14 @@ class MLHealthIntelligenceEngine:
                 )
 
         # 4. Multi-variate joint consistency (e.g. Systolic vs Diastolic BP)
+        # 4. Multi-variate joint consistency (e.g. Systolic vs Diastolic BP)
         if paired_measurements:
-            if metric == "systolic_bp" and "diastolic_bp" in paired_measurements:
-                dbp = paired_measurements["diastolic_bp"]
+            is_sbp = metric in ["systolic_bp", "blood_pressure_systolic"]
+            is_dbp = metric in ["diastolic_bp", "blood_pressure_diastolic"]
+            dbp = paired_measurements.get("diastolic_bp") or paired_measurements.get("blood_pressure_diastolic")
+            sbp = paired_measurements.get("systolic_bp") or paired_measurements.get("blood_pressure_systolic")
+
+            if is_sbp and dbp is not None:
                 if value <= dbp:
                     is_plausible = False
                     confidence_weight = 0.0
@@ -177,8 +182,7 @@ class MLHealthIntelligenceEngine:
                     rule_warnings.append(
                         f"Narrow pulse pressure ({value - dbp:.1f} mmHg). Highly atypical resting hemodynamics."
                     )
-            elif metric == "diastolic_bp" and "systolic_bp" in paired_measurements:
-                sbp = paired_measurements["systolic_bp"]
+            elif is_dbp and sbp is not None:
                 if value >= sbp:
                     is_plausible = False
                     confidence_weight = 0.0
