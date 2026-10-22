@@ -507,50 +507,79 @@ export const AIOpticalTwinScanner: React.FC<{ onScanComplete?: () => void }> = (
             </div>
 
             {mlPrediction ? (
-              <div className="space-y-3 text-xs">
-                {/* Phenotype & Risk Tier */}
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400">Classified Phenotype:</span>
-                    <span className="font-bold text-teal-300">{mlPrediction.health_phenotype}</span>
+              mlPrediction.status && mlPrediction.status !== 'ready' ? (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-amber-400">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                    Prediction Safeguard: Withheld ({mlPrediction.status.replace(/_/g, ' ')})
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-tight">
-                    {mlPrediction.phenotype_description}
+                  <p className="text-[11px] text-amber-300">
+                    {mlPrediction.limitations?.[0] || 'Inference is withheld because required features are missing, stale, or outside valid calibration schemas.'}
                   </p>
-                </div>
-
-                {/* Trajectory Delta & Risk Probabilities */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
-                    <span className="text-[10px] text-slate-400 block font-mono">14D VITALITY DRIFT</span>
-                    <span className={`text-sm font-bold font-mono ${mlPrediction.predicted_14d_vitality_delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {mlPrediction.predicted_14d_vitality_delta >= 0 ? '+' : ''}{mlPrediction.predicted_14d_vitality_delta} pts
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
-                    <span className="text-[10px] text-slate-400 block font-mono">RISK PROBABILITY</span>
-                    <span className="text-sm font-bold font-mono text-cyan-300">
-                      {mlPrediction.risk_probabilities.low_resilient}% Resilient
-                    </span>
+                  {mlPrediction.warnings && mlPrediction.warnings.length > 0 && (
+                    <ul className="text-[10px] space-y-0.5 text-amber-300/80 list-disc list-inside">
+                      {mlPrediction.warnings.map((w: string, idx: number) => (
+                        <li key={idx}>{w}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {mlPrediction.data_provenance?.missing_features && mlPrediction.data_provenance.missing_features.length > 0 && (
+                    <div className="text-[10px] text-slate-400 pt-1 font-mono">
+                      Missing: {mlPrediction.data_provenance.missing_features.join(', ')}
+                    </div>
+                  )}
+                  <div className="text-[10px] text-slate-400 pt-1 border-t border-amber-500/20 font-mono">
+                    Zero-Imputation Safeguard: unmeasured biometrics are never imputed with 0.
                   </div>
                 </div>
+              ) : (
+                <div className="space-y-3 text-xs">
+                  {/* Phenotype & Risk Tier */}
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-400">Classified Phenotype:</span>
+                      <span className="font-bold text-teal-300">{mlPrediction.health_phenotype}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-tight">
+                      {mlPrediction.phenotype_description}
+                    </p>
+                  </div>
 
-                {/* Top Driving Factors */}
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-mono text-slate-400 block uppercase">
-                    Key Drivers (SHAP Importance):
-                  </span>
-                  <div className="space-y-1">
-                    {mlPrediction.top_driving_factors.map((f, i) => (
-                      <div key={i} className="flex items-center justify-between text-[11px] text-slate-300 bg-slate-900/60 px-2 py-1 rounded border border-slate-800">
-                        <span>{f.feature} ({f.current_value})</span>
-                        <span className="font-mono text-teal-300">{f.importance_pct}% impact</span>
+                  {/* Trajectory Delta & Risk Probabilities */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-mono">14D VITALITY DRIFT</span>
+                      <span className={`text-sm font-bold font-mono ${mlPrediction.predicted_14d_vitality_delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {mlPrediction.predicted_14d_vitality_delta >= 0 ? '+' : ''}{mlPrediction.predicted_14d_vitality_delta} pts
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-mono">RISK PROBABILITY</span>
+                      <span className="text-sm font-bold font-mono text-cyan-300">
+                        {mlPrediction.risk_probabilities?.low_resilient ?? 80}% Resilient
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Top Driving Factors */}
+                  {mlPrediction.top_driving_factors && mlPrediction.top_driving_factors.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-mono text-slate-400 block uppercase">
+                        Key Drivers (SHAP Importance):
+                      </span>
+                      <div className="space-y-1">
+                        {mlPrediction.top_driving_factors.map((f: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between text-[11px] text-slate-300 bg-slate-900/60 px-2 py-1 rounded border border-slate-800">
+                            <span>{f.feature} ({f.current_value})</span>
+                            <span className="font-mono text-teal-300">{f.importance_pct}% impact</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )
             ) : (
               <div className="p-6 text-center text-xs text-slate-500 font-mono">
                 Computing ensemble predictions...

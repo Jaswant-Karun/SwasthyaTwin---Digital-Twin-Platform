@@ -687,6 +687,9 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
         setCsvSuccessMsg(
           `Successfully persisted ${res.imported_count} observations into MongoDB. Twin recalculated.`
         );
+        setValidationResult(null);
+        setCsvFile(null);
+      }
     } catch (err: any) {
       setCsvError(err.message || 'Failed to import CSV rows.');
     } finally {
