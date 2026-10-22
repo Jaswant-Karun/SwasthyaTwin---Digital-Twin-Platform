@@ -371,7 +371,7 @@ export const api = {
 
   getTrends: async (patientId: string): Promise<any> => {
     if (explicitOfflineDemo) {
-      return null;
+      return null;         
     }
     return await request<any>(`/api/v1/patients/${patientId}/trends`);
   },
