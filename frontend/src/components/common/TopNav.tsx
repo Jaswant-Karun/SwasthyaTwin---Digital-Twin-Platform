@@ -124,7 +124,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           >
             {patients.map((p) => (
               <option key={p.patient_id} value={p.patient_id} className="bg-slate-900 text-slate-200">
-                {p.full_name} ({p.patient_id})
+                {p.demo_data || p.patient_id.startsWith('PT-100') ? '🔬 [Demo] ' : '👤 [User] '}{p.full_name} ({p.patient_id})
               </option>
             ))}
           </select>

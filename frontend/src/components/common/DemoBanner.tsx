@@ -143,7 +143,7 @@ export const DemoBanner: React.FC = () => {
             >
               {patients.map((p) => (
                 <option key={p.patient_id} value={p.patient_id}>
-                  {p.patient_id}: {p.full_name}
+                  {p.demo_data || p.patient_id.startsWith('PT-100') ? '[Demo] ' : '[User] '}{p.patient_id}: {p.full_name}
                 </option>
               ))}
             </select>

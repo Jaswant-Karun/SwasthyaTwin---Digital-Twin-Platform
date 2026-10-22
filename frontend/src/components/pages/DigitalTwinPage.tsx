@@ -66,6 +66,15 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-teal-500/20 text-teal-300 border border-teal-500/40">
                   SPATIAL v2.4
                 </span>
+                {currentPatient.demo_data || currentPatient.patient_id.startsWith('PT-100') ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1">
+                    🔬 RESEARCH DEMO COHORT
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 flex items-center gap-1">
+                    👤 LIVE CLINICAL USER
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
                 Multi-layer physiological model of <strong className="text-white">{currentPatient.full_name}</strong> calibrated to personal longitudinal baselines.

@@ -25,6 +25,8 @@ export interface Patient {
   lifestyle_profile: LifestyleProfile;
   notes?: string;
   consent_confirmed?: boolean;
+  demo_data?: boolean;
+  is_synthetic?: boolean;
   created_at: string;
   updated_at: string;
   active_alerts_count: number;
