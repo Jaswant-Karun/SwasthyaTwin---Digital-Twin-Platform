@@ -84,6 +84,8 @@ class MultiSignalSummary(BaseModel):
     sleep_intelligence: Dict[str, Any] = Field(default_factory=dict)
     cardiovascular_intelligence: Dict[str, Any] = Field(default_factory=dict)
     cross_signal_insight: Dict[str, Any] = Field(default_factory=dict)
+    vitals_summary: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
 
 
 # Alias for backward/forward compatibility
