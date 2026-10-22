@@ -412,7 +412,9 @@ export const api = {
           hrv_rmssd: Number(hrv.toFixed(1)),
           hrv_rmssd_upper: Number((hrv + 4.2).toFixed(1)),
           hrv_rmssd_lower: Number((hrv - 4.2).toFixed(1)),
-          vitality_projected: Number(Math.min(100, 84.5 + day * 0.25).toFixed(1))
+          vitality_projected: Number(Math.min(100, 84.5 + day * 0.25).toFixed(1)),
+          ml_vitality_projected: Number(Math.min(100, 82.0 + day * 0.3).toFixed(1)),
+          ml_risk_tier: day > 10 ? 'Low Risk (Resilient)' : 'Moderate Drift'
         });
       }
       return {
@@ -429,7 +431,15 @@ export const api = {
           delta_systolic_bp: Number((trajectories[trajectories.length - 1].systolic_bp - baseSbp).toFixed(1)),
           final_hrv_rmssd: trajectories[trajectories.length - 1].hrv_rmssd,
           delta_hrv_rmssd: Number((trajectories[trajectories.length - 1].hrv_rmssd - baseHrv).toFixed(1)),
-          final_vitality: trajectories[trajectories.length - 1].vitality_projected
+          final_vitality: trajectories[trajectories.length - 1].vitality_projected,
+          ml_predicted_vitality_delta: 3.2,
+          ml_baseline_risk_tier: 'Moderate Drift (Subclinical)',
+          ml_projected_risk_tier: 'Low Risk (Resilient)',
+          ml_baseline_phenotype: 'Sympathetic Hyper-Reactivity',
+          ml_projected_phenotype: 'High-Vagal Resilient',
+          ml_risk_reduction_pct: 18.5,
+          ml_confidence_pct: 88.0,
+          ml_model_version: 'v2.4.0'
         },
         trajectories,
         model_assumptions: [
