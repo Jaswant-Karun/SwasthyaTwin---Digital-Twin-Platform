@@ -1,0 +1,63 @@
+{
+  "dataset": "BiDSleep v1.0.1",
+  "random_seed": 42,
+  "total_participants": 3,
+  "all_participants": [
+    "Bidslab00",
+    "Bidslab01",
+    "Bidslab02"
+  ],
+  "splits": {
+    "train": {
+      "participant_count": 1,
+      "participants": [
+        "Bidslab00"
+      ],
+      "epoch_count": 6171,
+      "epoch_percentage": 39.14,
+      "class_distribution": {
+        "Wake": 322,
+        "N1": 284,
+        "N2": 2464,
+        "N3": 1608,
+        "REM": 1493
+      }
+    },
+    "validation": {
+      "participant_count": 1,
+      "participants": [
+        "Bidslab01"
+      ],
+      "epoch_count": 4314,
+      "epoch_percentage": 27.36,
+      "class_distribution": {
+        "Wake": 341,
+        "N1": 215,
+        "N2": 2124,
+        "N3": 975,
+        "REM": 659
+      }
+    },
+    "test": {
+      "participant_count": 1,
+      "participants": [
+        "Bidslab02"
+      ],
+      "epoch_count": 5280,
+      "epoch_percentage": 33.49,
+      "class_distribution": {
+        "Wake": 1181,
+        "N1": 402,
+        "N2": 1650,
+        "N3": 1003,
+        "REM": 1044
+      }
+    }
+  },
+  "leakage_audit": {
+    "status": "PASSED_ZERO_LEAKAGE",
+    "train_val_overlap": [],
+    "train_test_overlap": [],
+    "val_test_overlap": []
+  }
+}
