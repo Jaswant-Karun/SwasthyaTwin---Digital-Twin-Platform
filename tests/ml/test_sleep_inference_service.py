@@ -129,7 +129,7 @@ def test_label_mapping_integrity():
     """Verifies that 5-class AASM labels and 3-class groupings follow clinical standards."""
     from ml_pipeline.config import CLASS_NAMES_5, CLASS_NAMES_3, CLASS_3_MAP
     assert CLASS_NAMES_5 == ["Wake", "N1", "N2", "N3", "REM"]
-    assert CLASS_NAMES_3 == {0: "Wake", 1: "NREM", 2: "REM"}
+    assert CLASS_NAMES_3 == ["Wake", "NREM", "REM"]
 
     # Wake -> Wake
     assert CLASS_3_MAP[0] == 0
@@ -153,6 +153,7 @@ def test_missing_model_raises_model_unavailable():
     with pytest.raises(ModelUnavailableError):
         unready_service.predict_epoch({
             "hr_mean": 65.0,
+            "hr_std": 1.5,
             "hr_min": 60.0,
             "hr_max": 70.0,
             "hr_rolling_mean_5m": 65.0
@@ -163,6 +164,7 @@ def test_extreme_heart_rate_bounds_warning():
     """Verifies that heart rate outside [30, 240 bpm] generates a structured warning."""
     feat = {
         "hr_mean": 235.0,
+        "hr_std": 5.0,
         "hr_min": 220.0,
         "hr_max": 240.0,
         "hr_rolling_mean_5m": 230.0,
