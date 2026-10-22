@@ -111,7 +111,7 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
       zScore: hrMetric ? hrMetric.z_score : 0.0,
       dataTier: hrMetric ? (hrMetric.data_tier as any) : 'measured',
       sourceProvenance: 'Apple Watch Series 9 (Optical PPG)',
-      observedTimestamp: hrMetric?.contributing_observation_id ? 'Real-time telemetry' : 'Trailing 24h window',
+      observedTimestamp: (hrMetric as any)?.contributing_observation_id ? 'Real-time telemetry' : 'Trailing 24h window',
       calculationMethod: "Tukey's IQR Fences [Q1-1.5*IQR, Q3+1.5*IQR] + 30-Day Robust Median",
       isAvailable: hasCardio,
       limitations: 'Measures wearable optical pulse rate; does not diagnose arrhythmias, ischemia, or myocardial infarction.'
@@ -572,7 +572,7 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
           <div className="mt-4 px-4 py-2 rounded-xl bg-slate-950/80 border border-white/10 flex items-center gap-4 text-[10px] font-mono text-slate-400">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
-              <span>QUALITY: {twinState?.data_quality || 'EXCELLENT'}</span>
+              <span>QUALITY: {typeof twinState?.data_quality === 'string' ? twinState.data_quality : (twinState?.data_quality as any)?.status || 'EXCELLENT'}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-cyan-400" />
