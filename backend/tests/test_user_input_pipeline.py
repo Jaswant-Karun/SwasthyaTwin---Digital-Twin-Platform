@@ -30,12 +30,8 @@ def real_mongo_db():
 
     yield db
 
-    # Teardown test artifacts
-    db.patients.delete_many({"patient_id": {"$regex": "^PT-PIPE-"}})
-    db.observations.delete_many({"patient_id": {"$regex": "^PT-PIPE-"}})
-    db.health_assessments.delete_many({"patient_id": {"$regex": "^PT-PIPE-"}})
-    db.alerts.delete_many({"patient_id": {"$regex": "^PT-PIPE-"}})
-    db.audit_events.delete_many({"patient_id": {"$regex": "^PT-PIPE-"}})
+    # Teardown: drop temporary test database completely
+    client.drop_database("swasthyatwin_integration_test")
     client.close()
 
 @pytest.fixture
