@@ -1,0 +1,580 @@
+{
+  "version": "2.4.0-ml-ensemble",
+  "trained_at": "2026-10-22T13:29:34.020906+00:00",
+  "training_duration_seconds": 3.77,
+  "dataset_summary": {
+    "total_samples": 2000,
+    "train_samples": 1600,
+    "test_samples": 400,
+    "features_count": 12,
+    "feature_names": [
+      "heart_rate",
+      "systolic_bp",
+      "diastolic_bp",
+      "mean_arterial_pressure",
+      "pulse_pressure",
+      "hrv_rmssd",
+      "autonomic_recovery_ratio",
+      "respiratory_rate",
+      "spo2",
+      "sleep_duration",
+      "daily_steps",
+      "baseline_z_max"
+    ]
+  },
+  "classification_metrics": {
+    "algorithm": "RandomForestClassifier(n_estimators=100, max_depth=8)",
+    "test_accuracy": 83.5,
+    "test_precision": 83.76,
+    "test_recall": 83.5,
+    "test_f1_score": 83.59,
+    "roc_auc_ovr": 94.66,
+    "cross_validation_5fold": {
+      "fold_scores": [
+        84.38,
+        79.38,
+        77.81,
+        83.12,
+        76.25
+      ],
+      "mean_score": 80.19,
+      "std_score": 3.1
+    },
+    "confusion_matrix": [
+      [
+        135,
+        17,
+        0
+      ],
+      [
+        13,
+        111,
+        16
+      ],
+      [
+        0,
+        20,
+        88
+      ]
+    ],
+    "class_labels": [
+      "Low Risk (Resilient)",
+      "Moderate Drift",
+      "Elevated Strain"
+    ]
+  },
+  "baseline_comparison": {
+    "algorithm": "LogisticRegression(Baseline)",
+    "test_accuracy": 94.25,
+    "test_f1_score": 94.21,
+    "accuracy_improvement_pct": -10.75
+  },
+  "regression_metrics": {
+    "algorithm": "GradientBoostingRegressor(n_estimators=120, lr=0.06)",
+    "mae": 1.76,
+    "rmse": 2.15,
+    "r2_score": 0.921,
+    "target": "14-Day Vitality Delta (Continuous Trajectory)"
+  },
+  "unsupervised_phenotypes": {
+    "algorithm": "KMeans(k=4, init='k-means++')",
+    "clusters": [
+      {
+        "cluster_id": 0,
+        "name": "High-Vagal Resilient",
+        "archetype": "Parasympathetic Dominant",
+        "summary": "Robust heart rate variability, optimal hemodynamic pressure, and restorative sleep duration. Minimal autonomic strain.",
+        "color": "#10b981",
+        "profile": {
+          "heart_rate": 70.3,
+          "systolic_bp": 122.1,
+          "diastolic_bp": 78.0,
+          "pulse_pressure": 44.1,
+          "hrv_rmssd": 99.6,
+          "sleep_duration": 7.3,
+          "daily_steps": 8146.0
+        }
+      },
+      {
+        "cluster_id": 1,
+        "name": "Sympathetic Hyper-Reactivity",
+        "archetype": "Autonomic Overdrive",
+        "summary": "Resting tachycardia combined with suppressed vagal tone (low HRV) and elevated pulse pressure. Elevated autonomic exhaustion risk.",
+        "color": "#f59e0b",
+        "profile": {
+          "heart_rate": 71.8,
+          "systolic_bp": 122.7,
+          "diastolic_bp": 77.9,
+          "pulse_pressure": 44.7,
+          "hrv_rmssd": 34.8,
+          "sleep_duration": 7.1,
+          "daily_steps": 7784.0
+        }
+      },
+      {
+        "cluster_id": 2,
+        "name": "Vascular Hemodynamic Strain",
+        "archetype": "Arterial Stiffening Drift",
+        "summary": "Elevated Mean Arterial Pressure (MAP) and widened pulse pressure indicating heightened peripheral vascular resistance.",
+        "color": "#ef4444",
+        "profile": {
+          "heart_rate": 71.0,
+          "systolic_bp": 104.0,
+          "diastolic_bp": 66.0,
+          "pulse_pressure": 38.0,
+          "hrv_rmssd": 42.0,
+          "sleep_duration": 7.2,
+          "daily_steps": 7483.0
+        }
+      },
+      {
+        "cluster_id": 3,
+        "name": "Circadian-Metabolic Depletion",
+        "archetype": "Recovery Deficit",
+        "summary": "Short sleep duration, sedentary baseline step volume, and high multi-metric variance indicating systemic lifestyle fatigue.",
+        "color": "#8b5cf6",
+        "profile": {
+          "heart_rate": 71.2,
+          "systolic_bp": 140.9,
+          "diastolic_bp": 90.9,
+          "pulse_pressure": 50.0,
+          "hrv_rmssd": 39.5,
+          "sleep_duration": 7.1,
+          "daily_steps": 7178.0
+        }
+      }
+    ]
+  },
+  "dimensionality_reduction": {
+    "algorithm": "PCA(n_components=2)",
+    "explained_variance_ratio": [
+      27.8,
+      16.8
+    ],
+    "total_explained_variance_pct": 44.6,
+    "sample_scatter_points": [
+      {
+        "x": -0.295,
+        "y": -0.042,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": 0.323,
+        "y": -0.345,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 0.857,
+        "y": -0.816,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": -1.432,
+        "y": -0.173,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 0.585,
+        "y": -0.515,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": 0.114,
+        "y": -0.964,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": -1.898,
+        "y": -1.52,
+        "cluster": 2,
+        "risk_class": 1
+      },
+      {
+        "x": -0.478,
+        "y": -1.977,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": 0.413,
+        "y": -1.61,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": 3.441,
+        "y": -1.22,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": -1.143,
+        "y": -1.259,
+        "cluster": 2,
+        "risk_class": 1
+      },
+      {
+        "x": -0.598,
+        "y": 0.076,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 2.833,
+        "y": -1.371,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": -0.509,
+        "y": -0.504,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 3.661,
+        "y": 0.365,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": -0.06,
+        "y": 2.723,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": -1.322,
+        "y": -1.456,
+        "cluster": 2,
+        "risk_class": 1
+      },
+      {
+        "x": 4.44,
+        "y": -1.409,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": 1.44,
+        "y": -0.784,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": 3.18,
+        "y": -0.787,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": -0.652,
+        "y": 1.364,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": -1.785,
+        "y": -2.082,
+        "cluster": 2,
+        "risk_class": 2
+      },
+      {
+        "x": -0.153,
+        "y": -0.223,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": -0.497,
+        "y": 2.29,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": 3.915,
+        "y": -0.751,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": -2.037,
+        "y": -0.212,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 1.138,
+        "y": 2.554,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": -1.241,
+        "y": 0.542,
+        "cluster": 2,
+        "risk_class": 1
+      },
+      {
+        "x": 0.701,
+        "y": 2.662,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": -0.093,
+        "y": -0.754,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": -1.728,
+        "y": -0.929,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 1.27,
+        "y": -1.103,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": -0.51,
+        "y": -0.997,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 1.157,
+        "y": -0.13,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": -1.485,
+        "y": 1.751,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": 0.46,
+        "y": -0.458,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": -0.518,
+        "y": -0.968,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": -0.268,
+        "y": -1.148,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": -0.56,
+        "y": 2.448,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": -2.382,
+        "y": -0.416,
+        "cluster": 2,
+        "risk_class": 1
+      },
+      {
+        "x": 0.739,
+        "y": 1.382,
+        "cluster": 0,
+        "risk_class": 1
+      },
+      {
+        "x": -1.183,
+        "y": 2.495,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": 2.551,
+        "y": -0.392,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": 1.0,
+        "y": -0.012,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": -4.144,
+        "y": 0.92,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 0.886,
+        "y": -1.701,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": 0.647,
+        "y": -1.292,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": -0.246,
+        "y": -0.467,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 1.96,
+        "y": 0.268,
+        "cluster": 3,
+        "risk_class": 1
+      },
+      {
+        "x": -0.747,
+        "y": 1.18,
+        "cluster": 0,
+        "risk_class": 0
+      },
+      {
+        "x": 0.452,
+        "y": -0.698,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 1.68,
+        "y": 1.228,
+        "cluster": 3,
+        "risk_class": 1
+      },
+      {
+        "x": 1.126,
+        "y": -1.461,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": 1.788,
+        "y": -0.3,
+        "cluster": 3,
+        "risk_class": 1
+      },
+      {
+        "x": -1.943,
+        "y": -0.728,
+        "cluster": 2,
+        "risk_class": 1
+      },
+      {
+        "x": -0.09,
+        "y": -0.876,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": 2.321,
+        "y": -1.747,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": -3.799,
+        "y": 2.979,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 0.657,
+        "y": -0.105,
+        "cluster": 1,
+        "risk_class": 2
+      },
+      {
+        "x": -2.468,
+        "y": -0.223,
+        "cluster": 2,
+        "risk_class": 0
+      }
+    ]
+  },
+  "feature_importance": [
+    {
+      "feature": "hrv_rmssd",
+      "display_name": "Hrv Rmssd",
+      "importance_pct": 17.56
+    },
+    {
+      "feature": "autonomic_recovery_ratio",
+      "display_name": "Autonomic Recovery Ratio",
+      "importance_pct": 16.98
+    },
+    {
+      "feature": "systolic_bp",
+      "display_name": "Systolic Bp",
+      "importance_pct": 12.98
+    },
+    {
+      "feature": "sleep_duration",
+      "display_name": "Sleep Duration",
+      "importance_pct": 9.15
+    },
+    {
+      "feature": "baseline_z_max",
+      "display_name": "Baseline Z Max",
+      "importance_pct": 9.07
+    },
+    {
+      "feature": "mean_arterial_pressure",
+      "display_name": "Mean Arterial Pressure",
+      "importance_pct": 7.89
+    },
+    {
+      "feature": "diastolic_bp",
+      "display_name": "Diastolic Bp",
+      "importance_pct": 7.03
+    },
+    {
+      "feature": "daily_steps",
+      "display_name": "Daily Steps",
+      "importance_pct": 6.6
+    },
+    {
+      "feature": "pulse_pressure",
+      "display_name": "Pulse Pressure",
+      "importance_pct": 5.44
+    },
+    {
+      "feature": "heart_rate",
+      "display_name": "Heart Rate",
+      "importance_pct": 3.44
+    },
+    {
+      "feature": "spo2",
+      "display_name": "Spo2",
+      "importance_pct": 1.96
+    },
+    {
+      "feature": "respiratory_rate",
+      "display_name": "Respiratory Rate",
+      "importance_pct": 1.9
+    }
+  ]
+}
