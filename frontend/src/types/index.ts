@@ -415,34 +415,48 @@ export interface InputPlausibilityResult {
 }
 
 export interface MLPredictionResult {
+  status?: string;
+  warnings?: string[];
+  limitations?: string[];
+  model_version?: string;
+  units?: Record<string, string>;
+  data_provenance?: {
+    patient_id: string;
+    is_synthetic: boolean;
+    feature_sources?: Record<string, string>;
+    features_evaluated?: string[];
+    missing_features?: string[];
+    stale_features?: string[];
+  };
   patient_id: string;
   patient_name: string;
-  predicted_risk_tier: string;
-  risk_probabilities: {
+  predicted_risk_tier?: string;
+  risk_probabilities?: {
     low_resilient: number;
     moderate_drift: number;
     elevated_strain: number;
   };
-  predicted_14d_vitality_delta: number;
-  health_phenotype: string;
-  phenotype_description: string;
-  top_driving_factors: Array<{
+  predicted_14d_vitality_delta?: number;
+  health_phenotype?: string;
+  phenotype_description?: string;
+  top_driving_factors?: Array<{
     feature: string;
     importance_pct: number;
     current_value: number;
   }>;
-  radar_scores: {
+  radar_scores?: {
     cardiovascular_stability: number;
     autonomic_reserve: number;
     circadian_alignment: number;
     metabolic_vitality: number;
     input_credibility: number;
   };
-  model_metadata: {
+  model_metadata?: {
     algorithm: string;
     training_samples: number;
     confidence_score: number;
     evaluated_at: string;
+    version?: string;
   };
 }
 
