@@ -14,7 +14,7 @@ import {
   Compass,
   AlertTriangle
 } from 'lucide-react';
-import type { DigitalTwinState, Patient } from '../../types';
+import type { DigitalTwinState, Patient, StabilityStatus } from '../../types';
 
 export interface SpatialBodyNode {
   id: 'cns' | 'cardiovascular' | 'pulmonary' | 'metabolic' | 'musculoskeletal';
@@ -25,7 +25,7 @@ export interface SpatialBodyNode {
   metricKey: string;
   accentColor: string; // cyan, teal, blue, emerald
   glowColor: string;
-  status: 'optimal' | 'mild_deviation' | 'elevated' | 'critical';
+  status: StabilityStatus;
   signalValue: string;
   signalUnit: string;
   baselineDiff: string;
@@ -272,7 +272,7 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-ping" />
                 TWIN STABILITY
               </span>
-              <span>{twinState ? `${twinState.vitality_index.toFixed(1)} / 100` : '84.5'}</span>
+              <span>{twinState ? `${twinState.overall_vitality.toFixed(1)} / 100` : '84.5'}</span>
             </div>
             <p className="text-[10px] text-slate-400 leading-relaxed">
               Personalized multi-organ coupling index calculated from rolling {patient.baseline_window_days}-day covariance.

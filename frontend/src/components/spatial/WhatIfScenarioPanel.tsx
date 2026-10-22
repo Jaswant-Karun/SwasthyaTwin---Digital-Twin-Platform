@@ -229,7 +229,7 @@ export const WhatIfScenarioPanel: React.FC<WhatIfScenarioPanelProps> = ({
               Forecasted Physiological Divergence ({params.duration_days} Days)
             </h4>
             <span className="text-[10px] font-mono text-cyan-300 uppercase">
-              Model: {simulationResult.model_version || '2.4.0-in-silico'}
+              Model: {simulationResult.projected_outcomes?.ml_model_version || '2.4.0-in-silico'}
             </span>
           </div>
 
@@ -237,31 +237,35 @@ export const WhatIfScenarioPanel: React.FC<WhatIfScenarioPanelProps> = ({
             <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5">
               <span className="text-[10px] text-slate-400 block font-mono">Resting HR Shift</span>
               <span className="text-lg font-bold text-teal-300 font-mono">
-                {simulationResult.predicted_resting_hr ? `${simulationResult.predicted_resting_hr.toFixed(1)} bpm` : '64.2 bpm'}
+                {simulationResult.projected_outcomes?.final_resting_hr ? `${simulationResult.projected_outcomes.final_resting_hr.toFixed(1)} bpm` : '64.2 bpm'}
               </span>
-              <span className="text-[10px] text-emerald-400 block">-3.8 bpm vs baseline</span>
+              <span className="text-[10px] text-emerald-400 block">
+                {simulationResult.projected_outcomes?.delta_resting_hr !== undefined ? `${simulationResult.projected_outcomes.delta_resting_hr > 0 ? '+' : ''}${simulationResult.projected_outcomes.delta_resting_hr.toFixed(1)} bpm` : '-3.8 bpm'} vs baseline
+              </span>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5">
               <span className="text-[10px] text-slate-400 block font-mono">Systolic BP Shift</span>
               <span className="text-lg font-bold text-blue-300 font-mono">
-                {simulationResult.predicted_systolic_bp ? `${simulationResult.predicted_systolic_bp.toFixed(1)} mmHg` : '114.0 mmHg'}
+                {simulationResult.projected_outcomes?.final_systolic_bp ? `${simulationResult.projected_outcomes.final_systolic_bp.toFixed(1)} mmHg` : '114.0 mmHg'}
               </span>
-              <span className="text-[10px] text-emerald-400 block">-4.0 mmHg vs baseline</span>
+              <span className="text-[10px] text-emerald-400 block">
+                {simulationResult.projected_outcomes?.delta_systolic_bp !== undefined ? `${simulationResult.projected_outcomes.delta_systolic_bp > 0 ? '+' : ''}${simulationResult.projected_outcomes.delta_systolic_bp.toFixed(1)} mmHg` : '-4.0 mmHg'} vs baseline
+              </span>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5">
               <span className="text-[10px] text-slate-400 block font-mono">HRV RMSSD Gain</span>
               <span className="text-lg font-bold text-cyan-300 font-mono">
-                +14.5 ms
+                {simulationResult.projected_outcomes?.delta_hrv_rmssd !== undefined ? `${simulationResult.projected_outcomes.delta_hrv_rmssd > 0 ? '+' : ''}${simulationResult.projected_outcomes.delta_hrv_rmssd.toFixed(1)} ms` : '+14.5 ms'}
               </span>
               <span className="text-[10px] text-cyan-400 block">+23% vagal buffer</span>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5">
-              <span className="text-[10px] text-slate-400 block font-mono">Vitality Index Delta</span>
+              <span className="text-[10px] text-slate-400 block font-mono">Final Vitality Index</span>
               <span className="text-lg font-bold text-emerald-300 font-mono">
-                +{simulationResult.predicted_vitality_gain ? simulationResult.predicted_vitality_gain.toFixed(1) : '5.8'} pts
+                {simulationResult.projected_outcomes?.final_vitality ? simulationResult.projected_outcomes.final_vitality.toFixed(1) : '89.2'} pts
               </span>
               <span className="text-[10px] text-emerald-400 block">Resilient phenotype</span>
             </div>
