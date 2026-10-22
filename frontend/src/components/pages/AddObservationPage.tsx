@@ -1714,9 +1714,9 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
                     <th className="px-5 py-3">Timestamp</th>
                     <th className="px-5 py-3">Metric</th>
                     <th className="px-5 py-3">Value</th>
-                    <th className="px-5 py-3">Classification</th>
-                    <th className="px-5 py-3">Source</th>
-                    <th className="px-5 py-3">Notes</th>
+                    <th className="px-5 py-3">Classification & Provenance</th>
+                    <th className="px-5 py-3">Validation Status</th>
+                    <th className="px-5 py-3">Notes & Audit</th>
                     <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -1733,6 +1733,8 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
                     historyObservations.map(obs => {
                       const obsId = obs._id || obs.observation_id || '';
                       const classification = (obs as any).data_classification || (obs.data_tier === 'user_reported' ? 'user_entered' : 'measured');
+                      const valStatus = (obs as any).validation_status || 'valid';
+                      const editCount = (obs as any).edit_history ? (obs as any).edit_history.length : 0;
                       return (
                         <tr key={obsId} className="hover:bg-slate-50/70 transition-colors">
                           <td className="px-5 py-3 font-mono text-[11px] text-slate-600">
@@ -1743,27 +1745,58 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
                           </td>
                           <td className="px-5 py-3 font-mono font-bold text-slate-900">
                             {obs.value} {obs.unit}
+                            {(obs as any).was_unit_converted && (
+                              <span className="block text-[10px] font-normal text-teal-600">
+                                (from {(obs as any).original_value} {(obs as any).original_unit})
+                              </span>
+                            )}
                           </td>
                           <td className="px-5 py-3">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                classification === 'user_entered'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : classification === 'wearable_imported'
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : classification === 'synthetic_demo'
-                                  ? 'bg-slate-100 text-slate-700'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {classification.replace('_', ' ')}
-                            </span>
+                            <div className="space-y-1">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  classification === 'user_entered'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : classification === 'wearable_imported'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : classification === 'synthetic_demo'
+                                    ? 'bg-slate-100 text-slate-700'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}
+                              >
+                                {classification.replace('_', ' ')}
+                              </span>
+                              <div className="text-[10px] font-mono text-slate-400">
+                                {(obs as any).source_type || obs.source}
+                                {(obs as any).device_id ? ` • ${(obs as any).device_id}` : ''}
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-5 py-3 text-slate-500 font-mono text-[11px]">
-                            {obs.source}
+                          <td className="px-5 py-3">
+                            {valStatus === 'valid' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                Valid
+                              </span>
+                            ) : valStatus === 'confirmed_unusual' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                Confirmed Unusual
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+                                <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                                {valStatus}
+                              </span>
+                            )}
                           </td>
-                          <td className="px-5 py-3 text-slate-500 truncate max-w-xs">
-                            {obs.notes || '—'}
+                          <td className="px-5 py-3 text-slate-500 max-w-xs">
+                            <div className="truncate text-xs">{obs.notes || '—'}</div>
+                            {editCount > 0 && (
+                              <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-slate-100 text-[10px] font-mono text-slate-600 border border-slate-200">
+                                Edited ×{editCount}
+                              </span>
+                            )}
                           </td>
                           <td className="px-5 py-3 text-right space-x-1">
                             <button
@@ -1788,6 +1821,359 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: REVIEW DATA QUALITY & INGESTION SAFEGUARDS */}
+      {activeSubTab === 'data_quality' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-teal-500/10 text-teal-600 border border-teal-500/20">
+                  <Shield className="w-5 h-5" />
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  Health Data & Ingestion Quality Architecture
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Multi-layer physiological plausibility, explicit unit conversions, patient isolation, and pre-inference prediction safeguards.
+              </p>
+            </div>
+
+            <button
+              onClick={loadSafeguardData}
+              disabled={isLoadingSafeguard}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white text-xs font-bold transition-colors"
+            >
+              {isLoadingSafeguard ? 'Auditing Features...' : 'Re-audit Inference Readiness'}
+            </button>
+          </div>
+
+          {/* Section 1: Provenance & Patient Isolation Guarantee */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+              <Layers className="w-4 h-4 text-teal-600" />
+              1. Provenance Architecture & Five Ingestion Channels
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Every health observation ingested into SwasthyaTwin preserves immutable clinical provenance metadata, including canonical unit mappings, source identifier, device ID, validation status, and audit change logs.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  Manual Entry (user_entered)
+                </div>
+                <p className="text-slate-500 text-[11px]">
+                  Direct self-reported or clinician-keyed entries via app forms. Subject to interactive plausibility checks and confirmation dialogs.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-500" />
+                  Imported File (imported_file)
+                </div>
+                <p className="text-slate-500 text-[11px]">
+                  Batch CSV exports from smartwatch apps or clinic files. Verified through pre-import preview with column detection and unit conversions.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-teal-500" />
+                  Device Measurement (device_measurement)
+                </div>
+                <p className="text-slate-500 text-[11px]">
+                  Live optical bio-scanner telemetry, Bluetooth smart cuffs, and continuous wearable streams with hardware device identifiers.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Certified Clinical Lab (clinical_lab)
+                </div>
+                <p className="text-slate-500 text-[11px]">
+                  Venous blood draws, laboratory panels, and formal diagnostic screenings acting as gold-standard reference points.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 sm:col-span-2">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  Research Datasets & Synthetic Demos (public_research_dataset / synthetic_demo)
+                </div>
+                <p className="text-slate-500 text-[11px]">
+                  PhysioNet Sleep-EDF benchmark recordings and offline demonstration profiles. Strictly segregated in isolated MongoDB partitions.
+                </p>
+              </div>
+            </div>
+
+            {/* Strict Isolation Callout */}
+            <div className="p-4 rounded-xl bg-teal-50/80 border border-teal-200 text-teal-950 text-xs flex items-start gap-3">
+              <Shield className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
+              <div>
+                <strong className="block font-bold text-teal-950 mb-0.5">
+                  Strict Personal Baseline Isolation Guarantee:
+                </strong>
+                <span>
+                  SwasthyaTwin guarantees that public research participants (such as PhysioNet Sleep-EDF cohort members) and synthetic demonstration profiles are never merged into a real user's personal baseline corridor. Each patient baseline is calculated strictly from that individual's own verified historical observations.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Clinical Corridor Reference Standards */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <Activity className="w-4 h-4 text-teal-600" />
+                2. Configurable Plausibility Corridors & Medical Reference Sources
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Plausibility limits are computational data-quality checks, not clinical decision thresholds. Unplausible values trigger hard rejections (400), while unusual readings trigger confirmation dialogs (409) rather than silent modification.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-600">
+                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[11px] border-b border-slate-200 font-semibold">
+                  <tr>
+                    <th className="px-4 py-2.5">Biometric Signal</th>
+                    <th className="px-4 py-2.5">Canonical Unit</th>
+                    <th className="px-4 py-2.5">Hard Rejection Limits</th>
+                    <th className="px-4 py-2.5">Soft Review Corridor</th>
+                    <th className="px-4 py-2.5">Medical Reference Standard</th>
+                    <th className="px-4 py-2.5">Unit Conversions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                  <tr>
+                    <td className="px-4 py-2 font-sans font-semibold text-slate-900">Resting Heart Rate</td>
+                    <td className="px-4 py-2 text-teal-700 font-bold">bpm</td>
+                    <td className="px-4 py-2 text-rose-700">&lt; 20 or &gt; 300</td>
+                    <td className="px-4 py-2 text-amber-700">35 – 180 bpm</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">AHA / ACC Resting Standards</td>
+                    <td className="px-4 py-2 font-sans text-slate-400">Canonical: bpm</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 font-sans font-semibold text-slate-900">Systolic Blood Pressure</td>
+                    <td className="px-4 py-2 text-teal-700 font-bold">mmHg</td>
+                    <td className="px-4 py-2 text-rose-700">&lt; 30 or &gt; 300</td>
+                    <td className="px-4 py-2 text-amber-700">50 – 240 mmHg</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">AHA Guidelines & ISO 81060-2</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">kPa → mmHg (× 7.5006)</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 font-sans font-semibold text-slate-900">Diastolic Blood Pressure</td>
+                    <td className="px-4 py-2 text-teal-700 font-bold">mmHg</td>
+                    <td className="px-4 py-2 text-rose-700">&lt; 20 or &gt; 200</td>
+                    <td className="px-4 py-2 text-amber-700">30 – 140 mmHg</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">ISO 81060-2 (Must be &lt; Systolic)</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">kPa → mmHg (× 7.5006)</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 font-sans font-semibold text-slate-900">Blood Glucose</td>
+                    <td className="px-4 py-2 text-teal-700 font-bold">mg/dL</td>
+                    <td className="px-4 py-2 text-rose-700">&lt; 10 or &gt; 1500</td>
+                    <td className="px-4 py-2 text-amber-700">40 – 450 mg/dL</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">American Diabetes Association (ADA)</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">mmol/L → mg/dL (× 18.0182)</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 font-sans font-semibold text-slate-900">Sleep Duration</td>
+                    <td className="px-4 py-2 text-teal-700 font-bold">hours</td>
+                    <td className="px-4 py-2 text-rose-700">&lt; 0 or &gt; 24</td>
+                    <td className="px-4 py-2 text-amber-700">2.0 – 16.0 hrs</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">National Sleep Foundation (NSF)</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">minutes → hours (÷ 60)</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 font-sans font-semibold text-slate-900">Respiratory Rate</td>
+                    <td className="px-4 py-2 text-teal-700 font-bold">breaths/min</td>
+                    <td className="px-4 py-2 text-rose-700">&lt; 3 or &gt; 80</td>
+                    <td className="px-4 py-2 text-amber-700">6 – 45 breaths/min</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">WHO / ATS Clinical Standards</td>
+                    <td className="px-4 py-2 font-sans text-slate-400">Canonical: breaths/min</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 font-sans font-semibold text-slate-900">Body Temperature</td>
+                    <td className="px-4 py-2 text-teal-700 font-bold">°C</td>
+                    <td className="px-4 py-2 text-rose-700">&lt; 30.0 or &gt; 45.0</td>
+                    <td className="px-4 py-2 text-amber-700">35.0 – 41.0 °C</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">Clinical Thermometry Guidelines</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">°F → °C ((F - 32) × 5/9)</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 font-sans font-semibold text-slate-900">Body Weight</td>
+                    <td className="px-4 py-2 text-teal-700 font-bold">kg</td>
+                    <td className="px-4 py-2 text-rose-700">&lt; 1.0 or &gt; 500.0</td>
+                    <td className="px-4 py-2 text-amber-700">25.0 – 250.0 kg</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">Physical plausibility boundaries</td>
+                    <td className="px-4 py-2 font-sans text-slate-600">lbs → kg (÷ 2.20462)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 space-y-1">
+              <strong className="text-slate-800">Multi-variate Inconsistency Rules:</strong>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+                <div>• Diastolic pressure $\ge$ Systolic pressure is rejected as technically impossible.</div>
+                <div>• Pulse pressure &lt; 15 mmHg or &gt; 120 mmHg triggers an unusual alert.</div>
+                <div>• Future timestamps &gt; 5 minutes into the future are rejected.</div>
+                <div>• Impossible dates prior to 1970-01-01 are rejected.</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Pre-Inference Prediction Safeguards & Feature Readiness Inspector */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                  <HeartPulse className="w-4 h-4 text-teal-600" />
+                  3. Pre-Inference Prediction Safeguards Inspector
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Patient: <strong className="text-slate-800 font-mono">{selectedPatientId}</strong> • Audits feature availability, temporal freshness (&le;30d), and prevents misleading zero-imputed predictions.
+                </p>
+              </div>
+
+              {mlSafeguardData && (
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  mlSafeguardData.status === 'ready'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                }`}>
+                  Status: {mlSafeguardData.status?.replace('_', ' ')}
+                </span>
+              )}
+            </div>
+
+            {/* Zero-Imputation Prohibition Callout */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
+              <strong className="text-slate-900 block font-semibold">
+                Core Machine Learning Safeguard: Zero-Imputation Prohibition
+              </strong>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                SwasthyaTwin never infers that an unmeasured biometric is zero (e.g., zero glucose, zero heart rate, or zero sleep). When required features are missing or outside supported training schemas, the pipeline honestly withholds inference with structured status explanations rather than returning a confident-looking hallucinated number.
+              </p>
+            </div>
+
+            {/* Live Safeguard Status Details */}
+            {mlSafeguardData && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                {/* Panel A: Status & Limitations */}
+                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                  <span className="font-bold text-slate-800 block text-xs uppercase tracking-wide">
+                    Inference Readiness Audit
+                  </span>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Pipeline Status:</span>
+                      <span className="font-mono font-bold capitalize text-slate-800">
+                        {mlSafeguardData.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Model Version:</span>
+                      <span className="font-mono text-slate-700">{mlSafeguardData.model_version || '2.4.0'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Synthetic Record:</span>
+                      <span className="font-mono text-slate-700">
+                        {mlSafeguardData.data_provenance?.is_synthetic ? 'Yes (Demo Demo)' : 'No (Clinical Individual)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {mlSafeguardData.limitations && mlSafeguardData.limitations.length > 0 && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <span className="text-[11px] font-bold text-slate-600 block mb-1">
+                        Active Model Limitations:
+                      </span>
+                      <ul className="text-[11px] space-y-1 text-slate-500 list-disc list-inside">
+                        {mlSafeguardData.limitations.map((lim: string, idx: number) => (
+                          <li key={idx}>{lim}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Panel B: Missing & Stale Features */}
+                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                  <span className="font-bold text-slate-800 block text-xs uppercase tracking-wide">
+                    Feature Availability & Freshness Audit
+                  </span>
+
+                  {mlSafeguardData.data_provenance?.missing_features && mlSafeguardData.data_provenance.missing_features.length > 0 ? (
+                    <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-900 text-[11px]">
+                      <strong className="block font-bold">Missing Required Features:</strong>
+                      <div className="mt-1 flex flex-wrap gap-1 font-mono">
+                        {mlSafeguardData.data_provenance.missing_features.map((f: string) => (
+                          <span key={f} className="px-1.5 py-0.5 rounded bg-rose-200 text-rose-950 font-semibold">
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="text-[10px] text-rose-700 mt-1">
+                        Predictions are withheld until these biometrics are recorded.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>All required baseline features are present in MongoDB.</span>
+                    </div>
+                  )}
+
+                  {mlSafeguardData.data_provenance?.stale_features && mlSafeguardData.data_provenance.stale_features.length > 0 && (
+                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px]">
+                      <strong className="block font-bold">Stale Features (&gt; 30 Days):</strong>
+                      <div className="mt-1 flex flex-wrap gap-1 font-mono">
+                        {mlSafeguardData.data_provenance.stale_features.map((f: string) => (
+                          <span key={f} className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 font-semibold">
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {mlSafeguardData.warnings && mlSafeguardData.warnings.length > 0 && (
+                    <div className="pt-2">
+                      <span className="text-[11px] font-bold text-slate-600 block mb-1">
+                        Quality Warnings:
+                      </span>
+                      <ul className="text-[11px] space-y-0.5 text-amber-800">
+                        {mlSafeguardData.warnings.map((w: string, idx: number) => (
+                          <li key={idx}>⚠️ {w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 4: Clinical & Non-Diagnostic Disclaimer */}
+          <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-950 text-xs space-y-2">
+            <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-amber-900">
+              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+              Algorithmic Data Quality & Plausibility Disclaimer
+            </div>
+            <p className="text-amber-900/90 leading-relaxed">
+              SwasthyaTwin validation rules enforce data format integrity, explicit unit conversions, mathematical plausibility corridors, and temporal coherence. <strong>Validation checks do not guarantee medical correctness, certify physiological absence of disease, or substitute for professional clinical diagnosis.</strong> A measurement that passes all data-quality checks may still represent an abnormal clinical finding requiring prompt evaluation by a licensed healthcare provider.
+            </p>
           </div>
         </div>
       )}
@@ -1872,6 +2258,131 @@ export const AddObservationPage: React.FC<AddObservationPageProps> = ({ onNaviga
           </div>
         </div>
       )}
+
+      {/* Suspicious / Unusual Value Confirmation Dialog */}
+      {suspiciousModal && suspiciousModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl border border-amber-300 shadow-2xl max-w-lg w-full overflow-hidden animate-scale-in">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-amber-100 bg-amber-50/70 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-xs">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-amber-950">
+                    Unusual Health Measurement Detected
+                  </h3>
+                  <p className="text-[11px] text-amber-800">
+                    Input Quality Safeguard • Confirmation Required Before Saving
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSuspiciousModal(null)}
+                className="text-amber-800/60 hover:text-amber-950 p-1"
+                aria-label="Close dialog"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-700 leading-relaxed">
+                The reading entered for <strong className="font-semibold text-slate-900">{suspiciousModal.metricType.replace('_', ' ')}</strong> is outside typical physiological corridors, but is technically plausible. To protect digital twin accuracy, please confirm this reading.
+              </p>
+
+              {/* Value Summary Card */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">
+                    Entered Measurement
+                  </span>
+                  <span className="text-base font-bold font-mono text-slate-900">
+                    {suspiciousModal.value} {suspiciousModal.unit}
+                  </span>
+                </div>
+                <div className="text-right text-[11px] text-slate-500 font-mono">
+                  <div>Patient: {suspiciousModal.patientId}</div>
+                  <div>{new Date(suspiciousModal.timestamp).toLocaleTimeString()}</div>
+                </div>
+              </div>
+
+              {/* Warnings List */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 block">
+                  Quality Warnings:
+                </span>
+                {suspiciousModal.warnings.map((w, i) => (
+                  <div key={i} className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <span>{w}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Typo Suggestion if Available */}
+              {suspiciousModal.suggestedCorrection && (
+                <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-950 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold block">Possible digit transposition detected?</span>
+                    <span className="text-[11px] text-teal-800">
+                      Did you mean to enter <strong>{suspiciousModal.suggestedCorrection} {suspiciousModal.unit}</strong>?
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setValue(String(suspiciousModal.suggestedCorrection));
+                      setSuspiciousModal(null);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shrink-0 transition-colors"
+                  >
+                    Use {suspiciousModal.suggestedCorrection}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-500 italic">
+                Saved with validation_status="confirmed_unusual"
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSuspiciousModal(null)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors"
+                >
+                  Edit Measurement
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmSuspiciousValue}
+                  disabled={isConfirmingUnusual}
+                  className="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5"
+                >
+                  {isConfirmingUnusual ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Confirming...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Confirm & Record As Is</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
