@@ -17,6 +17,7 @@ import { AlertCenter } from './components/alerts/AlertCenter';
 import { DataSourcesPage } from './components/pages/DataSourcesPage';
 import { SettingsPage } from './components/pages/SettingsPage';
 import { MethodologyPage } from './components/pages/MethodologyPage';
+import { MLStudioPage } from './components/pages/MLStudioPage';
 import { AlertCircle, X } from 'lucide-react';
 
 const AppContent: React.FC = () => {

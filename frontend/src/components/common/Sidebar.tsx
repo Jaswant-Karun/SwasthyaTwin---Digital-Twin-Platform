@@ -13,7 +13,8 @@ import {
   HeartPulse,
   BookOpen,
   UserPlus,
-  PlusCircle
+  PlusCircle,
+  Brain
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'add-patient', label: 'Add Patient', icon: UserPlus },
     { id: 'add-observation', label: 'Add Health Data', icon: PlusCircle },
     { id: 'digital-twin', label: 'AI Digital Twin', icon: HeartPulse, badgeText: 'LIVE' },
+    { id: 'ml-studio', label: 'ML Training Studio', icon: Brain, badgeText: 'AI' },
     { id: 'health-trends', label: 'Health Trends', icon: LineChart },
     { id: 'risk-insights', label: 'Risk Insights', icon: ShieldAlert },
     { id: 'what-if', label: 'What-if Simulator', icon: Sliders },
