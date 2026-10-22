@@ -4,7 +4,7 @@ FastAPI Endpoints for Machine Learning Health Intelligence & Live AI Optical Sca
 
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pymongo.database import Database
 from app.api.deps import get_database
 from app.analytics.ml_health_engine import ml_health_engine
