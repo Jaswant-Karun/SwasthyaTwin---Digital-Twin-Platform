@@ -112,7 +112,15 @@ class MLHealthIntelligenceEngine:
         Prevents typos or impossible values from skewing the digital twin.
         Returns plausibility score (0-100), validity flag, warnings, and suggested correction.
         """
-        metric = measurement_type.lower()
+        metric = measurement_type.lower().strip()
+        alias_map = {
+            "blood_pressure_systolic": "systolic_bp",
+            "blood_pressure_diastolic": "diastolic_bp",
+            "sleep_duration_hours": "sleep_duration",
+            "sleep_hours": "sleep_duration"
+        }
+        metric = alias_map.get(metric, metric)
+
         rule_warnings = []
         is_plausible = True
         confidence_weight = 1.0
