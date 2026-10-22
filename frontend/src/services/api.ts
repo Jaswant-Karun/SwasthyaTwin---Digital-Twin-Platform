@@ -1138,17 +1138,28 @@ export const api = {
     patientId: string,
     params?: {
       signal_filter?: string;
+      start_date?: string;
+      end_date?: string;
+      source?: string;
+      status?: string;
+      data_kind?: string;
       limit?: number;
       skip?: number;
     }
   ): Promise<MultiSignalTimelineResponse> => {
     const q = new URLSearchParams();
     if (params?.signal_filter && params.signal_filter !== 'all') q.set('signal_filter', params.signal_filter);
+    if (params?.start_date) q.set('start_date', params.start_date);
+    if (params?.end_date) q.set('end_date', params.end_date);
+    if (params?.source) q.set('source', params.source);
+    if (params?.status) q.set('status', params.status);
+    if (params?.data_kind) q.set('data_kind', params.data_kind);
     if (params?.limit) q.set('limit', String(params.limit));
     if (params?.skip) q.set('skip', String(params.skip));
     const qs = q.toString() ? `?${q.toString()}` : '';
     return await request<MultiSignalTimelineResponse>(`/api/v1/patients/${patientId}/timeline/multi-signal${qs}`);
   }
 };
+
 
 

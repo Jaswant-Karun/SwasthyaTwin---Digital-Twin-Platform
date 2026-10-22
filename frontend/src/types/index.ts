@@ -610,7 +610,9 @@ export interface MultiSignalTimelineItem {
   signal_type: 'sleep_stage_prediction' | 'heart_rate_statistical_flag' | 'physiological_observation';
   signal_category: string;
   signal_badge: string;
+  data_provenance: 'measured' | 'derived' | 'model_predicted' | 'simulated' | 'synthetic';
   timestamp: string;
+  time_zone?: string;
   title: string;
   summary: string;
   status_level: 'normal' | 'elevated' | 'low' | 'review' | 'info' | 'deep_sleep' | 'rem_sleep';
@@ -618,6 +620,10 @@ export interface MultiSignalTimelineItem {
   primary_metric?: string;
   primary_value?: string | number;
   primary_unit?: string;
+  canonical_unit?: string;
+  source_device?: string;
+  measurement_method?: string;
+  validation_status?: string;
   sleep_details?: SleepStageDetail | null;
   cardiovascular_details?: CardiovascularAnomalyDetail | null;
   observation_details?: PhysiologicalObservationDetail | null;
@@ -659,9 +665,35 @@ export interface MultiSignalTimelineResponse {
       synchronized_signals: string[];
       clinical_separation_guarantee: string;
     };
+    vitals_summary?: {
+      latest_blood_pressure?: {
+        systolic?: number;
+        diastolic?: number;
+        unit: string;
+        provenance: string;
+        measurement_method: string;
+        observed_at?: string;
+      };
+      latest_steps?: {
+        steps: number;
+        unit: string;
+        is_partial_day: boolean;
+        validation_status: string;
+        observed_at?: string;
+        provenance: string;
+      };
+      latest_respiratory_rate?: {
+        rate: number;
+        unit: string;
+        observed_at?: string;
+        provenance: string;
+        measurement_method?: string;
+      };
+    };
   };
   items: MultiSignalTimelineItem[];
 }
+
 
 
 
