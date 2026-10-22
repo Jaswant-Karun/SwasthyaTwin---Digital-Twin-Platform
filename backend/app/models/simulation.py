@@ -23,6 +23,8 @@ class TrajectoryPoint(BaseModel):
     hrv_rmssd_upper: float
     hrv_rmssd_lower: float
     vitality_projected: float
+    ml_vitality_projected: Optional[float] = None
+    ml_risk_tier: Optional[str] = None
 
 class SimulationRequest(BaseModel):
     scenario_name: str = Field(..., min_length=2, max_length=120)

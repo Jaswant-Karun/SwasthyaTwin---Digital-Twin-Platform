@@ -30,4 +30,11 @@ def test_twin_simulation_lifestyle_optimization():
     assert outcomes["delta_resting_hr"] < 0
     assert outcomes["delta_systolic_bp"] < 0
     assert outcomes["delta_hrv_rmssd"] > 0
+    # Hybrid ML trajectory outcomes
+    assert "ml_predicted_vitality_delta" in outcomes
+    assert "ml_baseline_risk_tier" in outcomes
+    assert "ml_projected_risk_tier" in outcomes
+    assert "ml_baseline_phenotype" in outcomes
+    assert "ml_projected_phenotype" in outcomes
+    assert result["trajectories"][-1]["ml_vitality_projected"] is not None
     assert "disclaimer" in result
