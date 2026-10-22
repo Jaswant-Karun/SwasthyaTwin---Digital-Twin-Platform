@@ -95,7 +95,7 @@ def convert_to_canonical_unit(
         return round(value, 1), "mmHg", False, None
 
     # 3. Sleep Duration: minutes/seconds to hours
-    if m_type == "sleep_duration_hours":
+    if m_type in ["sleep_duration_hours", "sleep_duration"]:
         if clean_unit in ["minutes", "min", "m"]:
             converted = round(value / 60.0, 2)
             return converted, "hours", True, f"Converted from {value} minutes to {converted} hours"
