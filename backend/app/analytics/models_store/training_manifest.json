@@ -1,11 +1,11 @@
 {
   "version": "2.4.0-ml-ensemble",
-  "trained_at": "2026-10-22T13:29:34.020906+00:00",
-  "training_duration_seconds": 3.77,
+  "trained_at": "2026-10-22T13:32:24.123817+00:00",
+  "training_duration_seconds": 2.76,
   "dataset_summary": {
-    "total_samples": 2000,
-    "train_samples": 1600,
-    "test_samples": 400,
+    "total_samples": 400,
+    "train_samples": 300,
+    "test_samples": 100,
     "features_count": 12,
     "feature_names": [
       "heart_rate",
@@ -24,37 +24,37 @@
   },
   "classification_metrics": {
     "algorithm": "RandomForestClassifier(n_estimators=100, max_depth=8)",
-    "test_accuracy": 83.5,
-    "test_precision": 83.76,
-    "test_recall": 83.5,
-    "test_f1_score": 83.59,
-    "roc_auc_ovr": 94.66,
+    "test_accuracy": 82.0,
+    "test_precision": 82.69,
+    "test_recall": 82.0,
+    "test_f1_score": 82.14,
+    "roc_auc_ovr": 94.52,
     "cross_validation_5fold": {
       "fold_scores": [
-        84.38,
-        79.38,
-        77.81,
-        83.12,
-        76.25
+        76.67,
+        71.67,
+        85.0,
+        75.0,
+        66.67
       ],
-      "mean_score": 80.19,
-      "std_score": 3.1
+      "mean_score": 75.0,
+      "std_score": 6.06
     },
     "confusion_matrix": [
       [
-        135,
-        17,
+        35,
+        6,
         0
       ],
       [
-        13,
-        111,
-        16
+        2,
+        23,
+        7
       ],
       [
         0,
-        20,
-        88
+        3,
+        24
       ]
     ],
     "class_labels": [
@@ -65,15 +65,15 @@
   },
   "baseline_comparison": {
     "algorithm": "LogisticRegression(Baseline)",
-    "test_accuracy": 94.25,
-    "test_f1_score": 94.21,
-    "accuracy_improvement_pct": -10.75
+    "test_accuracy": 94.0,
+    "test_f1_score": 94.0,
+    "accuracy_improvement_pct": -12.0
   },
   "regression_metrics": {
     "algorithm": "GradientBoostingRegressor(n_estimators=120, lr=0.06)",
-    "mae": 1.76,
-    "rmse": 2.15,
-    "r2_score": 0.921,
+    "mae": 2.12,
+    "rmse": 2.65,
+    "r2_score": 0.871,
     "target": "14-Day Vitality Delta (Continuous Trajectory)"
   },
   "unsupervised_phenotypes": {
@@ -86,13 +86,13 @@
         "summary": "Robust heart rate variability, optimal hemodynamic pressure, and restorative sleep duration. Minimal autonomic strain.",
         "color": "#10b981",
         "profile": {
-          "heart_rate": 70.3,
-          "systolic_bp": 122.1,
-          "diastolic_bp": 78.0,
-          "pulse_pressure": 44.1,
-          "hrv_rmssd": 99.6,
-          "sleep_duration": 7.3,
-          "daily_steps": 8146.0
+          "heart_rate": 69.8,
+          "systolic_bp": 139.9,
+          "diastolic_bp": 89.6,
+          "pulse_pressure": 50.3,
+          "hrv_rmssd": 43.1,
+          "sleep_duration": 7.1,
+          "daily_steps": 7077.0
         }
       },
       {
@@ -102,13 +102,13 @@
         "summary": "Resting tachycardia combined with suppressed vagal tone (low HRV) and elevated pulse pressure. Elevated autonomic exhaustion risk.",
         "color": "#f59e0b",
         "profile": {
-          "heart_rate": 71.8,
-          "systolic_bp": 122.7,
-          "diastolic_bp": 77.9,
-          "pulse_pressure": 44.7,
-          "hrv_rmssd": 34.8,
-          "sleep_duration": 7.1,
-          "daily_steps": 7784.0
+          "heart_rate": 74.2,
+          "systolic_bp": 103.3,
+          "diastolic_bp": 66.2,
+          "pulse_pressure": 37.1,
+          "hrv_rmssd": 36.4,
+          "sleep_duration": 7.4,
+          "daily_steps": 7334.0
         }
       },
       {
@@ -118,13 +118,13 @@
         "summary": "Elevated Mean Arterial Pressure (MAP) and widened pulse pressure indicating heightened peripheral vascular resistance.",
         "color": "#ef4444",
         "profile": {
-          "heart_rate": 71.0,
-          "systolic_bp": 104.0,
-          "diastolic_bp": 66.0,
-          "pulse_pressure": 38.0,
-          "hrv_rmssd": 42.0,
-          "sleep_duration": 7.2,
-          "daily_steps": 7483.0
+          "heart_rate": 72.4,
+          "systolic_bp": 118.8,
+          "diastolic_bp": 76.1,
+          "pulse_pressure": 42.7,
+          "hrv_rmssd": 104.9,
+          "sleep_duration": 7.4,
+          "daily_steps": 7122.0
         }
       },
       {
@@ -134,13 +134,13 @@
         "summary": "Short sleep duration, sedentary baseline step volume, and high multi-metric variance indicating systemic lifestyle fatigue.",
         "color": "#8b5cf6",
         "profile": {
-          "heart_rate": 71.2,
-          "systolic_bp": 140.9,
-          "diastolic_bp": 90.9,
-          "pulse_pressure": 50.0,
-          "hrv_rmssd": 39.5,
-          "sleep_duration": 7.1,
-          "daily_steps": 7178.0
+          "heart_rate": 69.6,
+          "systolic_bp": 121.1,
+          "diastolic_bp": 78.8,
+          "pulse_pressure": 42.3,
+          "hrv_rmssd": 37.3,
+          "sleep_duration": 6.9,
+          "daily_steps": 7623.0
         }
       }
     ]
@@ -148,369 +148,369 @@
   "dimensionality_reduction": {
     "algorithm": "PCA(n_components=2)",
     "explained_variance_ratio": [
-      27.8,
-      16.8
+      28.4,
+      16.6
     ],
-    "total_explained_variance_pct": 44.6,
+    "total_explained_variance_pct": 45.1,
     "sample_scatter_points": [
       {
-        "x": -0.295,
-        "y": -0.042,
+        "x": -2.544,
+        "y": 4.745,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 1.169,
+        "y": 0.143,
+        "cluster": 0,
+        "risk_class": 1
+      },
+      {
+        "x": -0.85,
+        "y": 1.58,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": -2.463,
+        "y": 0.484,
         "cluster": 1,
         "risk_class": 0
       },
       {
-        "x": 0.323,
+        "x": 1.318,
+        "y": 1.416,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": -1.588,
+        "y": -0.548,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 2.911,
+        "y": -1.32,
+        "cluster": 0,
+        "risk_class": 1
+      },
+      {
+        "x": -2.273,
+        "y": 1.954,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": 1.213,
+        "y": -1.561,
+        "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": 0.826,
+        "y": -0.273,
+        "cluster": 3,
+        "risk_class": 1
+      },
+      {
+        "x": -3.841,
+        "y": 0.249,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": 0.788,
+        "y": -0.508,
+        "cluster": 3,
+        "risk_class": 1
+      },
+      {
+        "x": 5.139,
+        "y": -0.41,
+        "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": 0.462,
+        "y": 3.261,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 1.092,
+        "y": 4.374,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 0.342,
+        "y": -0.314,
+        "cluster": 3,
+        "risk_class": 1
+      },
+      {
+        "x": -0.975,
+        "y": 0.067,
+        "cluster": 3,
+        "risk_class": 1
+      },
+      {
+        "x": 1.283,
+        "y": -1.315,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": 0.256,
         "y": -0.345,
-        "cluster": 1,
+        "cluster": 3,
         "risk_class": 1
       },
       {
-        "x": 0.857,
-        "y": -0.816,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": -1.432,
-        "y": -0.173,
-        "cluster": 2,
+        "x": 0.719,
+        "y": 0.14,
+        "cluster": 3,
         "risk_class": 0
       },
       {
-        "x": 0.585,
-        "y": -0.515,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": 0.114,
-        "y": -0.964,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": -1.898,
-        "y": -1.52,
-        "cluster": 2,
-        "risk_class": 1
-      },
-      {
-        "x": -0.478,
-        "y": -1.977,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": 0.413,
-        "y": -1.61,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": 3.441,
-        "y": -1.22,
-        "cluster": 3,
-        "risk_class": 2
-      },
-      {
-        "x": -1.143,
-        "y": -1.259,
-        "cluster": 2,
-        "risk_class": 1
-      },
-      {
-        "x": -0.598,
-        "y": 0.076,
-        "cluster": 1,
-        "risk_class": 1
-      },
-      {
-        "x": 2.833,
-        "y": -1.371,
-        "cluster": 3,
-        "risk_class": 2
-      },
-      {
-        "x": -0.509,
-        "y": -0.504,
-        "cluster": 1,
-        "risk_class": 1
-      },
-      {
-        "x": 3.661,
-        "y": 0.365,
-        "cluster": 3,
-        "risk_class": 2
-      },
-      {
-        "x": -0.06,
-        "y": 2.723,
+        "x": 2.118,
+        "y": 0.078,
         "cluster": 0,
         "risk_class": 0
       },
       {
-        "x": -1.322,
-        "y": -1.456,
-        "cluster": 2,
-        "risk_class": 1
+        "x": 0.275,
+        "y": 0.182,
+        "cluster": 3,
+        "risk_class": 0
       },
       {
-        "x": 4.44,
-        "y": -1.409,
+        "x": -1.426,
+        "y": 0.322,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": 4.893,
+        "y": -0.172,
+        "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": 0.097,
+        "y": 0.817,
+        "cluster": 3,
+        "risk_class": 0
+      },
+      {
+        "x": -0.272,
+        "y": -1.06,
         "cluster": 3,
         "risk_class": 2
       },
       {
-        "x": 1.44,
-        "y": -0.784,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": 3.18,
-        "y": -0.787,
+        "x": 0.712,
+        "y": 0.206,
         "cluster": 3,
         "risk_class": 2
       },
       {
-        "x": -0.652,
-        "y": 1.364,
-        "cluster": 0,
-        "risk_class": 0
-      },
-      {
-        "x": -1.785,
-        "y": -2.082,
-        "cluster": 2,
-        "risk_class": 2
-      },
-      {
-        "x": -0.153,
-        "y": -0.223,
+        "x": -2.92,
+        "y": 0.721,
         "cluster": 1,
-        "risk_class": 1
-      },
-      {
-        "x": -0.497,
-        "y": 2.29,
-        "cluster": 0,
         "risk_class": 0
       },
       {
-        "x": 3.915,
-        "y": -0.751,
-        "cluster": 3,
-        "risk_class": 2
-      },
-      {
-        "x": -2.037,
-        "y": -0.212,
+        "x": -1.279,
+        "y": 4.096,
         "cluster": 2,
         "risk_class": 0
       },
       {
-        "x": 1.138,
-        "y": 2.554,
-        "cluster": 0,
-        "risk_class": 0
-      },
-      {
-        "x": -1.241,
-        "y": 0.542,
-        "cluster": 2,
-        "risk_class": 1
-      },
-      {
-        "x": 0.701,
-        "y": 2.662,
-        "cluster": 0,
-        "risk_class": 0
-      },
-      {
-        "x": -0.093,
-        "y": -0.754,
-        "cluster": 1,
-        "risk_class": 0
-      },
-      {
-        "x": -1.728,
-        "y": -0.929,
-        "cluster": 2,
-        "risk_class": 0
-      },
-      {
-        "x": 1.27,
-        "y": -1.103,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": -0.51,
-        "y": -0.997,
-        "cluster": 1,
-        "risk_class": 1
-      },
-      {
-        "x": 1.157,
-        "y": -0.13,
-        "cluster": 1,
-        "risk_class": 0
-      },
-      {
-        "x": -1.485,
-        "y": 1.751,
-        "cluster": 0,
-        "risk_class": 0
-      },
-      {
-        "x": 0.46,
-        "y": -0.458,
-        "cluster": 1,
-        "risk_class": 1
-      },
-      {
-        "x": -0.518,
-        "y": -0.968,
-        "cluster": 1,
-        "risk_class": 1
-      },
-      {
-        "x": -0.268,
-        "y": -1.148,
-        "cluster": 1,
-        "risk_class": 1
-      },
-      {
-        "x": -0.56,
-        "y": 2.448,
-        "cluster": 0,
-        "risk_class": 0
-      },
-      {
-        "x": -2.382,
-        "y": -0.416,
-        "cluster": 2,
-        "risk_class": 1
-      },
-      {
-        "x": 0.739,
-        "y": 1.382,
-        "cluster": 0,
-        "risk_class": 1
-      },
-      {
-        "x": -1.183,
-        "y": 2.495,
-        "cluster": 0,
-        "risk_class": 0
-      },
-      {
-        "x": 2.551,
-        "y": -0.392,
-        "cluster": 3,
-        "risk_class": 2
-      },
-      {
-        "x": 1.0,
-        "y": -0.012,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": -4.144,
-        "y": 0.92,
-        "cluster": 2,
-        "risk_class": 0
-      },
-      {
-        "x": 0.886,
-        "y": -1.701,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": 0.647,
-        "y": -1.292,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": -0.246,
-        "y": -0.467,
-        "cluster": 1,
-        "risk_class": 1
-      },
-      {
-        "x": 1.96,
-        "y": 0.268,
+        "x": 0.462,
+        "y": -0.026,
         "cluster": 3,
         "risk_class": 1
       },
       {
-        "x": -0.747,
-        "y": 1.18,
+        "x": 0.992,
+        "y": -1.019,
+        "cluster": 3,
+        "risk_class": 2
+      },
+      {
+        "x": 3.584,
+        "y": -1.245,
         "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": -0.763,
+        "y": -0.172,
+        "cluster": 1,
         "risk_class": 0
       },
       {
-        "x": 0.452,
-        "y": -0.698,
-        "cluster": 1,
-        "risk_class": 1
+        "x": -0.602,
+        "y": -0.51,
+        "cluster": 3,
+        "risk_class": 0
       },
       {
-        "x": 1.68,
-        "y": 1.228,
+        "x": 0.769,
+        "y": -1.524,
         "cluster": 3,
         "risk_class": 1
       },
       {
-        "x": 1.126,
-        "y": -1.461,
+        "x": -1.81,
+        "y": -1.219,
         "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": 1.788,
-        "y": -0.3,
-        "cluster": 3,
         "risk_class": 1
       },
       {
-        "x": -1.943,
-        "y": -0.728,
-        "cluster": 2,
-        "risk_class": 1
-      },
-      {
-        "x": -0.09,
-        "y": -0.876,
-        "cluster": 1,
-        "risk_class": 2
-      },
-      {
-        "x": 2.321,
-        "y": -1.747,
+        "x": 0.875,
+        "y": -1.166,
         "cluster": 3,
         "risk_class": 2
       },
       {
-        "x": -3.799,
-        "y": 2.979,
+        "x": -0.202,
+        "y": 1.378,
         "cluster": 2,
         "risk_class": 0
       },
       {
-        "x": 0.657,
-        "y": -0.105,
+        "x": -1.805,
+        "y": -1.266,
         "cluster": 1,
         "risk_class": 2
       },
       {
-        "x": -2.468,
-        "y": -0.223,
+        "x": -1.398,
+        "y": -0.904,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": 0.414,
+        "y": 3.044,
         "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 0.941,
+        "y": -0.972,
+        "cluster": 0,
+        "risk_class": 1
+      },
+      {
+        "x": -2.125,
+        "y": -0.716,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": -2.4,
+        "y": -0.906,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 2.142,
+        "y": 5.661,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": -1.041,
+        "y": -0.349,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": 1.809,
+        "y": -0.688,
+        "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": 0.331,
+        "y": -0.139,
+        "cluster": 3,
+        "risk_class": 0
+      },
+      {
+        "x": -2.778,
+        "y": 0.687,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": 2.83,
+        "y": 0.943,
+        "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": -1.973,
+        "y": -1.28,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 3.984,
+        "y": -1.361,
+        "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": 2.125,
+        "y": -1.388,
+        "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": -1.451,
+        "y": -0.642,
+        "cluster": 1,
+        "risk_class": 1
+      },
+      {
+        "x": 1.897,
+        "y": 0.555,
+        "cluster": 0,
+        "risk_class": 1
+      },
+      {
+        "x": -2.244,
+        "y": 1.677,
+        "cluster": 1,
+        "risk_class": 0
+      },
+      {
+        "x": 2.902,
+        "y": -1.714,
+        "cluster": 0,
+        "risk_class": 2
+      },
+      {
+        "x": -1.846,
+        "y": 2.389,
+        "cluster": 2,
+        "risk_class": 0
+      },
+      {
+        "x": 0.314,
+        "y": -1.032,
+        "cluster": 3,
+        "risk_class": 0
+      },
+      {
+        "x": -3.602,
+        "y": -0.407,
+        "cluster": 1,
         "risk_class": 0
       }
     ]
@@ -519,62 +519,62 @@
     {
       "feature": "hrv_rmssd",
       "display_name": "Hrv Rmssd",
-      "importance_pct": 17.56
+      "importance_pct": 16.39
     },
     {
       "feature": "autonomic_recovery_ratio",
       "display_name": "Autonomic Recovery Ratio",
-      "importance_pct": 16.98
-    },
-    {
-      "feature": "systolic_bp",
-      "display_name": "Systolic Bp",
-      "importance_pct": 12.98
-    },
-    {
-      "feature": "sleep_duration",
-      "display_name": "Sleep Duration",
-      "importance_pct": 9.15
+      "importance_pct": 16.09
     },
     {
       "feature": "baseline_z_max",
       "display_name": "Baseline Z Max",
-      "importance_pct": 9.07
+      "importance_pct": 10.45
+    },
+    {
+      "feature": "systolic_bp",
+      "display_name": "Systolic Bp",
+      "importance_pct": 10.4
     },
     {
       "feature": "mean_arterial_pressure",
       "display_name": "Mean Arterial Pressure",
-      "importance_pct": 7.89
-    },
-    {
-      "feature": "diastolic_bp",
-      "display_name": "Diastolic Bp",
-      "importance_pct": 7.03
-    },
-    {
-      "feature": "daily_steps",
-      "display_name": "Daily Steps",
-      "importance_pct": 6.6
+      "importance_pct": 7.47
     },
     {
       "feature": "pulse_pressure",
       "display_name": "Pulse Pressure",
-      "importance_pct": 5.44
+      "importance_pct": 7.16
+    },
+    {
+      "feature": "sleep_duration",
+      "display_name": "Sleep Duration",
+      "importance_pct": 7.08
+    },
+    {
+      "feature": "diastolic_bp",
+      "display_name": "Diastolic Bp",
+      "importance_pct": 6.74
+    },
+    {
+      "feature": "daily_steps",
+      "display_name": "Daily Steps",
+      "importance_pct": 6.48
     },
     {
       "feature": "heart_rate",
       "display_name": "Heart Rate",
-      "importance_pct": 3.44
-    },
-    {
-      "feature": "spo2",
-      "display_name": "Spo2",
-      "importance_pct": 1.96
+      "importance_pct": 4.19
     },
     {
       "feature": "respiratory_rate",
       "display_name": "Respiratory Rate",
-      "importance_pct": 1.9
+      "importance_pct": 4.06
+    },
+    {
+      "feature": "spo2",
+      "display_name": "Spo2",
+      "importance_pct": 3.5
     }
   ]
 }

@@ -156,3 +156,48 @@ def process_ai_optical_scan(
     scan_result["persisted_observation_ids"] = persisted_observations
     scan_result["twin_updated"] = len(persisted_observations) > 0
     return scan_result
+
+
+class ModelTrainingRequest(BaseModel):
+    n_samples: int = Field(default=2500, ge=100, le=10000, description="Training cohort sample count")
+    test_size: float = Field(default=0.20, ge=0.05, le=0.50, description="Fraction of dataset reserved for testing")
+    random_state: int = Field(default=42, description="Random seed for reproducibility")
+
+
+@router.post("/ml/train")
+def train_ml_models(
+    req: ModelTrainingRequest = ModelTrainingRequest(),
+    db: Database = Depends(get_database)
+):
+    """
+    Triggers end-to-end Machine Learning training pipeline:
+    - Feature engineering (MAP, Pulse Pressure, Autonomic Recovery Ratio)
+    - Stratified Train/Test Split (leakage prevention)
+    - 5-Fold Stratified Cross-Validation on Random Forest Classifier
+    - Gradient Boosting Regressor for 14-day continuous trajectory delta
+    - Unsupervised K-Means Latent Phenotype Clustering (k=4)
+    - PCA 2D Latent Space Projection
+    - Model artifact serialization to disk
+    """
+    report = ml_health_engine.retrain_models(
+        n_samples=req.n_samples,
+        test_size=req.test_size,
+        random_state=req.random_state
+    )
+    return report
+
+
+@router.get("/ml/model-info")
+def get_ml_model_info():
+    """
+    Returns current production Machine Learning model metadata,
+    evaluation metrics, cross-validation scores, confusion matrix,
+    feature importance, and unsupervised cluster centroids.
+    """
+    manifest = getattr(ml_health_engine, "manifest", None)
+    if not manifest:
+        from app.analytics.ml_trainer import ml_trainer
+        manifest = ml_trainer.get_manifest()
+    if not manifest:
+        manifest = ml_health_engine.retrain_models()
+    return manifest

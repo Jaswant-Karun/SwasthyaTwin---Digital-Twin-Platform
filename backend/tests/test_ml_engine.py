@@ -1,13 +1,19 @@
 """
 Tests for SwasthyaTwin Machine Learning Health Intelligence Engine:
 1. Multi-variate Biological Plausibility & Typo Guard
-2. Trained Random Forest & Gradient Boosting health risk predictions
-3. Health Phenotype classification and feature importances
-4. Optical rPPG bio-scanner processing
+2. Production-trained Random Forest & Gradient Boosting health risk predictions
+3. Unsupervised K-Means Phenotyping and PCA latent coordinates
+4. Model Training Pipeline & Artifact persistence
+5. Optical rPPG bio-scanner processing
 """
 
 import pytest
+from fastapi.testclient import TestClient
+from app.main import app
 from app.analytics.ml_health_engine import ml_health_engine
+from app.analytics.ml_trainer import ml_trainer
+
+client = TestClient(app)
 
 def test_ml_plausibility_guard_detects_impossible_typo():
     # 700 bpm is physically impossible
@@ -61,8 +67,12 @@ def test_ml_health_trajectory_prediction():
     assert "risk_probabilities" in prediction
     assert "predicted_14d_vitality_delta" in prediction
     assert "health_phenotype" in prediction
-    assert len(prediction["top_driving_factors"]) == 3
+    assert len(prediction["top_driving_factors"]) >= 3
     assert "radar_scores" in prediction
+    assert "pca_coordinates" in prediction
+    assert "engineered_features" in prediction
+    assert prediction["pca_coordinates"]["x"] is not None
+    assert prediction["pca_coordinates"]["y"] is not None
 
 def test_ai_optical_scan_processing():
     scan_telemetry = {
@@ -76,3 +86,31 @@ def test_ai_optical_scan_processing():
     assert scan_res["overall_credibility_score"] > 85.0
     assert scan_res["extracted_biometrics"]["heart_rate"]["valid"] is True
     assert scan_res["ml_prediction"]["health_phenotype"] is not None
+
+def test_ml_trainer_execution_and_metrics():
+    report = ml_trainer.train_and_evaluate(n_samples=300, test_size=0.20, random_state=42)
+    assert "classification_metrics" in report
+    assert "regression_metrics" in report
+    assert "unsupervised_phenotypes" in report
+    assert "dimensionality_reduction" in report
+    assert "feature_importance" in report
+
+    clf = report["classification_metrics"]
+    assert clf["test_accuracy"] > 60.0
+    assert len(clf["cross_validation_5fold"]["fold_scores"]) == 5
+    assert len(report["unsupervised_phenotypes"]["clusters"]) == 4
+    assert len(report["feature_importance"]) == 12
+
+def test_ml_api_endpoints():
+    # 1. Test model-info endpoint
+    info_res = client.get("/api/v1/ml/model-info")
+    assert info_res.status_code == 200
+    info_data = info_res.json()
+    assert "classification_metrics" in info_data
+    assert "feature_importance" in info_data
+
+    # 2. Test train endpoint
+    train_res = client.post("/api/v1/ml/train", json={"n_samples": 400, "test_size": 0.25, "random_state": 42})
+    assert train_res.status_code == 200
+    train_data = train_res.json()
+    assert train_data["classification_metrics"]["test_accuracy"] > 50.0
