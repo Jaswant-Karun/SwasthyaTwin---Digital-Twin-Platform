@@ -163,11 +163,11 @@ def test_missing_model_raises_model_unavailable():
 def test_extreme_heart_rate_bounds_warning():
     """Verifies that heart rate outside [30, 240 bpm] generates a structured warning."""
     feat = {
-        "hr_mean": 235.0,
+        "hr_mean": 245.0,
         "hr_std": 5.0,
         "hr_min": 220.0,
-        "hr_max": 240.0,
-        "hr_rolling_mean_5m": 230.0,
+        "hr_max": 255.0,
+        "hr_rolling_mean_5m": 240.0,
         "hr_valid_count": 6.0
     }
     validated, warnings = sleep_inference_service.validate_features_payload(feat)
