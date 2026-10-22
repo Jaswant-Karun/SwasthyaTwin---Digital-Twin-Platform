@@ -1,0 +1,49 @@
+{
+  "model_name": "BiDSleep Sleep-Stage Classifier",
+  "model_version": "1.0.0",
+  "model_architecture": "RobustScaler + Class-Weighted RandomForestClassifier",
+  "random_seed": 42,
+  "features_schema": [
+    "hr_mean",
+    "hr_std",
+    "hr_median",
+    "hr_min",
+    "hr_max",
+    "hr_q25",
+    "hr_q75",
+    "hr_valid_count",
+    "hr_delta_baseline",
+    "hr_rolling_mean_5m",
+    "hr_rolling_std_5m",
+    "time_elapsed_minutes"
+  ],
+  "classes_mapping": {
+    "0": "Wake",
+    "1": "N1",
+    "2": "N2",
+    "3": "N3",
+    "4": "REM",
+    "5": "Unknown"
+  },
+  "classes_5": [
+    "Wake",
+    "N1",
+    "N2",
+    "N3",
+    "REM"
+  ],
+  "hyperparameters": {
+    "n_estimators": 150,
+    "max_depth": 12,
+    "min_samples_leaf": 4,
+    "class_weight": "balanced"
+  },
+  "training_samples_count": 6171,
+  "validation_samples_count": 4314,
+  "validation_metrics": {
+    "majority_baseline_macro_f1": 0.132,
+    "majority_baseline_balanced_accuracy": 0.2,
+    "random_forest_macro_f1": 0.45,
+    "random_forest_balanced_accuracy": 0.4666
+  }
+}
