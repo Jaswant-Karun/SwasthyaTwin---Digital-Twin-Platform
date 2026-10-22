@@ -565,8 +565,12 @@ class MultiSignalService:
                 continue
             seen_keys.add(dkey)
             deduped_items.append(item)
+        print(f"DEBUG: deduped_items len = {len(deduped_items)}")
+        for di in deduped_items:
+            print(f"  deduped: {di.signal_type} {di.primary_metric} {di.timestamp}")
 
         # ----------------------------------------------------------------------
+
         # MULTI-CRITERIA FILTERING
         # ----------------------------------------------------------------------
         filtered_items: List[MultiSignalTimelineItem] = []
