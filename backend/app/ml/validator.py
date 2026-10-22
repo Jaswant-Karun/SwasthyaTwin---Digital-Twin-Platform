@@ -12,15 +12,16 @@ import pandas as pd
 from app.ml.config import FEATURE_NAMES, RAW_STAGE_TO_CLASS, CLASS_NAMES
 
 # Physiological boundaries for feature inputs
+# Expected nocturnal physiological bounds for quality audits
 FEATURE_BOUNDS = {
-    "hr_mean": (30.0, 240.0, "bpm"),
-    "hr_std": (0.0, 60.0, "bpm"),
-    "hr_min": (30.0, 240.0, "bpm"),
-    "hr_max": (30.0, 260.0, "bpm"),
-    "hr_delta_baseline": (-60.0, 60.0, "bpm"),
-    "hr_rolling_mean_5m": (30.0, 240.0, "bpm"),
-    "hr_rolling_std_5m": (0.0, 60.0, "bpm"),
-    "time_elapsed_minutes": (0.0, 1440.0, "minutes")
+    "hr_mean": (40.0, 140.0, "bpm"),
+    "hr_std": (0.0, 25.0, "bpm"),
+    "hr_min": (35.0, 130.0, "bpm"),
+    "hr_max": (45.0, 160.0, "bpm"),
+    "hr_delta_baseline": (-30.0, 30.0, "bpm"),
+    "hr_rolling_mean_5m": (40.0, 140.0, "bpm"),
+    "hr_rolling_std_5m": (0.0, 25.0, "bpm"),
+    "time_elapsed_minutes": (0.0, 960.0, "minutes")
 }
 
 class DatasetValidationError(Exception):
