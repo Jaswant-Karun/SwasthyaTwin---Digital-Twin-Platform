@@ -1024,19 +1024,32 @@ export const api = {
   },
 
   // Authentic PhysioNet Sleep Staging ML Pipeline
+  getSleepStageStatus: async (): Promise<any> => {
+    return await request<any>('/api/v1/ml/sleep-stage/status');
+  },
+
   getSleepStageEvaluation: async (): Promise<any> => {
     return await request<any>('/api/v1/ml/sleep-stage/evaluation');
+  },
+
+  getResearchHypnogramSamples: async (subjectId: string = 'Bidslab02', nightId: string = '1', limit: number = 120): Promise<any> => {
+    return await request<any>(`/api/v1/ml/sleep-stage/research-samples?subject_id=${subjectId}&night_id=${nightId}&limit=${limit}`);
   },
 
   predictSleepStage: async (features: {
     hr_mean: number;
     hr_std?: number;
+    hr_median?: number;
     hr_min: number;
     hr_max: number;
+    hr_q25?: number;
+    hr_q75?: number;
+    hr_valid_count?: number;
     hr_delta_baseline?: number;
     hr_rolling_mean_5m: number;
     hr_rolling_std_5m?: number;
     time_elapsed_minutes?: number;
+    epoch_index?: number;
   }): Promise<any> => {
     return await request<any>('/api/v1/ml/sleep-stage/predict', {
       method: 'POST',
