@@ -168,8 +168,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
             AI Research & Models
           </div>
           {[
-            { id: 'ml-studio', label: 'ML Training Studio', icon: Brain, badgeText: 'AI' },
+            { id: 'sleep-research', label: 'Sleep Research', icon: Moon, badgeText: '5-STAGE' },
             { id: 'model-evaluation', label: 'Model Evaluation', icon: BarChart3, badgeText: 'BENCH' },
+            { id: 'ml-studio', label: 'ML Training Studio', icon: Brain, badgeText: 'AI' },
             { id: 'health-trends', label: 'Baseline Trends', icon: LineChart },
             { id: 'methodology', label: 'Methodology & Ethics', icon: BookOpen },
             { id: 'settings', label: 'Settings', icon: Settings },
