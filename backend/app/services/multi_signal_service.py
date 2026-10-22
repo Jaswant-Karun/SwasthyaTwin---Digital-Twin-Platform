@@ -581,27 +581,35 @@ class MultiSignalService:
             # 1. Signal Filter
             if signal_filter == "sleep":
                 if item.signal_type != "sleep_stage_prediction" and item.primary_metric not in ["sleep_stage", "sleep_duration_hours", "sleep_duration"]:
+                    print(f"DEBUG: skip {item.id} due to signal_filter")
                     continue
             elif signal_filter in ["cardio", "cardiovascular", "heart_rate"]:
                 if item.signal_type != "heart_rate_statistical_flag" and item.primary_metric not in ["heart_rate", "resting_heart_rate"]:
+                    print(f"DEBUG: skip {item.id} due to cardio filter")
                     continue
             elif signal_filter in ["blood_pressure", "bp"]:
                 if item.primary_metric not in ["blood_pressure_systolic", "blood_pressure_diastolic", "blood_pressure"]:
+                    print(f"DEBUG: skip {item.id} due to bp filter")
                     continue
             elif signal_filter in ["steps", "activity"]:
                 if item.primary_metric not in ["daily_steps", "steps_count", "steps"]:
+                    print(f"DEBUG: skip {item.id} due to steps filter")
                     continue
             elif signal_filter in ["respiratory", "respiration"]:
                 if item.primary_metric not in ["respiratory_rate"]:
+                    print(f"DEBUG: skip {item.id} due to resp filter")
                     continue
             elif signal_filter == "observations":
                 if item.signal_type != "physiological_observation":
+                    print(f"DEBUG: skip {item.id} due to obs filter")
                     continue
 
             # 2. Date Range Filter
             if start_dt and item.timestamp < start_dt:
+                print(f"DEBUG: skip {item.id} due to start_dt")
                 continue
             if end_dt and item.timestamp > end_dt:
+                print(f"DEBUG: skip {item.id} due to end_dt")
                 continue
 
             # 3. Source Filter
@@ -610,21 +618,25 @@ class MultiSignalService:
                 matches_dev = src_q in (item.source_device or "").lower()
                 matches_src = item.observation_details and src_q in (item.observation_details.source_type or "").lower()
                 if not (matches_dev or matches_src):
+                    print(f"DEBUG: skip {item.id} due to source")
                     continue
 
             # 4. Status Filter
             if status:
                 stat_q = status.strip().lower()
                 if stat_q != item.status_level.lower() and stat_q != item.validation_status.lower():
+                    print(f"DEBUG: skip {item.id} due to status")
                     continue
 
             # 5. Data Provenance Filter
             if data_kind:
                 kind_q = data_kind.strip().lower()
                 if kind_q != item.data_provenance.lower():
+                    print(f"DEBUG: skip {item.id} due to data_kind")
                     continue
 
             filtered_items.append(item)
+
 
         # Sort reverse chronologically: newest timestamp first
         filtered_items.sort(key=lambda x: x.timestamp, reverse=True)
