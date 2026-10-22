@@ -103,8 +103,15 @@ class SleepStageInferenceEngine:
                 "algorithm": model_meta.get("selected_algorithm", "Unknown"),
                 "model_version": model_meta.get("version", MODEL_VERSION),
                 "dataset_version": self.manifest.get("dataset_provenance", {}).get("version", DATASET_VERSION),
+                "target_unit": "sleep_stage_3class",
+                "evaluation_reference": "/api/v1/ml/sleep-stage/evaluation",
                 "held_out_balanced_accuracy": baseline_comp.get("model_held_out_balanced_acc"),
-                "held_out_macro_f1": baseline_comp.get("model_held_out_macro_f1")
+                "held_out_macro_f1": baseline_comp.get("model_held_out_macro_f1"),
+                "limitations": [
+                    "Trained on 30s wearable PPG epochs; not a diagnostic substitute for 10-20 EEG polysomnography.",
+                    "Sleep staging requires continuous motion-free photoplethysmography sensor alignment.",
+                    "Class imbalance favors dominant NREM over REM/Wake transitions."
+                ]
             },
             "clinical_disclaimer": (
                 "Research demonstration model trained on PhysioNet sleep-accel wearable PPG. "

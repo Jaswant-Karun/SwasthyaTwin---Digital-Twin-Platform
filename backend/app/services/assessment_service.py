@@ -200,10 +200,15 @@ class AssessmentService:
         is_overall_stale = overall_freshness_h > settings.DATA_STALENESS_WARNING_HOURS if overall_freshness_h is not None else True
 
         if is_overall_stale:
-            missing_warnings.append(
-                f"Data Staleness Warning: Most recent telemetry is {overall_freshness_h:.0f} hours old "
-                f"(exceeds {settings.DATA_STALENESS_WARNING_HOURS}h threshold)."
-            )
+            if overall_freshness_h is not None:
+                missing_warnings.append(
+                    f"Data Staleness Warning: Most recent telemetry is {overall_freshness_h:.0f} hours old "
+                    f"(exceeds {settings.DATA_STALENESS_WARNING_HOURS}h threshold)."
+                )
+            else:
+                missing_warnings.append(
+                    f"Data Staleness Warning: No biometric telemetry recorded yet for baseline calculations."
+                )
 
         data_quality = {
             "window_observations_count": total_obs_count,
