@@ -96,8 +96,9 @@ def add_observation(
     saved_obs["id"] = saved_obs.get("observation_id")
     saved_obs["metric_type"] = saved_obs.get("measurement_type")
     saved_obs["timestamp"] = saved_obs.get("observed_at")
-    saved_obs["data_tier"] = saved_obs.get("data_kind", "user_reported")
+    saved_obs["data_tier"] = "user_reported" if saved_obs.get("data_kind") in ["user_entered", "manual_entry"] else saved_obs.get("data_kind", "user_reported")
     return saved_obs
+
 
 @router.post("/preview")
 def preview_single_observation(

@@ -369,6 +369,7 @@ class IngestionService:
         return {
             "total_rows": len(raw_rows),
             "valid_rows_count": valid_count,
+            "invalid_rows_count": rejected_count,
             "unusual_rows_count": unusual_count,
             "rejected_rows_count": rejected_count,
             "duplicate_rows_count": duplicate_count,
@@ -535,7 +536,7 @@ class IngestionService:
 
         AuditRepository.log_action(
             db=db,
-            action="UPDATE_OBSERVATION",
+            action="correct_observation",
             entity_type="observation",
             entity_id=observation_id,
             patient_id=patient_id,
@@ -546,6 +547,7 @@ class IngestionService:
             },
             user_id=edited_by
         )
+
 
         try:
             AssessmentService.evaluate_twin_state(db=db, patient_id=patient_id)
