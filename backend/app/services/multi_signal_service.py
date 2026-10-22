@@ -468,24 +468,25 @@ class MultiSignalService:
                 # Check for partial-day status
                 is_today = (obs_time.date() == now.date())
                 if is_today:
+
                     v_status = "partial_day"
                     status_lvl = "info"
                     status_lbl = "Partial Day (In Progress)"
                     title_txt = f"Daily Steps: {int(val):,} steps (In Progress)"
-                    summary_txt = f"Active step count accumulating today ({int(val):,} steps) via {source}. Day in progress."
+                    summary_txt = f"Active step count accumulating today ({int(val):,} steps) via {obs_source}. Day in progress."
                 else:
                     v_status = o.get("validation_status") or "valid"
                     status_lvl = "normal"
                     status_lbl = "Completed 24h Total"
                     title_txt = f"Daily Steps: {int(val):,} steps"
-                    summary_txt = f"Completed 24-hour physical activity total ({int(val):,} steps) via {source}."
+                    summary_txt = f"Completed 24-hour physical activity total ({int(val):,} steps) via {obs_source}."
                 disclaimer_txt = "Pedometer step count logged via wearable or mobile 3-axis accelerometer."
 
             elif m_type in ["respiratory_rate"]:
                 sig_cat = "Pulmonary Telemetry"
                 sig_badge = "RESPIRATORY RATE"
                 canon_unit = "breaths/min"
-                m_method = o.get("measurement_method") or ("impedance_pneumography" if "wearable" in str(source).lower() else "manual_count")
+                m_method = o.get("measurement_method") or ("impedance_pneumography" if "wearable" in str(obs_source).lower() else "manual_count")
                 v_status = o.get("validation_status") or "valid"
                 title_txt = f"Respiratory Rate: {disp_val} breaths/min"
                 summary_txt = f"Respiratory rate measured at {obs_time.strftime('%b %d, %H:%M')} via {m_method}."
@@ -500,7 +501,7 @@ class MultiSignalService:
                 m_method = o.get("measurement_method") or "actigraphy"
                 v_status = o.get("validation_status") or "valid"
                 title_txt = f"Sleep Duration: {disp_val} hours"
-                summary_txt = f"Total sleep duration logged via {source}."
+                summary_txt = f"Total sleep duration logged via {obs_source}."
                 disclaimer_txt = "Longitudinal nocturnal sleep duration captured via wearable actigraphy."
                 status_lvl = "normal"
                 status_lbl = "Logged Sleep"
@@ -512,7 +513,7 @@ class MultiSignalService:
                 m_method = o.get("measurement_method") or "sensor"
                 v_status = o.get("validation_status") or "valid"
                 title_txt = f"{clean_name}: {disp_val} {unit}".strip()
-                summary_txt = f"Logged via {source} ({tier} tier) at {obs_time.strftime('%b %d, %H:%M')}."
+                summary_txt = f"Logged via {obs_source} ({tier} tier) at {obs_time.strftime('%b %d, %H:%M')}."
                 disclaimer_txt = "Verified physiological telemetry stored in MongoDB health records layer."
                 status_lvl = "normal"
                 status_lbl = f"Logged ({tier})"
@@ -521,7 +522,7 @@ class MultiSignalService:
                 metric_type=m_type or "unknown",
                 value=round(val, 2),
                 unit=unit,
-                source_type=str(source),
+                source_type=str(obs_source),
                 data_tier=tier,
                 is_synthetic=(tier in ["synthetic", "simulated"])
             )
@@ -543,7 +544,7 @@ class MultiSignalService:
                     primary_value=val,
                     primary_unit=unit,
                     canonical_unit=canon_unit,
-                    source_device=dev_id or str(source),
+                    source_device=dev_id or str(obs_source),
                     measurement_method=m_method,
                     validation_status=v_status,
                     observation_details=obs_detail,
@@ -556,9 +557,7 @@ class MultiSignalService:
         # Deduplicate on (patient_id, primary_metric, timestamp_to_second)
         # ----------------------------------------------------------------------
         raw_combined = cardio_items + sleep_items + obs_items
-        print(f"DEBUG: cardio={len(cardio_items)}, sleep={len(sleep_items)}, obs={len(obs_items)}, raw_combined={len(raw_combined)}")
         deduped_items: List[MultiSignalTimelineItem] = []
-
         seen_keys = set()
 
         for item in raw_combined:
@@ -568,12 +567,8 @@ class MultiSignalService:
                 continue
             seen_keys.add(dkey)
             deduped_items.append(item)
-        print(f"DEBUG: deduped_items len = {len(deduped_items)}")
-        for di in deduped_items:
-            print(f"  deduped: {di.signal_type} {di.primary_metric} {di.timestamp}")
 
         # ----------------------------------------------------------------------
-
         # MULTI-CRITERIA FILTERING
         # ----------------------------------------------------------------------
         filtered_items: List[MultiSignalTimelineItem] = []
@@ -584,65 +579,54 @@ class MultiSignalService:
             # 1. Signal Filter
             if signal_filter == "sleep":
                 if item.signal_type != "sleep_stage_prediction" and item.primary_metric not in ["sleep_stage", "sleep_duration_hours", "sleep_duration"]:
-                    print(f"DEBUG: skip {item.id} due to signal_filter")
                     continue
             elif signal_filter in ["cardio", "cardiovascular", "heart_rate"]:
                 if item.signal_type != "heart_rate_statistical_flag" and item.primary_metric not in ["heart_rate", "resting_heart_rate"]:
-                    print(f"DEBUG: skip {item.id} due to cardio filter")
                     continue
             elif signal_filter in ["blood_pressure", "bp"]:
                 if item.primary_metric not in ["blood_pressure_systolic", "blood_pressure_diastolic", "blood_pressure"]:
-                    print(f"DEBUG: skip {item.id} due to bp filter")
                     continue
             elif signal_filter in ["steps", "activity"]:
                 if item.primary_metric not in ["daily_steps", "steps_count", "steps"]:
-                    print(f"DEBUG: skip {item.id} due to steps filter")
                     continue
             elif signal_filter in ["respiratory", "respiration"]:
                 if item.primary_metric not in ["respiratory_rate"]:
-                    print(f"DEBUG: skip {item.id} due to resp filter")
                     continue
             elif signal_filter == "observations":
                 if item.signal_type != "physiological_observation":
-                    print(f"DEBUG: skip {item.id} due to obs filter")
                     continue
 
             # 2. Date Range Filter
             if start_dt and item.timestamp < start_dt:
-                print(f"DEBUG: skip {item.id} due to start_dt")
                 continue
             if end_dt and item.timestamp > end_dt:
-                print(f"DEBUG: skip {item.id} due to end_dt")
                 continue
 
             # 3. Source Filter
-            if source:
-                src_q = source.strip().lower()
+            if filter_source:
+                src_q = filter_source.strip().lower()
                 matches_dev = src_q in (item.source_device or "").lower()
                 matches_src = item.observation_details and src_q in (item.observation_details.source_type or "").lower()
                 if not (matches_dev or matches_src):
-                    print(f"DEBUG: skip {item.id} due to source")
                     continue
 
             # 4. Status Filter
-            if status:
-                stat_q = status.strip().lower()
+            if filter_status:
+                stat_q = filter_status.strip().lower()
                 if stat_q != item.status_level.lower() and stat_q != item.validation_status.lower():
-                    print(f"DEBUG: skip {item.id} due to status")
                     continue
 
             # 5. Data Provenance Filter
-            if data_kind:
-                kind_q = data_kind.strip().lower()
+            if filter_data_kind:
+                kind_q = filter_data_kind.strip().lower()
                 if kind_q != item.data_provenance.lower():
-                    print(f"DEBUG: skip {item.id} due to data_kind")
                     continue
 
             filtered_items.append(item)
 
-
         # Sort reverse chronologically: newest timestamp first
         filtered_items.sort(key=lambda x: x.timestamp, reverse=True)
+ue)
 
         # Pagination
         paginated_items = filtered_items[skip: skip + limit]
