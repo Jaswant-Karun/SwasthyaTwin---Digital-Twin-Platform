@@ -23,7 +23,10 @@ import {
   ExternalLink,
   Zap,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  RotateCcw,
+  Check,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 import { api } from '../../services/api';
@@ -79,14 +82,53 @@ const STAGE_DISPLAY_NAMES: Record<string, string> = {
   REM: 'Stage REM (Rapid Eye Movement / Dreaming)'
 };
 
+const PROVENANCE_THEMES: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  measured: {
+    bg: 'bg-emerald-950/60',
+    text: 'text-emerald-300',
+    border: 'border-emerald-500/40',
+    label: 'MEASURED'
+  },
+  derived: {
+    bg: 'bg-sky-950/60',
+    text: 'text-sky-300',
+    border: 'border-sky-500/40',
+    label: 'DERIVED'
+  },
+  model_predicted: {
+    bg: 'bg-purple-950/60',
+    text: 'text-purple-300',
+    border: 'border-purple-500/40',
+    label: 'MODEL PREDICTED'
+  },
+  simulated: {
+    bg: 'bg-amber-950/60',
+    text: 'text-amber-300',
+    border: 'border-amber-500/40',
+    label: 'SIMULATED'
+  },
+  synthetic: {
+    bg: 'bg-fuchsia-950/60',
+    text: 'text-fuchsia-300',
+    border: 'border-fuchsia-500/40',
+    label: 'SYNTHETIC'
+  }
+};
+
 export const PatientTimeline: React.FC = () => {
   const { currentPatient, logObservation, newlyAddedObservationId } = useTwin();
   const [timelineData, setTimelineData] = useState<MultiSignalTimelineResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [signalFilter, setSignalFilter] = useState<'all' | 'sleep' | 'cardio' | 'observations'>('all');
+  // Multi-criteria Filters
+  const [signalFilter, setSignalFilter] = useState<'all' | 'sleep' | 'cardio' | 'blood_pressure' | 'steps' | 'respiratory' | 'observations'>('all');
+  const [provenanceFilter, setProvenanceFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [sourceFilter, setSourceFilter] = useState<string>('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
 
   // Inspection Modal State
   const [inspectedItem, setInspectedItem] = useState<MultiSignalTimelineItem | null>(null);
@@ -109,10 +151,27 @@ export const PatientTimeline: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await api.getMultiSignalTimeline(currentPatient.patient_id, {
+      const params: any = {
         signal_filter: signalFilter,
         limit: 150
-      });
+      };
+      if (provenanceFilter && provenanceFilter !== 'all') {
+        params.data_kind = provenanceFilter;
+      }
+      if (statusFilter && statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      if (startDate) {
+        params.start_date = startDate;
+      }
+      if (endDate) {
+        params.end_date = endDate;
+      }
+      if (sourceFilter.trim()) {
+        params.source = sourceFilter.trim();
+      }
+
+      const res = await api.getMultiSignalTimeline(currentPatient.patient_id, params);
       if (currentReq === fetchReqIdRef.current) {
         setTimelineData(res);
       }
@@ -130,7 +189,31 @@ export const PatientTimeline: React.FC = () => {
 
   useEffect(() => {
     fetchMultiSignalTimeline();
-  }, [currentPatient?.patient_id, signalFilter]);
+  }, [
+    currentPatient?.patient_id,
+    signalFilter,
+    provenanceFilter,
+    statusFilter,
+    startDate,
+    endDate,
+    sourceFilter
+  ]);
+
+  const clearAllFilters = () => {
+    setSignalFilter('all');
+    setProvenanceFilter('all');
+    setStatusFilter('all');
+    setStartDate('');
+    setEndDate('');
+    setSourceFilter('');
+  };
+
+  const hasActiveAdvancedFilters =
+    provenanceFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    Boolean(startDate) ||
+    Boolean(endDate) ||
+    Boolean(sourceFilter.trim());
 
   // Metric-specific default units and validation rules
   const validateValue = (metric: string, valStr: string): string | null => {
