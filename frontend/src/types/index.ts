@@ -255,6 +255,8 @@ export interface TrajectoryPoint {
   hrv_rmssd_upper: number;
   hrv_rmssd_lower: number;
   vitality_projected: number;
+  ml_vitality_projected?: number;
+  ml_risk_tier?: string;
 }
 
 export interface SimulationResult {
@@ -272,6 +274,14 @@ export interface SimulationResult {
     final_hrv_rmssd: number;
     delta_hrv_rmssd: number;
     final_vitality: number;
+    ml_predicted_vitality_delta?: number;
+    ml_baseline_risk_tier?: string;
+    ml_projected_risk_tier?: string;
+    ml_baseline_phenotype?: string;
+    ml_projected_phenotype?: string;
+    ml_risk_reduction_pct?: number;
+    ml_confidence_pct?: number;
+    ml_model_version?: string;
   };
   trajectories: TrajectoryPoint[];
   model_assumptions: string[];
