@@ -143,14 +143,30 @@ def train_models(
 
 def main():
     parser = argparse.ArgumentParser(description="Train baseline and ML models for sleep-stage classification.")
-    parser.add_argument("--features-csv", default=PROCESSED_FEATURES_CSV)
-    parser.add_argument("--manifest", default=SPLIT_MANIFEST_PATH)
+    parser.add_argument("--data-dir", default=None, help="Directory containing processed features (e.g. data/processed)")
+    parser.add_argument("--features-csv", default=None, help="Explicit path to features CSV/Parquet")
+    parser.add_argument("--manifest", default=SPLIT_MANIFEST_PATH, help="Path to split manifest JSON")
     parser.add_argument("--seed", type=int, default=RANDOM_SEED)
     args = parser.parse_args()
 
     os.makedirs(MODELS_DIR, exist_ok=True)
 
-    train_df, val_df, test_df, manifest = load_split_data(args.features_csv, args.manifest)
+    # Determine features CSV/Parquet path
+    if args.features_csv:
+        features_path = args.features_csv
+    elif args.data_dir:
+        candidate_csv = os.path.join(args.data_dir, "bidsleep_features.csv")
+        candidate_parquet = os.path.join(args.data_dir, "bidsleep_features.parquet")
+        if os.path.exists(candidate_csv):
+            features_path = candidate_csv
+        elif os.path.exists(candidate_parquet):
+            features_path = candidate_parquet
+        else:
+            features_path = candidate_csv
+    else:
+        features_path = PROCESSED_FEATURES_CSV
+
+    train_df, val_df, test_df, manifest = load_split_data(features_path, args.manifest)
     rf_pipeline, dummy_model, metadata = train_models(train_df, val_df, seed=args.seed)
 
     # Save models and metadata

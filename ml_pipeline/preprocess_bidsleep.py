@@ -160,13 +160,14 @@ def preprocess_single_night(
 
 def run_preprocessing_pipeline(
     raw_dir: str = RAW_DATA_DIR,
+    output_dir: str = PROCESSED_DATA_DIR,
     max_subjects: Optional[int] = None,
     participants: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Executes end-to-end preprocessing over available subjects and nights.
     """
-    os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     os.makedirs(REPORTS_DIR, exist_ok=True)
 
     available_subjects = sorted([
@@ -219,9 +220,11 @@ def run_preprocessing_pipeline(
         raise ValueError(f"Feature matrix validation failed: {val_report.get('error')}")
 
     # Save to disk (CSV and Parquet)
-    combined_df.to_csv(PROCESSED_FEATURES_CSV, index=False)
+    csv_output_path = os.path.join(output_dir, "bidsleep_features.csv")
+    parquet_output_path = os.path.join(output_dir, "bidsleep_features.parquet")
+    combined_df.to_csv(csv_output_path, index=False)
     try:
-        combined_df.to_parquet(PROCESSED_FEATURES_PARQUET, index=False)
+        combined_df.to_parquet(parquet_output_path, index=False)
         parquet_saved = True
     except Exception:
         parquet_saved = False
@@ -248,8 +251,8 @@ def run_preprocessing_pipeline(
         "features_list": CORE_FEATURE_COLUMNS,
         "class_counts_5class": class_counts_5,
         "class_percentages_5class": class_pct_5,
-        "csv_output_path": PROCESSED_FEATURES_CSV,
-        "parquet_output_path": PROCESSED_FEATURES_PARQUET if parquet_saved else None,
+        "csv_output_path": csv_output_path,
+        "parquet_output_path": parquet_output_path if parquet_saved else None,
         "nights_summary": nights_summary
     }
 
@@ -258,7 +261,7 @@ def run_preprocessing_pipeline(
         json.dump(report, f, indent=2)
 
     print(f"\n[Success] Preprocessed {total_epochs:,} epochs across {len(nights_summary)} nights.")
-    print(f"Features saved to: {PROCESSED_FEATURES_CSV}")
+    print(f"Features saved to: {csv_output_path}")
     print(f"Report saved to:   {report_path}")
 
     return report
@@ -266,11 +269,15 @@ def run_preprocessing_pipeline(
 
 def main():
     parser = argparse.ArgumentParser(description="Memory-efficient BiDSleep Preprocessing.")
+    parser.add_argument("--data-dir", default=RAW_DATA_DIR, help="Path to raw BiDSleep dataset directory")
+    parser.add_argument("--output-dir", default=PROCESSED_DATA_DIR, help="Path to output directory for features")
     parser.add_argument("--max-subjects", type=int, default=None, help="Max number of subjects to process")
     parser.add_argument("--participants", nargs="+", default=None, help="Explicit participant IDs")
     args = parser.parse_args()
 
     run_preprocessing_pipeline(
+        raw_dir=args.data_dir,
+        output_dir=args.output_dir,
         max_subjects=args.max_subjects,
         participants=args.participants
     )

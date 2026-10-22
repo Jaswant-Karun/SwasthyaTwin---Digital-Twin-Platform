@@ -219,13 +219,36 @@ def evaluate_held_out_test(
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate sleep stage classification on held-out test data.")
+    parser.add_argument("--data-dir", default=None, help="Directory containing processed features (e.g. data/processed)")
+    parser.add_argument("--features-csv", default=None, help="Explicit path to features CSV/Parquet")
+    parser.add_argument("--manifest", default=SPLIT_MANIFEST_PATH, help="Path to split manifest JSON")
+    parser.add_argument("--model-path", default=MODEL_ARTIFACT_PATH, help="Path to trained model artifact")
     args = parser.parse_args()
+
+    # Determine features CSV/Parquet path
+    if args.features_csv:
+        features_path = args.features_csv
+    elif args.data_dir:
+        candidate_csv = os.path.join(args.data_dir, "bidsleep_features.csv")
+        candidate_parquet = os.path.join(args.data_dir, "bidsleep_features.parquet")
+        if os.path.exists(candidate_csv):
+            features_path = candidate_csv
+        elif os.path.exists(candidate_parquet):
+            features_path = candidate_parquet
+        else:
+            features_path = candidate_csv
+    else:
+        features_path = PROCESSED_FEATURES_CSV
 
     print("=" * 70)
     print("SwasthyaTwin AI — Honest Held-Out Test Set Evaluation")
     print("=" * 70)
 
-    report = evaluate_held_out_test()
+    report = evaluate_held_out_test(
+        model_path=args.model_path,
+        features_csv=features_path,
+        manifest_path=args.manifest
+    )
 
     print(f"\nHeld-Out Test Participants: {report['held_out_test_participants']}")
     print(f"Test Epochs (30s):          {report['held_out_test_epochs']:,} (~{report['held_out_test_duration_hours']} hours)")
