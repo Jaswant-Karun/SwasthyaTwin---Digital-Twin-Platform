@@ -187,7 +187,7 @@ def audit_observation_plausibility(
         h_spec = HARD_LIMITS[m_type]
         if value < h_spec["min"] or value > h_spec["max"]:
             errors.append(
-                f"Physiologically impossible value: {value} {unit} is outside human survival limits "
+                f"Measurement is not physiologically plausible: {value} {unit} is outside human survival limits "
                 f"({h_spec['min']} to {h_spec['max']} {h_spec['unit']}). Reference: {h_spec['standard']}."
             )
             # Detect common order-of-magnitude typos

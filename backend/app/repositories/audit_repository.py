@@ -70,3 +70,25 @@ class AuditRepository:
         except PyMongoError as e:
             logger.error(f"Failed to query audit events: {e}")
             raise
+
+    @staticmethod
+    def log_action(
+        db: Optional[Database],
+        action: str,
+        entity_type: str,
+        entity_id: str,
+        patient_id: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+        user_id: str = "patient"
+    ) -> Dict[str, Any]:
+        """Convenience method to record an action directly using a Database reference."""
+        repo = AuditRepository(db)
+        return repo.record_event({
+            "action": action,
+            "resource_type": entity_type,
+            "resource_id": entity_id,
+            "patient_id": patient_id,
+            "actor": user_id,
+            "details": details or {}
+        })
+
