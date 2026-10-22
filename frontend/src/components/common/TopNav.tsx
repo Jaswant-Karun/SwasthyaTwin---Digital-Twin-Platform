@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Check,
   BookOpen,
-  Zap
+  Zap,
+  Film
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 
@@ -21,6 +22,7 @@ interface TopNavProps {
   selectedRange: number;
   setSelectedRange: (days: number) => void;
   onToggleMobileMenu?: () => void;
+  onReplayIntro?: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -28,7 +30,8 @@ export const TopNav: React.FC<TopNavProps> = ({
   setActiveTab,
   selectedRange,
   setSelectedRange,
-  onToggleMobileMenu
+  onToggleMobileMenu,
+  onReplayIntro
 }) => {
   const {
     patients,
@@ -100,6 +103,18 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Right Controls: Methodology Button + Patient Selector + Date Range + Notifications + Profile */}
       <div className="flex items-center gap-3">
+        {/* Replay Intro Button */}
+        {onReplayIntro && (
+          <button
+            onClick={onReplayIntro}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-white/10 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-400/50 text-xs font-mono font-bold transition-all shadow-xs"
+            title="Replay cinematic digital twin intro motion video"
+          >
+            <Film className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline">Intro Motion</span>
+          </button>
+        )}
+
         {/* Prominent Methodology Button for Users & Judges */}
         <button
           onClick={() => setActiveTab('methodology')}
