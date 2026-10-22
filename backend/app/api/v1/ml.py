@@ -392,7 +392,12 @@ def predict_sleep_stage(req: SleepStagePredictRequest):
                 "version": pred_res["model_version"],
                 "feature_schema_version": pred_res["feature_schema_version"],
                 "selected_algorithm": "RandomForestClassifier",
-                "target_unit": "sleep_stage_3class_and_5class"
+                "target_unit": "sleep_stage_3class",
+                "limitations": [
+                    "Inferred from 30s wearable optical heart rate (PPG) dynamics; not a replacement for 10-20 EEG polysomnography.",
+                    "Subject to motion artifacts and sensor contact variations during sleep.",
+                    "Non-diagnostic investigational tool; not for medical decision making."
+                ]
             },
             "limitations": [
                 "Inferred from 30s wearable optical heart rate (PPG) dynamics; not a replacement for 10-20 EEG polysomnography.",
