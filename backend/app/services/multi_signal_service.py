@@ -57,6 +57,19 @@ STAGE_DISPLAY_NAMES = {
 }
 
 
+def _ensure_utc(dt: Any) -> datetime:
+    if isinstance(dt, str):
+        try:
+            dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+        except Exception:
+            dt = datetime.now(timezone.utc)
+    if isinstance(dt, datetime):
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    return datetime.now(timezone.utc)
+
+
 class MultiSignalService:
     @staticmethod
     def get_multi_signal_timeline(
@@ -157,7 +170,7 @@ class MultiSignalService:
                     signal_type="heart_rate_statistical_flag",
                     signal_category="Cardiovascular Anomaly Intelligence",
                     signal_badge="nMAD STATISTICAL ENGINE",
-                    timestamp=r.timestamp,
+                    timestamp=_ensure_utc(r.timestamp),
                     title=f"Resting Heart Rate: {r.measured_heart_rate:.0f} bpm",
                     summary=r.reason,
                     status_level=status_lvl,
@@ -301,7 +314,7 @@ class MultiSignalService:
                         signal_type="sleep_stage_prediction",
                         signal_category="BiDSleep Wearable Sleep ML",
                         signal_badge="BiDSLEEP ML INFERENCE",
-                        timestamp=epoch_time,
+                        timestamp=_ensure_utc(epoch_time),
                         title=f"Predicted Sleep Stage: {pred_stage_5} ({conf:.0f}% confidence)",
                         summary=(
                             f"Model classified 30s epoch as {STAGE_DISPLAY_NAMES.get(pred_stage_5, pred_stage_5)} "
@@ -361,7 +374,7 @@ class MultiSignalService:
                     signal_type="physiological_observation",
                     signal_category="Direct Physiological Telemetry",
                     signal_badge="MEASURED TELEMETRY",
-                    timestamp=obs_time,
+                    timestamp=_ensure_utc(obs_time),
                     title=f"{label}: {disp_val} {unit}".strip(),
                     summary=f"Logged via {source} ({tier} tier) at {obs_time.strftime('%b %d, %H:%M')}.",
                     status_level="normal",
