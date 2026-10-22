@@ -375,6 +375,7 @@ class IngestionService:
             "duplicate_rows_count": duplicate_count,
             "detected_columns": sorted(list(detected_columns)),
             "proposed_unit_conversions": proposed_conversions,
+            "rows": validated_rows,
             "rows_preview": validated_rows[:15],
             "all_rows": validated_rows,
             "can_import": valid_count > 0
