@@ -527,4 +527,38 @@ def get_research_hypnogram_samples(subject_id: str = "Bidslab02", night_id: str 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading research samples: {e}")
 
+@router.get("/ml/registry")
+def get_model_registry(category: Optional[str] = Query(None, description="Optional category filter")):
+    """
+    Returns the authoritative Model Registry for all supported machine learning
+    and analytical intelligence tasks.
+    Guarantees explicit task separation, provenance tracking, and held-out evaluation links.
+    """
+    from app.analytics.model_registry import model_registry
+    if category:
+        entries = model_registry.get_entries_by_category(category)
+    else:
+        entries = model_registry.get_all_entries()
+    return {
+        "registry_version": "1.0.0",
+        "task_count": len(entries),
+        "tasks": [e.model_dump() for e in entries]
+    }
+
+@router.get("/ml/registry/{task_id}")
+def get_model_registry_task(task_id: str):
+    """
+    Returns detailed specification for a specific machine learning task in the registry,
+    including dataset provenance, feature schema, split strategy, held-out metrics, and limitations.
+    """
+    from app.analytics.model_registry import model_registry
+    entry = model_registry.get_entry(task_id)
+    if not entry:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task '{task_id}' not found in model registry."
+        )
+    return entry.model_dump()
+
+
 
