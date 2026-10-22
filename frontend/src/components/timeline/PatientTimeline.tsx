@@ -1011,6 +1011,8 @@ export const PatientTimeline: React.FC = () => {
               ? STAGE_THEMES[item.sleep_details.stage_5class] || STAGE_THEMES.N2
               : null;
 
+            const provTheme = PROVENANCE_THEMES[item.data_provenance] || PROVENANCE_THEMES.measured;
+
             return (
               <div
                 key={item.id}
@@ -1045,7 +1047,7 @@ export const PatientTimeline: React.FC = () => {
                     </div>
 
                     <div className="space-y-1">
-                      {/* Signal Category Badge */}
+                      {/* Signal Category & Provenance Badges */}
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-bold uppercase tracking-wider border ${
@@ -1058,6 +1060,20 @@ export const PatientTimeline: React.FC = () => {
                         >
                           {item.signal_badge}
                         </span>
+
+                        {/* Provenance Tier Badge */}
+                        <span
+                          className={`px-2 py-0.5 rounded-md font-mono text-[9px] font-bold uppercase tracking-wider border ${provTheme.bg} ${provTheme.text} ${provTheme.border}`}
+                        >
+                          {provTheme.label}
+                        </span>
+
+                        {/* Partial Day Badge */}
+                        {item.validation_status === 'partial_day' && (
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-bold font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                            PARTIAL DAY
+                          </span>
+                        )}
 
                         <span className="text-[11px] font-mono text-slate-400">
                           {new Date(item.timestamp).toLocaleDateString(undefined, {
@@ -1072,6 +1088,12 @@ export const PatientTimeline: React.FC = () => {
                           })}
                         </span>
 
+                        {item.time_zone && (
+                          <span className="text-[9px] font-mono text-slate-500">
+                            ({item.time_zone})
+                          </span>
+                        )}
+
                         {isNewlyAdded && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-teal-400 text-slate-950 animate-pulse">
                             <Sparkles className="w-2.5 h-2.5" />
@@ -1083,6 +1105,11 @@ export const PatientTimeline: React.FC = () => {
                       {/* Main Title */}
                       <h4 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
                         <span>{item.title}</span>
+                        {item.measurement_method && (
+                          <span className="text-[10px] font-mono font-normal text-slate-400 bg-slate-800/80 px-1.5 py-0.5 rounded">
+                            {item.measurement_method.replace(/_/g, ' ')}
+                          </span>
+                        )}
                       </h4>
 
                       {/* Summary explanation */}
@@ -1142,6 +1169,11 @@ export const PatientTimeline: React.FC = () => {
                           <span className="text-sm font-extrabold font-mono text-white">
                             {item.primary_value} <span className="text-xs text-slate-400 font-normal">{item.primary_unit}</span>
                           </span>
+                          {item.canonical_unit && item.canonical_unit !== item.primary_unit && (
+                            <span className="text-[9px] text-slate-500 font-mono block">
+                              Canonical: {item.canonical_unit}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1353,6 +1385,58 @@ export const PatientTimeline: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Observation Identity & Provenance Verification Panel */}
+              <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+                <h4 className="text-xs font-mono font-bold text-teal-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                  Observation Identity & Provenance Verification
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                  <div className="p-2 rounded-lg bg-slate-900 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Provenance Tier</span>
+                    <span className={`font-bold uppercase ${
+                      PROVENANCE_THEMES[inspectedItem.data_provenance]?.text || 'text-emerald-300'
+                    }`}>
+                      {inspectedItem.data_provenance}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Canonical Unit</span>
+                    <span className="text-white font-bold">{inspectedItem.canonical_unit || inspectedItem.primary_unit || 'N/A'}</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Measurement Method</span>
+                    <span className="text-slate-300 font-bold">{inspectedItem.measurement_method || 'direct_observation'}</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Validation Status</span>
+                    <span className={`font-bold ${
+                      inspectedItem.validation_status === 'partial_day' ? 'text-amber-400' : 'text-teal-300'
+                    }`}>
+                      {inspectedItem.validation_status || 'valid'}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Time Zone</span>
+                    <span className="text-slate-300 font-bold">{inspectedItem.time_zone || 'UTC'}</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-900 border border-white/5">
+                    <span className="text-[10px] text-slate-400 block">Source / Device</span>
+                    <span className="text-slate-300 font-bold truncate block">{inspectedItem.source_device || inspectedItem.observation_details?.source_type || 'system'}</span>
+                  </div>
+                </div>
+                {inspectedItem.primary_metric === 'blood_pressure_systolic' && (
+                  <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-[10px] font-mono text-emerald-300">
+                    Verified: Blood pressure is strictly measured via oscillometric cuff. Never inferred from heart rate or PPG waveforms.
+                  </div>
+                )}
+                {inspectedItem.validation_status === 'partial_day' && (
+                  <div className="p-2 rounded-lg bg-amber-950/40 border border-amber-500/20 text-[10px] font-mono text-amber-300">
+                    Partial Day Notice: Telemetry is still accumulating for this date window. Summary values are tentative and will finalize at midnight.
+                  </div>
+                )}
+              </div>
 
               {/* Research Disclaimer Box */}
               <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30 flex items-start gap-2.5">
