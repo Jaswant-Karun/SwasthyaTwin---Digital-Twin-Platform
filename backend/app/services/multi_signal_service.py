@@ -404,8 +404,10 @@ class MultiSignalService:
                             )
                         )
                     )
+        print(f"DEBUG: raw_obs count={len(raw_obs)}, sleep_duration_records={len(sleep_duration_records)}, sleep_items={len(sleep_items)}")
 
         # ----------------------------------------------------------------------
+
         # SIGNAL C: Ingested Physiological Telemetry (BP, Steps, Respiration, etc.)
         # ----------------------------------------------------------------------
         obs_items: List[MultiSignalTimelineItem] = []
