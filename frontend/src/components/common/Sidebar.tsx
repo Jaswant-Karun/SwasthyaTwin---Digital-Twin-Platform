@@ -15,7 +15,8 @@ import {
   UserPlus,
   PlusCircle,
   Brain,
-  BarChart3
+  BarChart3,
+  Moon
 } from 'lucide-react';
 import { useTwin } from '../../context/TwinContext';
 
