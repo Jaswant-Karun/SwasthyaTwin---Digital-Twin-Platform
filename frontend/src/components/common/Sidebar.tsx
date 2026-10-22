@@ -85,41 +85,119 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
       )}
 
       {/* Navigation List */}
-      <div className="px-3 py-4 flex-1 space-y-1">
-        <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider font-mono">
-          Clinical Platform
+      <div className="px-3 py-4 flex-1 space-y-4 overflow-y-auto">
+        {/* Spatial Core Workspace */}
+        <div className="space-y-1">
+          <div className="px-3 pb-1 text-[9px] font-extrabold text-cyan-400 uppercase tracking-widest font-mono">
+            Spatial Workspace
+          </div>
+          {[
+            { id: 'digital-twin', label: 'Spatial Digital Twin', icon: HeartPulse, badgeText: 'LIVE' },
+            { id: 'timeline', label: 'Health Timeline', icon: Clock },
+            { id: 'what-if', label: 'What-If Lab', icon: Sliders, badgeText: 'SIM' },
+            { id: 'risk-insights', label: 'AI Risk Insights', icon: ShieldAlert },
+          ].map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleSelect(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  isActive
+                    ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                  <span>{item.label}</span>
+                </div>
+                {item.badgeText && (
+                  <span className="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono tracking-wider">
+                    {item.badgeText}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleSelect(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                isActive
-                  ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30 font-semibold'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
-              </div>
-              {item.badge !== undefined && item.badge > 0 ? (
-                <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                  {item.badge}
-                </span>
-              ) : (item as any).badgeText ? (
-                <span className="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono tracking-wider">
-                  {(item as any).badgeText}
-                </span>
-              ) : isActive ? (
-                <ChevronRight className="w-3.5 h-3.5 text-teal-400" />
-              ) : null}
-            </button>
-          );
-        })}
+
+        {/* Clinical Data Ingestion */}
+        <div className="space-y-1">
+          <div className="px-3 pb-1 text-[9px] font-extrabold text-slate-500 uppercase tracking-widest font-mono">
+            Data & Provenance
+          </div>
+          {[
+            { id: 'overview', label: 'Overview Dashboard', icon: LayoutDashboard },
+            { id: 'add-observation', label: 'Add Observation', icon: PlusCircle },
+            { id: 'add-patient', label: 'Patient Cohort', icon: UserPlus },
+            { id: 'data-sources', label: 'Data Sources', icon: Database },
+            { id: 'alerts', label: 'Safety Alerts', icon: AlertCircle, badge: unreadAlerts },
+          ].map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleSelect(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  isActive
+                    ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge !== undefined && item.badge > 0 ? (
+                  <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Machine Learning & Research */}
+        <div className="space-y-1">
+          <div className="px-3 pb-1 text-[9px] font-extrabold text-slate-500 uppercase tracking-widest font-mono">
+            AI Research & Models
+          </div>
+          {[
+            { id: 'ml-studio', label: 'ML Training Studio', icon: Brain, badgeText: 'AI' },
+            { id: 'model-evaluation', label: 'Model Evaluation', icon: BarChart3, badgeText: 'BENCH' },
+            { id: 'health-trends', label: 'Baseline Trends', icon: LineChart },
+            { id: 'methodology', label: 'Methodology & Ethics', icon: BookOpen },
+            { id: 'settings', label: 'Settings', icon: Settings },
+          ].map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleSelect(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  isActive
+                    ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
+                  <span>{item.label}</span>
+                </div>
+                {item.badgeText && (
+                  <span className="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono tracking-wider">
+                    {item.badgeText}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Sidebar Footer System Status */}
