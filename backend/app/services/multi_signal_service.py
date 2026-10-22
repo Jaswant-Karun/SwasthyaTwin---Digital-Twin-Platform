@@ -636,22 +636,27 @@ class MultiSignalService:
         # EXECUTIVE MULTI-SIGNAL SUMMARY COMPUTATION
         # ----------------------------------------------------------------------
         # Sleep stage breakdown
-        sleep_counts = {"N3": 0, "REM": 0, "N2": 0, "N1": 0, "Wake": 0}
         total_sleep_epochs = len(sleep_items)
-        conf_sum = 0.0
+        if total_sleep_epochs == 0:
+            sleep_counts = {}
+            stage_dist_pct = {}
+            avg_conf = 0.0
+        else:
+            sleep_counts = {"N3": 0, "REM": 0, "N2": 0, "N1": 0, "Wake": 0}
+            conf_sum = 0.0
+            for s in sleep_items:
+                if s.sleep_details:
+                    st = s.sleep_details.stage_5class
+                    if st in sleep_counts:
+                        sleep_counts[st] += 1
+                    conf_sum += s.sleep_details.confidence_pct
 
-        for s in sleep_items:
-            if s.sleep_details:
-                st = s.sleep_details.stage_5class
-                if st in sleep_counts:
-                    sleep_counts[st] += 1
-                conf_sum += s.sleep_details.confidence_pct
+            avg_conf = round(conf_sum / total_sleep_epochs, 1)
+            stage_dist_pct = {
+                k: round((v / total_sleep_epochs) * 100.0, 1)
+                for k, v in sleep_counts.items()
+            }
 
-        avg_conf = round(conf_sum / total_sleep_epochs, 1) if total_sleep_epochs > 0 else 0.0
-        stage_dist_pct = {
-            k: round((v / total_sleep_epochs) * 100.0, 1) if total_sleep_epochs > 0 else 0.0
-            for k, v in sleep_counts.items()
-        }
 
         # Cardiovascular metrics
         total_cardio = len(cardio_items)
