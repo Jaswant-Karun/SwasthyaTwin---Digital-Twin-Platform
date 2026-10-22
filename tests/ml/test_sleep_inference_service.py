@@ -123,3 +123,51 @@ def test_path_sanitization():
     assert sanitized["model"] == "model.joblib"
     assert sanitized["plot"] == "reports/confusion_matrix.png"
     assert sanitized["nested"]["path"] == "data.csv"
+
+
+def test_label_mapping_integrity():
+    """Verifies that 5-class AASM labels and 3-class groupings follow clinical standards."""
+    from ml_pipeline.config import CLASS_NAMES_5, CLASS_NAMES_3, CLASS_3_MAP
+    assert CLASS_NAMES_5 == ["Wake", "N1", "N2", "N3", "REM"]
+    assert CLASS_NAMES_3 == {0: "Wake", 1: "NREM", 2: "REM"}
+
+    # Wake -> Wake
+    assert CLASS_3_MAP[0] == 0
+    # N1, N2, N3 -> NREM
+    assert CLASS_3_MAP[1] == 1
+    assert CLASS_3_MAP[2] == 1
+    assert CLASS_3_MAP[3] == 1
+    # REM -> REM
+    assert CLASS_3_MAP[4] == 2
+
+
+def test_missing_model_raises_model_unavailable():
+    """Verifies that an unready/missing model raises ModelUnavailableError."""
+    from app.services.sleep_inference_service import SleepInferenceService
+    class MockUnreadyPredictor:
+        is_ready = False
+        model_version = "0.0.0"
+
+    unready_service = SleepInferenceService(predictor=MockUnreadyPredictor())
+    assert unready_service.is_ready is False
+    with pytest.raises(ModelUnavailableError):
+        unready_service.predict_epoch({
+            "hr_mean": 65.0,
+            "hr_min": 60.0,
+            "hr_max": 70.0,
+            "hr_rolling_mean_5m": 65.0
+        })
+
+
+def test_extreme_heart_rate_bounds_warning():
+    """Verifies that heart rate outside [30, 240 bpm] generates a structured warning."""
+    feat = {
+        "hr_mean": 235.0,
+        "hr_min": 220.0,
+        "hr_max": 240.0,
+        "hr_rolling_mean_5m": 230.0,
+        "hr_valid_count": 6.0
+    }
+    validated, warnings = sleep_inference_service.validate_features_payload(feat)
+    assert len(warnings) > 0
+    assert any("Extreme heart rate" in w for w in warnings)
