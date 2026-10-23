@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, Literal
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field
 
 DataKind = Literal[
     "measured",
@@ -123,14 +123,17 @@ class ObservationBase(BaseModel):
                 raise ValueError(f"Invalid unit '{v_clean}' for measurement_type '{m_type}'. Expected one of: {allowed}")
         return v_clean
 
+    @computed_field
     @property
     def metric_type(self) -> str:
         return self.measurement_type
 
+    @computed_field
     @property
     def timestamp(self) -> datetime:
         return self.observed_at
 
+    @computed_field
     @property
     def data_tier(self) -> str:
         if self.data_kind in ["user_entered", "user_reported"]:
@@ -262,9 +265,6 @@ class AssessmentUpdateMetadata(BaseModel):
 class ObservationResponse(ObservationBase):
     id: str = Field(default="")
     observation_id: str
-    metric_type: str
-    timestamp: datetime
-    data_tier: str
     notes: Optional[str] = None
     demo_data: bool = False
     is_synthetic: bool = False

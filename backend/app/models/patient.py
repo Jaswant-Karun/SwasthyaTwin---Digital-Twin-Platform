@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field
 
 class LifestyleProfile(BaseModel):
     baseline_sleep_hours: float = Field(default=7.5, ge=3.0, le=14.0)
@@ -26,10 +26,12 @@ class PatientBase(BaseModel):
     is_synthetic: bool = Field(default=False, description="Explicit synthetic provenance indicator")
 
     # Compatibility alias so frontend reading 'full_name' or 'biological_sex' works cleanly
+    @computed_field
     @property
     def full_name(self) -> str:
         return self.display_name
 
+    @computed_field
     @property
     def biological_sex(self) -> str:
         return self.gender or "other"
@@ -87,8 +89,6 @@ class PatientUpdate(BaseModel):
     notes: Optional[str] = None
 
 class PatientResponse(PatientBase):
-    full_name: str
-    biological_sex: str
     is_synthetic: bool = False
     created_at: datetime
     updated_at: datetime
