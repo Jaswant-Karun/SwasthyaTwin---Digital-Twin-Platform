@@ -40,7 +40,8 @@ class SimulationService:
         sim_doc["scenario_inputs"] = sim_request.parameters.model_dump()
         sim_doc["simulated_summary"] = sim_doc.get("projected_outcomes", {})
         sim_doc["assumptions"] = sim_doc.get("model_assumptions", [])
-        sim_doc["model_version"] = "v1.2.0"
+        sim_doc["model_version"] = "v2.1.0"
+        sim_doc["data_tier"] = "simulated"
 
         repo = SimulationRepository(db)
         repo.save_simulation(sim_doc)
