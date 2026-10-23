@@ -182,9 +182,9 @@ def test_05_timeline_and_charts_update_from_api(test_client: TestClient, mock_db
     assert res_timeline.status_code == 200
     timeline = res_timeline.json()
     assert timeline["patient_id"] == "PT-TIMELINE-01"
-    assert "signals" in timeline
-    assert "heart_rate" in timeline["signals"]
-    assert len(timeline["signals"]["heart_rate"]["points"]) >= 2
+    assert "items" in timeline
+    assert timeline["total_items"] >= 2
+    assert any(it.get("primary_metric") == "heart_rate" for it in timeline["items"])
 
     # Digital twin state reflects the latest reading
     res_twin = test_client.get("/api/v1/patients/PT-TIMELINE-01/twin/state")
