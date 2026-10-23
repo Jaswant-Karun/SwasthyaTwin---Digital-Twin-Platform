@@ -105,8 +105,9 @@ def create_presentation_pdf():
         {
             "num": "1 / 8",
             "title": "SwasthyaTwin AI — Multisignal Health Intelligence",
-            "subtitle": "Happiest Health Digital Twin Challenge 2026",
+            "subtitle": "Happiest Health Digital Twin Challenge 2026 | Team: 24cb012",
             "bullets": [
+                "Team Name: 24cb012",
                 "Team Leader: Gangeswara S",
                 "Team Members: Bharanika D, Jaswant karun S A, Baviya Varshini V",
                 "Affiliation: [TODO: Add College / Institution Name & Department]",
