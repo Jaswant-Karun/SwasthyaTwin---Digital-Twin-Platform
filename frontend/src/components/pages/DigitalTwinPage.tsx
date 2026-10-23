@@ -432,15 +432,26 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
                 </span>
               </div>
               <div className="text-lg font-bold font-mono text-emerald-300 flex items-center gap-2">
-                <span>{healthModules?.trend_forecasting?.forecast_status === 'ready' ? 'Ready (95% Corridor)' : 'Insufficient History Gate'}</span>
+                <span>
+                  {healthModules?.trend_forecasting?.forecast_status === 'ready'
+                    ? 'Validated (95% Corridor)'
+                    : healthModules?.trend_forecasting?.forecast_status === 'experimental'
+                    ? 'Experimental (High Error)'
+                    : 'Insufficient History Gate'}
+                </span>
               </div>
               <div className="space-y-1 text-xs text-slate-300 font-mono">
-                <div>Model: <span className="text-slate-300">Autoregressive Exponential Smoothing</span></div>
-                <div>Baseline: <span className="text-slate-300">Naive Persistence (y_t)</span></div>
+                <div>Model: <span className="text-slate-300">Autoregressive Exponential Smoothing (v2.1)</span></div>
+                <div>Baselines: <span className="text-slate-300">Persistence (y_t) &amp; 7D Mean</span></div>
                 <div>Temporal Guard: <span className="text-teal-300 font-bold">Strict Chronological Split</span></div>
+                {healthModules?.trend_forecasting?.held_out_metrics && (
+                  <div className="text-[11px] text-teal-300 pt-1">
+                    Held-Out MAE: {healthModules.trend_forecasting.held_out_metrics.mae} {healthModules.trend_forecasting.target_unit} (vs {healthModules.trend_forecasting.held_out_metrics.baseline_mae || 'N/A'})
+                  </div>
+                )}
               </div>
               <p className="text-[10px] text-slate-400 pt-2 border-t border-white/10 leading-relaxed">
-                Returns insufficient data rather than fabricating results when historical samples are inadequate.
+                Evaluated on held-out history. Only forecasts supported targets (daily steps, sleep, resting HR). Correlations do not imply causation.
               </p>
             </div>
           </div>

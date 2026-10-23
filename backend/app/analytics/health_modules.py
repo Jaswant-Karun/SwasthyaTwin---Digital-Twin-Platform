@@ -602,22 +602,23 @@ class TrendForecastSummary(BaseModel):
     target_metric: str
     target_unit: str
     horizon_days: int = 7
-    forecast_status: str  # ready, insufficient_data, unsupported_metric
+    forecast_status: str  # ready, experimental, insufficient_data, unsupported_metric
     model_version: str = "2.1.0"
     training_data_provenance: str = "Chronological User Observation Stream"
     insufficient_data_reason: Optional[str] = None
     forecast_trajectory: List[Dict[str, Any]] = Field(default_factory=list)
     held_out_metrics: Optional[Dict[str, Any]] = None
     baseline_comparison: Optional[Dict[str, Any]] = None
+    uncertainty_method: Optional[str] = None
     disclaimer: str = (
         "Autoregressive time-series projection with 95% confidence bounds. "
-        "Evaluated via strict chronological held-out validation against a Naive Persistence Baseline. "
-        "Does NOT predict medical disease onset or total sleep duration."
+        "Evaluated via strict chronological held-out validation against Naive Persistence and Rolling 7-Day Mean baselines. "
+        "Does NOT predict medical disease onset or clinical deterioration. Correlations do not imply causation."
     )
 
 
 class FutureTrendForecastingModule:
-    SUPPORTED_METRICS = ["heart_rate", "resting_heart_rate", "hrv_rmssd", "daily_steps"]
+    SUPPORTED_METRICS = ["daily_steps", "sleep_duration_hours", "heart_rate", "resting_heart_rate", "hrv_rmssd"]
 
     @staticmethod
     def forecast(
@@ -638,7 +639,8 @@ class FutureTrendForecastingModule:
 
         metric_obs = [
             o for o in observations
-            if o.get("measurement_type") == metric_type and o.get("value") is not None
+            if (o.get("measurement_type") == metric_type or o.get("metric_type") == metric_type)
+            and o.get("value") is not None
         ]
 
         if len(metric_obs) < 14:
@@ -669,26 +671,44 @@ class FutureTrendForecastingModule:
         trajectory = [p.model_dump() for p in result.prediction_trajectory]
         eval_metrics = result.evaluation_metrics.model_dump()
 
+        status = "ready"
+        if eval_metrics.get("acceptance_status") == "experimental":
+            status = "experimental"
+
         return TrendForecastSummary(
             patient_id=patient_id,
             target_metric=metric_type,
             target_unit=unit,
             horizon_days=horizon_days,
-            forecast_status="ready",
+            forecast_status=status,
             model_version=result.model_version,
             training_data_provenance=result.training_data_provenance,
             forecast_trajectory=trajectory,
+            uncertainty_method=result.uncertainty_method,
             held_out_metrics={
                 "model_name": eval_metrics["model_name"],
                 "mae": eval_metrics["mae"],
                 "rmse": eval_metrics["rmse"],
                 "evaluation_window_days": eval_metrics["evaluation_window_days"],
-                "improvement_vs_persistence_pct": eval_metrics["improvement_vs_persistence_pct"]
+                "improvement_vs_persistence_pct": eval_metrics["improvement_vs_persistence_pct"],
+                "acceptance_status": eval_metrics.get("acceptance_status", "passed"),
+                "acceptance_reason": eval_metrics.get("acceptance_reason", "")
             },
             baseline_comparison={
                 "baseline_name": "Simple Persistence Baseline (y_{t+h} = y_t)",
                 "baseline_mae": eval_metrics["baseline_mae"],
                 "baseline_rmse": eval_metrics["baseline_rmse"],
-                "gain_pct": eval_metrics["improvement_vs_persistence_pct"]
+                "gain_pct": eval_metrics["improvement_vs_persistence_pct"],
+                "persistence_baseline": {
+                    "name": eval_metrics.get("baseline_name", "Naive Persistence (y_t)"),
+                    "mae": eval_metrics["baseline_mae"],
+                    "rmse": eval_metrics["baseline_rmse"],
+                    "gain_pct": eval_metrics["improvement_vs_persistence_pct"]
+                },
+                "rolling_7d_baseline": {
+                    "name": "Rolling 7-Day Historical Mean",
+                    "mae": eval_metrics.get("rolling_7d_mae"),
+                    "rmse": eval_metrics.get("rolling_7d_rmse")
+                }
             }
         )

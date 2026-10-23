@@ -373,8 +373,11 @@ export const SpatialTimelineInspector: React.FC<SpatialTimelineInspectorProps> =
     isPredicted: false
   });
 
-  // Future 7-day projection
-  if (liveForecasts && Array.isArray(liveForecasts.prediction_trajectory)) {
+  // Future 7-day projection: Strictly use validated model forecasts only
+  const isSupportedForecastMetric = ['daily_steps', 'sleep_duration_hours', 'heart_rate', 'hrv_rmssd'].includes(selectedMetric);
+  const hasValidForecast = isSupportedForecastMetric && liveForecasts && Array.isArray(liveForecasts.prediction_trajectory) && liveForecasts.prediction_trajectory.length > 0;
+
+  if (hasValidForecast) {
     liveForecasts.prediction_trajectory.forEach((pt: any) => {
       const d = new Date(pt.date);
       chartData.push({
@@ -389,25 +392,6 @@ export const SpatialTimelineInspector: React.FC<SpatialTimelineInspectorProps> =
         isPredicted: true
       });
     });
-  } else {
-    for (let f = 1; f <= 7; f++) {
-      const fd = new Date(now.getTime() + f * 86400000);
-      const dateStr = fd.toLocaleDateString([], { month: 'short', day: 'numeric' });
-      const drift = Math.cos(f / 2.5) * (metricConfig.sigma * 0.4);
-      const forecastVal = latestObsVal + drift;
-
-      chartData.push({
-        date: dateStr,
-        timestamp: fd.toISOString(),
-        observed: null,
-        predicted: parseFloat(forecastVal.toFixed(1)),
-        predictedLower: parseFloat((forecastVal - metricConfig.sigma * 0.7).toFixed(1)),
-        predictedUpper: parseFloat((forecastVal + metricConfig.sigma * 0.7).toFixed(1)),
-        baselineMin: metricConfig.corridorMin,
-        baselineMax: metricConfig.corridorMax,
-        isPredicted: true
-      });
-    }
   }
 
   // Helper to map event to body node for silhouette lighting
@@ -637,6 +621,75 @@ export const SpatialTimelineInspector: React.FC<SpatialTimelineInspectorProps> =
           </ResponsiveContainer>
         )}
       </div>
+
+      {/* Forecast Status & Baseline Comparison Card */}
+      {isSupportedForecastMetric && liveForecasts && (
+        <div className="p-4 rounded-2xl bg-slate-900/90 border border-teal-500/30 space-y-3 font-mono text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
+            <div className="flex items-center gap-2 text-teal-300 font-bold">
+              <TrendingUp className="w-4 h-4 text-teal-400" />
+              <span>Personal 7-Day Trend Forecast ({liveForecasts.metric_type})</span>
+              <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold border ${
+                liveForecasts.evaluation_metrics?.acceptance_status === 'experimental'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                  : 'bg-teal-500/20 text-teal-300 border-teal-500/40'
+              }`}>
+                {liveForecasts.evaluation_metrics?.acceptance_status === 'experimental' ? 'EXPERIMENTAL' : 'EVALUATED & VALIDATED'}
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-400">
+              Model: <span className="text-white font-bold">{liveForecasts.model_version}</span> • Generated: {new Date(liveForecasts.forecast_generated_at || Date.now()).toLocaleTimeString()}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-0.5">
+              <span className="text-[10px] text-slate-500 block">Held-out Window</span>
+              <span className="text-white font-bold">{liveForecasts.evaluation_metrics?.evaluation_window_days || 7} Days</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-0.5">
+              <span className="text-[10px] text-slate-500 block">Model MAE</span>
+              <span className="text-teal-300 font-bold">{liveForecasts.evaluation_metrics?.mae} {liveForecasts.unit}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-0.5">
+              <span className="text-[10px] text-slate-500 block">Baseline Persistence MAE</span>
+              <span className="text-slate-300 font-bold">{liveForecasts.evaluation_metrics?.baseline_mae} {liveForecasts.unit}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-0.5">
+              <span className="text-[10px] text-slate-500 block">Improvement vs Baseline</span>
+              <span className={`font-bold ${(liveForecasts.evaluation_metrics?.improvement_vs_persistence_pct || 0) >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {(liveForecasts.evaluation_metrics?.improvement_vs_persistence_pct || 0) > 0 ? '+' : ''}
+                {liveForecasts.evaluation_metrics?.improvement_vs_persistence_pct || 0}%
+              </span>
+            </div>
+          </div>
+
+          <div className="text-[10px] text-slate-400 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/5">
+            <div>
+              <span className="text-slate-500">Uncertainty: </span>
+              <span className="text-cyan-300">{liveForecasts.uncertainty_method || 'Expanding 95% confidence bounds (±1.96 residual σ)'}</span>
+            </div>
+            <div className="text-slate-500 italic">
+              Correlations do not demonstrate causal outcomes.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unsupported Metric Guard Explanation */}
+      {!isSupportedForecastMetric && (
+        <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-amber-500/30 text-xs font-mono space-y-1">
+          <div className="flex items-center gap-2 text-amber-300 font-bold">
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span>Trend Forecasting Unavailable for {metricConfig.label}</span>
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            {selectedMetric === 'systolic_bp'
+              ? 'Blood pressure and cardiovascular disease risk are strictly excluded from time-series forecasting to prevent misleading clinical projections.'
+              : 'Continuous forward forecasting requires validated daily telemetry. This metric is tracked for observational baseline stability only.'}
+          </p>
+        </div>
+      )}
 
       {/* Mathematical Method Callout for Metric */}
       <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 gap-2">

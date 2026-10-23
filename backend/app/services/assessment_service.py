@@ -348,7 +348,7 @@ class AssessmentService:
         Executes time-series autoregressive forecasting with temporal leakage prevention
         and held-out validation against persistence baselines.
         """
-        target_metrics = metrics or ["heart_rate", "blood_pressure_systolic", "sleep_duration_hours"]
+        target_metrics = metrics or ["daily_steps", "sleep_duration_hours", "heart_rate"]
         cutoff = datetime.now(timezone.utc) - timedelta(days=90)
 
         results: Dict[str, Any] = {}
@@ -370,6 +370,10 @@ class AssessmentService:
                 }, {"_id": 0}).sort("observed_at", 1))
 
             unit = obs[0].get("unit", "") if obs else ""
+            if not unit:
+                default_units = {"daily_steps": "steps", "sleep_duration_hours": "hours", "heart_rate": "bpm", "hrv_rmssd": "ms"}
+                unit = default_units.get(m, "")
+
             forecast = train_and_forecast_metric(
                 metric_type=m,
                 unit=unit,
@@ -378,7 +382,6 @@ class AssessmentService:
             )
             if forecast:
                 results[m] = forecast.model_dump()
-
 
         return {
             "patient_id": patient_id,
