@@ -1,6 +1,6 @@
 # SwasthyaTwin AI — Personalized Multisignal Health Intelligence & Digital Twin
 
-**Happiest Health Digital Twin Challenge 2026 — Team Name: 24cb012**
+### Happiest Health Digital Twin Challenge 2026 — Team Name: 24cb012
 
 [![Pytest](https://img.shields.io/badge/Backend_Testing-227_Pytest_PASSED-0A9EDC.svg?style=flat&logo=pytest)](https://pytest.org)
 [![Vitest](https://img.shields.io/badge/Frontend_Testing-55_Vitest_PASSED-FCC624.svg?style=flat&logo=vitest)](https://vitest.dev)
@@ -14,8 +14,10 @@
 ---
 
 ## ⚠️ Healthcare Safety & Research Prototype Notice
+
 > [!WARNING]
 > **CLINICAL & REGULATORY DISCLAIMER:** SwasthyaTwin AI is an experimental proof-of-concept research prototype developed for personal longitudinal biometric deviation tracking, physiological sleep-stage inference, and *in silico* counterfactual What-If lifestyle simulation.
+>
 > - **It is NOT an FDA, EMA, or CDSCO-cleared medical device.**
 > - **It does NOT provide clinical diagnoses, triage acute medical conditions, or prescribe medical treatments.**
 > - **It does NOT replace consultation with certified healthcare professionals.**
@@ -29,9 +31,11 @@
 - **Team Name:** `24cb012`
 
 ### Team Leader
+
 - **Gangeswara S** — Team Leader
 
 ### Team Members
+
 - **Bharanika D**
 - **Jaswant karun S A**
 - **Baviya Varshini V**
@@ -53,6 +57,7 @@
 ## 🎯 Problem Statement
 
 Modern healthcare analytics and wearable health apps suffer from four systemic flaws:
+
 1. **The Flaw of Generic Population Averages:** Commercial fitness trackers benchmark individuals against broad statistical averages (e.g., standard 60–100 bpm resting heart rate). An endurance athlete whose normal baseline is 46 bpm drifting to 62 bpm is experiencing significant autonomic exhaustion or acute illness, yet legacy platforms label it "Normal". Conversely, healthy variations in seniors or shift workers trigger frequent false alarms.
 2. **Fragmented Longitudinal Visibility:** Observations from smartwatches, blood pressure cuffs, glucometers, and subjective sleep logs are isolated across separate vendor silos with limited visibility into longitudinal physiological changes over time.
 3. **The Black-Box Dilemma:** Proprietary commercial "readiness" and "sleep quality" scores produce opaque, single-number metrics without mathematical derivations or audit trails. Clinicians and users cannot audit, trust, or act upon them.
@@ -72,7 +77,9 @@ SwasthyaTwin AI addresses these challenges through a grounded, explainable digit
 6. **In-Silico What-If Scenario Simulator:** Prospective lifestyle modeling (e.g., sleep extension, step targets) using exponential recovery kinetics.
 
 ### Strict 5-Tier Data Provenance
+
 Every displayed value in SwasthyaTwin carries an immutable provenance indicator:
+
 - **`MEASURED`** (Teal): Direct sensor reading or validated clinical cuff observation (e.g., Apple Watch optical PPG, Omron cuff).
 - **`DERIVED`** (Cyan): Deterministic mathematical transformations (e.g., MAP, Pulse Pressure, Modified $Z$-score).
 - **`PREDICTED`** (Purple): Validated machine-learning inference (e.g., BiDSleep 5-stage hypnogram classifier).
@@ -101,6 +108,7 @@ Every displayed value in SwasthyaTwin carries an immutable provenance indicator:
 ## 💻 Technical Stack
 
 ### Frontend Architecture
+
 - **Core Framework:** React 19 (`19.0.0`) with TypeScript 5
 - **Build Tool:** Vite v8.3.4 (optimized code-splitting: `vendor-react` 207 kB, `vendor-charts` 384 kB, `vendor-icons` 22 kB)
 - **Styling:** Vanilla Tailwind CSS with custom spatial midnight theme tokens
@@ -109,22 +117,26 @@ Every displayed value in SwasthyaTwin carries an immutable provenance indicator:
 - **Testing:** Vitest (`5.0.5`) + Testing Library / JSDOM (55 tests passing)
 
 ### Backend Architecture
+
 - **Core Engine:** Python 3.13 / 3.11+
 - **API Framework:** FastAPI (`0.115.0+`) with ASGI Uvicorn
 - **Contract & Schema Validation:** Pydantic v2 (`2.9.0+`) with `@computed_field`
 - **Testing:** Pytest (`8.0.0+`) with `httpx` TestClient (227 tests passing)
 
 ### Database & Storage
+
 - **Primary Database:** MongoDB 7.0 (official PyMongo driver)
 - **Indexing:** Compound indexes on `{"patient_id": 1, "timestamp": -1}`
 - **Offline Resilience:** In-memory `mongomock` fallback engine
 
 ### Machine Learning & Data Science
+
 - **ML Framework:** scikit-learn (`1.5.0+`), NumPy, Pandas, SciPy, Joblib
 - **Algorithm:** Class-Weighted Random Forest Classifier (150 estimators, max depth 12)
 - **Research Dataset:** PhysioNet BiDSleep v1.0.1 (31 human participants, 15,765 30s epochs)
 
 ### Development & Deployment
+
 - **Containerization:** Docker & Docker Compose (`docker-compose.yml`)
 
 ---
@@ -132,6 +144,7 @@ Every displayed value in SwasthyaTwin carries an immutable provenance indicator:
 ## 🔬 AI/ML Model & Framework Details
 
 ### Dataset Grounding: PhysioNet BiDSleep v1.0.1
+
 - **Official Source Link:** [https://www.physionet.org/content/bidsleep-dataset/1.0.1/](https://www.physionet.org/content/bidsleep-dataset/1.0.1/)
 - **DOI:** [10.13026/rees-1092](https://doi.org/10.13026/rees-1092)
 - **License:** Open Data Commons Attribution License v1.0 (ODC-By v1.0).
@@ -140,7 +153,9 @@ Every displayed value in SwasthyaTwin carries an immutable provenance indicator:
 - **Surrogate Telemetry:** High-resolution optical photoplethysmography (PPG) pulse rate from consumer smartwatches (Apple Watch).
 
 ### Group-Aware Partitioning (Zero Participant Leakage)
+
 To prevent intra-subject identity leakage, partitioning is strictly group-aware by participant ID:
+
 - **Training Cohort:** `Bidslab00` (7 nights, 6,171 epochs)
 - **Validation Cohort:** `Bidslab01` (5 nights, 4,314 epochs)
 - **Held-Out Test Cohort:** `Bidslab02` (6 nights, 5,280 epochs, 44.0 continuous hours)
@@ -148,7 +163,9 @@ To prevent intra-subject identity leakage, partitioning is strictly group-aware 
 - **Preprocessing Leakage:** `RobustScaler` fit exclusively on training participant `Bidslab00`; test data transformed with frozen parameters.
 
 ### 12 Causal Temporal Features
+
 All features are causal and derived exclusively from the concurrent 30-second epoch or preceding 5-minute rolling window:
+
 1. `hr_mean`: Arithmetic mean heart rate (bpm) in 30s epoch.
 2. `hr_std`: Sample standard deviation of heart rate.
 3. `hr_median`: 50th percentile heart rate.
@@ -163,6 +180,7 @@ All features are causal and derived exclusively from the concurrent 30-second ep
 12. `time_elapsed_minutes`: Circadian elapsed recording time $(k - 1) \times 0.5$ minutes.
 
 ### Empirical Held-Out Test Evaluation (Participant `Bidslab02`)
+
 Verified against saved evaluation manifest [reports/model_evaluation.json](file:///c:/Users/jaswant%20karun/SwasthyaTwin/reports/model_evaluation.json):
 
 | Evaluation Metric | BiDSleep Random Forest | Majority-Class Baseline | Real Empirical Lift |
@@ -174,6 +192,7 @@ Verified against saved evaluation manifest [reports/model_evaluation.json](file:
 | **Test Set Support** | 5,280 epochs (44.0 hrs) | 5,280 epochs | Authentic Dreem 2 EEG |
 
 ### Per-Class Performance Breakdown
+
 | Stage Name | Class ID | Precision | Recall | F1-Score | Support (Ground Truth) | Predicted Count |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Wake** | 0 | **97.21%** | 58.93% | **73.38%** | 1,181 | 716 |
@@ -183,9 +202,11 @@ Verified against saved evaluation manifest [reports/model_evaluation.json](file:
 | **REM** (Dream) | 4 | 5.95% | 5.49% | 5.71% | 1,111 | 1,028 |
 
 ### Optical Sensor Dropout Quality Gating
+
 When optical sensor dropout occurs (`hr_valid_count < 2.0`) or heart rate is non-physiological ($< 30$ or $> 240$ bpm), the model refuses to hallucinate a sleep stage. It returns an explicit `Unknown` label and `input_quality_status: "INSUFFICIENT_INPUT_DATA"`.
 
 ### Training & Inference Commands
+
 ```powershell
 # Retrain sleep model from preprocessed BiDSleep feature matrix
 cd backend
@@ -259,17 +280,20 @@ flowchart TB
 ## 🚀 Installation & Setup
 
 ### Prerequisites
+
 - **Python**: Version `3.11` or `3.12+` (Tested on Python `3.13.5`)
 - **Node.js**: Version `18.x` or `20.x+` (npm `10.x+`)
 - **MongoDB**: Version `6.0+` or `7.0+` running on `mongodb://localhost:27017` *(Optional: Automatic in-memory `mongomock` fallback allows offline evaluation without local MongoDB)*
 
 ### 1. Clone the Public Repository
+
 ```bash
 git clone https://github.com/Jaswant-Karun/SwasthyaTwin---Digital-Twin-Platform.git
 cd SwasthyaTwin---Digital-Twin-Platform
 ```
 
 ### 2. Configure Environment Variables
+
 ```bash
 # Copy example configuration templates
 cp .env.example .env
@@ -277,6 +301,7 @@ cp backend/.env.example backend/.env
 ```
 
 ### 3. Backend Setup
+
 ```bash
 cd backend
 
@@ -297,12 +322,15 @@ python -m app.database.seed
 # Start FastAPI development server
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+
 - **Backend API Root**: `http://127.0.0.1:8000`
 - **Interactive Swagger Docs**: `http://127.0.0.1:8000/docs`
 - **Health Probe**: `http://127.0.0.1:8000/health`
 
 ### 4. Frontend Setup
+
 In a new terminal window:
+
 ```bash
 cd frontend
 
@@ -312,9 +340,11 @@ npm ci
 # Start Vite client development server
 npm run dev
 ```
+
 - **Frontend Web Application**: `http://localhost:5173/`
 
 ### 5. Running the Complete Automated Test Suite (282 Tests)
+
 ```powershell
 # From repository root:
 $env:PYTHONPATH="backend;.backend"
@@ -333,6 +363,7 @@ npm run build
 ## ⚙️ Environment Variables & Data Configuration
 
 ### Environment Variables Reference (`.env.example`)
+
 | Variable | Default Value | Description |
 | :--- | :--- | :--- |
 | `APP_ENV` | `development` | Deployment environment: `development`, `staging`, `production` |
@@ -349,14 +380,18 @@ npm run build
 | `DEVIATION_SIGMA_THRESHOLD` | `2.0` | Modified $Z$-score threshold triggering statistical divergence alerts |
 
 ### Obtaining & Placing the BiDSleep Dataset
+
 To obtain the raw PhysioNet BiDSleep dataset under its official Open Data Commons license:
+
 1. Visit the PhysioNet project page: [https://www.physionet.org/content/bidsleep-dataset/1.0.1/](https://www.physionet.org/content/bidsleep-dataset/1.0.1/)
 2. Follow the PhysioNet download instructions to download recordings for subjects `Bidslab00`, `Bidslab01`, and `Bidslab02`.
 3. Extract the downloaded subject directories into `data/raw/bidsleep-dataset/`.
 4. Run the feature extraction pipeline:
+
    ```bash
    python -m ml_pipeline.preprocess_bidsleep
    ```
+
 > [!NOTE]
 > Preprocessed feature matrices (`bidsleep_features.csv`, 2.94 MB) and serialized model artifacts (`sleep_stage_rf_model.joblib`, 10.57 MB) are included in the repository so judges can evaluate inference immediately without re-downloading multi-gigabyte raw files.
 
@@ -370,6 +405,7 @@ To obtain the raw PhysioNet BiDSleep dataset under its official Open Data Common
 - **Demo Video URL:** `[TODO: Add the final 15–20 minute unlisted YouTube demo URL, e.g., https://youtu.be/XXXXXXXXXXX]`
 
 ### Recommended 15–20 Minute Demo Outline
+
 1. **Problem Statement & Motivation (0:00 – 2:30):**
    - Population norm bias vs individual biological variance; athlete resting HR drift example.
 2. **Project Architecture & Tech Stack (2:30 – 5:00):**
@@ -527,6 +563,7 @@ SwasthyaTwin/
 ---
 
 ### Verification Summary
+
 - **Total Automated Tests:** 282 of 282 PASSED (227 Pytest + 55 Vitest)
 - **Production Build:** Clean compile in 2.08s (0 TypeScript errors)
 - **Security Check:** Zero credentials, `.env` files, or raw patient records committed
