@@ -287,7 +287,13 @@ export interface SimulationResult {
   };
   trajectories: TrajectoryPoint[];
   model_assumptions: string[];
+  limitations?: string;
   disclaimer: string;
+  data_tier?: string;
+  model_version?: string;
+  baseline_scenario?: Record<string, any>;
+  hypothetical_scenario?: Record<string, any>;
+  output_classifications?: Record<string, string>;
 }
 
 export interface Alert {
