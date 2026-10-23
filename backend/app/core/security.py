@@ -38,7 +38,7 @@ class SecurityContext:
             return True
         return False
 
-async def get_current_actor(
+def get_current_actor(
     authorization: Optional[str] = Header(None, alias="Authorization"),
     x_api_key: Optional[str] = Header(None, alias="X-API-Key")
 ) -> SecurityContext:
