@@ -60,7 +60,11 @@ export const TopNav: React.FC<TopNavProps> = ({
   const getBreadcrumbLabel = (tab: string) => {
     switch (tab) {
       case 'overview': return 'Overview Dashboard';
+      case 'add-patient': return 'Patient Enrollment & Cohort';
+      case 'add-observation': return 'Clinical Data Ingestion';
       case 'digital-twin': return 'Digital Twin Profile';
+      case 'sleep-research': return 'BiDSleep Wearable Sleep Research';
+      case 'model-evaluation': return 'Held-Out Model Evaluation & Benchmarks';
       case 'ml-studio': return 'ML Training & Phenotyping Studio';
       case 'health-trends': return 'Health Trends & Analytics';
       case 'risk-insights': return 'Risk Insights';

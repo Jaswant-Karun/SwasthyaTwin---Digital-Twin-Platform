@@ -185,23 +185,26 @@ This spins up:
 
 ## 🧪 Testing & Quality Assurance
 
-SwasthyaTwin maintains a 100% passing automated test suite:
-
-### Backend Pytest Suite (185 Tests)
+### Backend & ML Pytest Suite (215 Tests)
 ```powershell
+# From repository root:
+$env:PYTHONPATH="backend;.backend"
+backend\venv\Scripts\python.exe -m pytest -q
+
+# Or from backend directory:
 cd backend
 $env:PYTHONPATH="."
-.\venv\Scripts\pytest tests
+.\venv\Scripts\pytest tests -q
 ```
-- **Total Tests**: 185 passed in ~70s
-- **Coverage**: Database CRUD, ML sleep pipeline, forecasting holdouts, What-If simulator, HMAC security, multi-signal timeline, and data quality guards.
+- **Total Tests**: **215 passed** (185 backend unit/integration + 30 ML pipeline tests; 0 failures)
+- **Coverage**: Database persistence, schema validation, personal baseline calculations, robust nMAD anomaly engine, BiDSleep ML pipeline, causal sequence inference, forecasting holdouts, What-If simulator, HMAC security, multi-signal timeline, and data quality guards.
 
 ### Frontend Vitest Suite (50 Tests)
 ```powershell
 cd frontend
 npx vitest run
 ```
-- **Total Tests**: 50 passed across 12 test suites in ~14s
+- **Total Tests**: **50 passed** across 12 test suites in ~34s (0 failures)
 - **Coverage**: Spatial Hologram Twin, timeline interactions, forecasting cards, simulation comparisons, accessibility semantics, and state error guards.
 
 ### Static Typing & Production Build
@@ -211,7 +214,7 @@ npx tsc --noEmit
 npm run build
 ```
 - **TypeScript**: 0 diagnostic errors
-- **Production Bundle**: Built in 2.75s (`dist/assets/index-BONiE7ch.js` 1,176 kB │ gzip 299 kB)
+- **Production Bundle**: Built successfully (`dist/assets/index-BONiE7ch.js` 1,176 kB │ gzip 299 kB)
 
 ---
 
