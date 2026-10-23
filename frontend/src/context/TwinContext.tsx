@@ -94,7 +94,7 @@ interface TwinContextType {
   closeExplanation: () => void;
 }
 
-const TwinContext = createContext<TwinContextType | undefined>(undefined);
+export const TwinContext = createContext<TwinContextType | undefined>(undefined);
 
 export const TwinProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isOfflineDemo, setIsOfflineDemoState] = useState<boolean>(isOfflineDemoMode());
