@@ -26,30 +26,38 @@ import { SpatialTimelineInspector } from '../spatial/SpatialTimelineInspector';
 import { WhatIfScenarioPanel } from '../spatial/WhatIfScenarioPanel';
 import { AIOpticalTwinScanner } from '../scanner/AIOpticalTwinScanner';
 
+import { TimelineMetric } from '../spatial/SpatialTimelineInspector';
+
 interface DigitalTwinPageProps {
   onNavigate?: (tab: string) => void;
 }
 
 export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) => {
-  const { currentPatient, twinState, assessment, latestUpdateInfo } = useTwin();
+  const { currentPatient, twinState, assessment, latestUpdateInfo, patients, setCurrentPatientId } = useTwin();
 
   // Spatial Twin state
   const [selectedNodeId, setSelectedNodeId] = useState<string>('cardiovascular');
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
   const [activeLayer, setActiveLayer] = useState<string>('all');
   const [activeViewTab, setActiveViewTab] = useState<'spatial_twin' | 'modules' | 'timeline' | 'scenario' | 'bio_scan'>('spatial_twin');
-  const [selectedTimelineMetric, setSelectedTimelineMetric] = useState<'heart_rate' | 'systolic_bp' | 'hrv_rmssd' | 'vitality'>('heart_rate');
+  const [selectedTimelineMetric, setSelectedTimelineMetric] = useState<TimelineMetric>('heart_rate');
   const [timelineDays, setTimelineDays] = useState<number>(30);
 
   // Active layers & health modules from backend
   const [activeLayers, setActiveLayers] = useState<any | null>(null);
   const [healthModules, setHealthModules] = useState<any | null>(null);
   const [modulesLoading, setModulesLoading] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadPatientData = () => {
     if (currentPatient?.patient_id) {
+      setApiError(null);
       api.getActiveLayers(currentPatient.patient_id)
         .then(res => setActiveLayers(res.layers))
-        .catch(err => console.warn('Failed to load active layers:', err));
+        .catch(err => {
+          console.warn('Failed to load active layers:', err);
+          setApiError('Notice: Could not sync active layers from live API. Using verified telemetry fallback.');
+        });
 
       setModulesLoading(true);
       api.getHealthModules(currentPatient.patient_id)
@@ -57,13 +65,31 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
         .catch(err => console.warn('Failed to load health modules:', err))
         .finally(() => setModulesLoading(false));
     }
+  };
+
+  useEffect(() => {
+    loadPatientData();
   }, [currentPatient?.patient_id]);
 
   if (!currentPatient || !twinState) {
     return (
-      <div className="spatial-panel rounded-3xl p-12 text-center text-slate-400 font-mono text-xs">
+      <div className="spatial-panel rounded-3xl p-12 text-center text-slate-400 font-mono text-xs space-y-4">
         <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        Synchronizing Spatial Digital Twin with Patient Telemetry...
+        <p>Synchronizing Spatial Digital Twin with Patient Telemetry...</p>
+        {patients.length > 0 && (
+          <div className="pt-2">
+            <label htmlFor="empty-patient-select" className="text-slate-500 mr-2">Select Active Patient:</label>
+            <select
+              id="empty-patient-select"
+              onChange={(e) => setCurrentPatientId(e.target.value)}
+              className="bg-slate-900 border border-slate-700 text-teal-300 px-3 py-1 rounded-lg"
+            >
+              {patients.map(p => (
+                <option key={p.patient_id} value={p.patient_id}>{p.full_name} ({p.patient_id})</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     );
   }
@@ -74,14 +100,14 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
   return (
     <div className="space-y-6">
       {/* 1. Spatial Experience Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 shadow-lg shadow-teal-500/10">
+            <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 shadow-lg shadow-teal-500/10 shrink-0">
               <HeartPulse className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                   Autonomous Spatial Digital Twin
                 </h1>
@@ -105,69 +131,103 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
           </div>
         </div>
 
-        {/* View Switcher Tabs */}
-        <div className="flex flex-wrap items-center p-1 rounded-2xl bg-slate-900/90 border border-white/10 text-xs font-mono self-start md:self-auto gap-1">
-          <button
-            onClick={() => setActiveViewTab('spatial_twin')}
-            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
-              activeViewTab === 'spatial_twin'
-                ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Spatial Twin</span>
-          </button>
+        {/* Patient Switcher & View Switcher Tabs */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Patient Selector Dropdown */}
+          <div className="flex items-center gap-2 bg-slate-900/90 border border-white/10 px-3 py-1.5 rounded-2xl">
+            <User className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+            <label htmlFor="twin-patient-switcher" className="sr-only">Select Patient Cohort</label>
+            <select
+              id="twin-patient-switcher"
+              value={currentPatient.patient_id}
+              onChange={(e) => setCurrentPatientId(e.target.value)}
+              className="bg-transparent text-teal-300 font-mono text-xs font-bold border-none focus:outline-none cursor-pointer"
+            >
+              {patients.map(p => (
+                <option key={p.patient_id} value={p.patient_id} className="bg-slate-900 text-white">
+                  {p.full_name} ({p.patient_id}) • {p.biological_sex.toUpperCase()} {p.age}y
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <button
-            onClick={() => setActiveViewTab('modules')}
-            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
-              activeViewTab === 'modules'
-                ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Health Modules (A-F)</span>
-          </button>
+          {/* View Switcher Tabs */}
+          <div className="flex flex-wrap items-center p-1 rounded-2xl bg-slate-900/90 border border-white/10 text-xs font-mono gap-1">
+            <button
+              onClick={() => setActiveViewTab('spatial_twin')}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
+                activeViewTab === 'spatial_twin'
+                  ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Spatial Twin</span>
+            </button>
 
-          <button
-            onClick={() => setActiveViewTab('timeline')}
-            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
-              activeViewTab === 'timeline'
-                ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5 text-teal-400" />
-            <span>Timeline</span>
-          </button>
+            <button
+              onClick={() => setActiveViewTab('modules')}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
+                activeViewTab === 'modules'
+                  ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Health Modules (A-F)</span>
+            </button>
 
-          <button
-            onClick={() => setActiveViewTab('scenario')}
-            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
-              activeViewTab === 'scenario'
-                ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5 text-blue-400" />
-            <span>What-If Lab</span>
-          </button>
+            <button
+              onClick={() => setActiveViewTab('timeline')}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
+                activeViewTab === 'timeline'
+                  ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5 text-teal-400" />
+              <span>Timeline</span>
+            </button>
 
-          <button
-            onClick={() => setActiveViewTab('bio_scan')}
-            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
-              activeViewTab === 'bio_scan'
-                ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Bio-Scan</span>
-          </button>
+            <button
+              onClick={() => setActiveViewTab('scenario')}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
+                activeViewTab === 'scenario'
+                  ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5 text-blue-400" />
+              <span>What-If Lab</span>
+            </button>
+
+            <button
+              onClick={() => setActiveViewTab('bio_scan')}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-2 ${
+                activeViewTab === 'bio_scan'
+                  ? 'bg-gradient-to-r from-teal-500/30 to-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-bold shadow-md shadow-cyan-950/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Bio-Scan</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Non-blocking API status notice if any */}
+      {apiError && (
+        <div className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-xs font-mono text-amber-300 flex items-center justify-between">
+          <span>{apiError}</span>
+          <button
+            onClick={loadPatientData}
+            className="px-2.5 py-1 rounded bg-amber-900/60 text-amber-200 font-bold hover:bg-amber-800"
+          >
+            Retry Sync
+          </button>
+        </div>
+      )}
 
       {/* 2. Patient Context Badge Strip */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs font-mono">
@@ -207,6 +267,7 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             onLayerChange={setActiveLayer}
             activeLayersInfo={activeLayers}
             healthModules={healthModules}
+            timelineHighlightedNodeId={highlightedNodeId}
           />
 
           <SpatialTimelineInspector
@@ -216,9 +277,11 @@ export const DigitalTwinPage: React.FC<DigitalTwinPageProps> = ({ onNavigate }) 
             onMetricChange={setSelectedTimelineMetric}
             timelineDays={timelineDays}
             onTimelineDaysChange={setTimelineDays}
+            onHighlightBodyNode={setHighlightedNodeId}
           />
         </div>
       )}
+
 
       {/* Health Modules Breakdown Tab (A-F) */}
       {activeViewTab === 'modules' && (

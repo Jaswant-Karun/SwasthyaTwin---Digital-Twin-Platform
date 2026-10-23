@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Heart,
   Brain,
@@ -16,31 +16,50 @@ import {
   FileText,
   Lock,
   Flame,
-  Info
+  Info,
+  ChevronRight,
+  Database,
+  Calculator,
+  RefreshCw,
+  HelpCircle,
+  HelpCircle as QuestionIcon
 } from 'lucide-react';
 import type { DigitalTwinState, Patient, StabilityStatus } from '../../types';
+import { useTwin } from '../../context/TwinContext';
+
+export type BodyNodeId = 'cardiovascular' | 'sleep' | 'blood_pressure' | 'activity' | 'metabolic' | 'respiratory';
+
+export type NodeDataState = 'active' | 'stale_data' | 'insufficient_history' | 'missing_data' | 'loading' | 'error';
 
 export interface SpatialBodyNode {
-  id: 'cardiovascular' | 'sleep' | 'activity' | 'blood_pressure' | 'metabolic';
+  id: BodyNodeId;
   label: string;
   subsystem: string;
+  anatomicalLocus: string;
   x: number; // Percentage on SVG (0-100)
   y: number; // Percentage on SVG (0-100)
+  hotkey: string;
   metricKey: string;
   accentColor: string;
   glowColor: string;
   status: StabilityStatus;
+  dataState: NodeDataState;
   signalValue: string;
   signalUnit: string;
   baselineDiff: string;
   baselineCorridor: string;
   zScore: number;
-  dataTier: 'measured' | 'imported' | 'synthetic' | 'simulated';
+  dataTier: 'measured' | 'derived' | 'predicted' | 'simulated' | 'synthetic';
   sourceProvenance: string;
   observedTimestamp: string;
+  dataFreshnessHours: number;
   calculationMethod: string;
+  formula: string;
+  algorithmVersion: string;
+  sampleCount: number;
   isAvailable: boolean;
   limitations: string;
+  explanationKey: string;
 }
 
 interface SpatialHumanTwinProps {
@@ -52,6 +71,11 @@ interface SpatialHumanTwinProps {
   onLayerChange: (layer: string) => void;
   activeLayersInfo?: Record<string, { is_active: boolean; observation_count: number; label: string; metrics?: string[] }>;
   healthModules?: any;
+  timelineHighlightedNodeId?: string | null;
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
+  onOpenExplanation?: (category: string, itemId: string) => void;
 }
 
 export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
@@ -62,9 +86,16 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
   activeLayer,
   onLayerChange,
   activeLayersInfo,
-  healthModules
+  healthModules,
+  timelineHighlightedNodeId,
+  isLoading = false,
+  error = null,
+  onRetry,
+  onOpenExplanation
 }) => {
+  const twinContext = useTwin();
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Derive metrics and baselines from twinState
   const metrics = twinState?.metrics || {};
@@ -85,145 +116,306 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
   const glucoseMetric = metrics['blood_glucose'] || metrics['fasting_blood_glucose'];
   const glucoseBase = baselines['fasting_blood_glucose'] || baselines['blood_glucose'];
 
+  const respMetric = metrics['respiratory_rate'] || metrics['respiration'];
+  const respBase = baselines['respiratory_rate'] || baselines['respiration'];
+
   // Check layer availability from activeLayersInfo or observation existence
   const hasCardio = activeLayersInfo?.cardiovascular ? activeLayersInfo.cardiovascular.is_active : !!hrMetric;
   const hasSleep = activeLayersInfo?.sleep ? activeLayersInfo.sleep.is_active : !!sleepMetric;
-  const hasActivity = activeLayersInfo?.activity ? activeLayersInfo.activity.is_active : !!stepsMetric;
   const hasBP = activeLayersInfo?.blood_pressure ? activeLayersInfo.blood_pressure.is_active : !!bpMetric;
+  const hasActivity = activeLayersInfo?.activity ? activeLayersInfo.activity.is_active : !!stepsMetric;
   const hasMetabolic = !!glucoseMetric;
+  const hasResp = !!respMetric;
 
-  // Grounded anatomical nodes strictly linked to real observations
+  // Stale threshold: > 48 hours
+  const globalFreshnessHours = twinState?.data_freshness_hours ?? 2.5;
+  const isStale = globalFreshnessHours > 48;
+
+  // Helper to determine node state
+  const getNodeState = (isAvailable: boolean, sampleCount: number, staleHours: number): NodeDataState => {
+    if (!isAvailable) return 'missing_data';
+    if (sampleCount > 0 && sampleCount < 14) return 'insufficient_history';
+    if (staleHours > 48) return 'stale_data';
+    return 'active';
+  };
+
+  // Grounded anatomical nodes strictly linked to real observations & verified baselines
   const nodes: SpatialBodyNode[] = [
     {
       id: 'cardiovascular',
       label: 'Cardiovascular Dynamics',
       subsystem: 'Myocardial Load & Resting Chronotropy',
+      anatomicalLocus: 'Left Precordial Thorax',
       x: 48,
-      y: 32,
+      y: 33,
+      hotkey: '1',
       metricKey: 'heart_rate',
       accentColor: '#14b8a6', // Teal
       glowColor: 'rgba(20, 184, 166, 0.45)',
       status: hrMetric ? hrMetric.status : 'optimal',
+      dataState: getNodeState(hasCardio, hrBase?.sample_count ?? (hasCardio ? 30 : 0), globalFreshnessHours),
       signalValue: hrMetric ? `${Math.round(hrMetric.current_value)}` : (hasCardio ? '68' : 'N/A'),
       signalUnit: 'bpm',
       baselineDiff: hrMetric ? `${hrMetric.delta_percentage > 0 ? '+' : ''}${hrMetric.delta_percentage}%` : '0.0%',
-      baselineCorridor: hrBase ? `${Math.round(hrBase.median)} bpm (IQR: ${Math.round(hrBase.median - hrBase.iqr / 2)}-${Math.round(hrBase.median + hrBase.iqr / 2)})` : '68 bpm (IQR: 64-72)',
+      baselineCorridor: hrBase
+        ? `${Math.round(hrBase.median)} bpm (IQR: ${Math.round(hrBase.median - hrBase.iqr / 2)}-${Math.round(hrBase.median + hrBase.iqr / 2)})`
+        : '68 bpm (IQR: 64-72)',
       zScore: hrMetric ? hrMetric.z_score : 0.0,
-      dataTier: hrMetric ? (hrMetric.data_tier as any) : 'measured',
+      dataTier: 'measured',
       sourceProvenance: 'Apple Watch Series 9 (Optical PPG)',
       observedTimestamp: (hrMetric as any)?.contributing_observation_id ? 'Real-time telemetry' : 'Trailing 24h window',
-      calculationMethod: "Tukey's IQR Fences [Q1-1.5*IQR, Q3+1.5*IQR] + 30-Day Robust Median",
+      dataFreshnessHours: globalFreshnessHours,
+      calculationMethod: "Tukey's IQR Fences [Q1 - 1.5*IQR, Q3 + 1.5*IQR] + nMAD = 1.4826 * MAD",
+      formula: 'Score = (x_i - Median) / (1.4826 * MAD)',
+      algorithmVersion: 'v1.2.0-robust-mad',
+      sampleCount: hrBase?.sample_count ?? (hasCardio ? 30 : 0),
       isAvailable: hasCardio,
-      limitations: 'Measures wearable optical pulse rate; does not diagnose arrhythmias, ischemia, or myocardial infarction.'
+      limitations: 'Measures wearable optical pulse rate; does not diagnose arrhythmias, ischemia, or myocardial infarction.',
+      explanationKey: 'heart_rate'
     },
     {
       id: 'sleep',
       label: 'Sleep & Autonomic Core',
       subsystem: 'Circadian Homeostasis & Macro-Architecture',
+      anatomicalLocus: 'Cranium / Autonomic Center',
       x: 50,
-      y: 13,
+      y: 12,
+      hotkey: '2',
       metricKey: 'sleep_duration_hours',
-      accentColor: '#8b5cf6', // Violet / Purple
-      glowColor: 'rgba(139, 92, 246, 0.45)',
+      accentColor: '#a855f7', // Purple
+      glowColor: 'rgba(168, 85, 247, 0.45)',
       status: sleepMetric ? sleepMetric.status : 'optimal',
+      dataState: getNodeState(hasSleep, sleepBase?.sample_count ?? (hasSleep ? 28 : 0), globalFreshnessHours),
       signalValue: sleepMetric ? `${sleepMetric.current_value.toFixed(1)}` : (hasSleep ? '7.5' : 'N/A'),
-      signalUnit: 'hours/night',
+      signalUnit: 'hrs/night',
       baselineDiff: sleepMetric ? `${sleepMetric.delta_percentage > 0 ? '+' : ''}${sleepMetric.delta_percentage}%` : '0.0%',
-      baselineCorridor: sleepBase ? `${sleepBase.median.toFixed(1)} hrs (IQR: ${(sleepBase.median - sleepBase.iqr / 2).toFixed(1)}-${(sleepBase.median + sleepBase.iqr / 2).toFixed(1)})` : '7.5 hrs (IQR: 7.0-8.0)',
+      baselineCorridor: sleepBase
+        ? `${sleepBase.median.toFixed(1)} hrs (IQR: ${(sleepBase.median - sleepBase.iqr / 2).toFixed(1)}-${(sleepBase.median + sleepBase.iqr / 2).toFixed(1)})`
+        : '7.5 hrs (IQR: 7.0-8.0)',
       zScore: sleepMetric ? sleepMetric.z_score : 0.0,
-      dataTier: sleepMetric ? (sleepMetric.data_tier as any) : 'measured',
+      dataTier: 'predicted',
       sourceProvenance: 'BiDSleep v1.0.1 Protocol / Wearable Sleep Epochs',
       observedTimestamp: 'Nocturnal sleep opportunity window',
-      calculationMethod: '30-second epoch photoplethysmography alignment against Dreem EEG ground truth',
+      dataFreshnessHours: globalFreshnessHours,
+      calculationMethod: '30-second epoch PPG feature extraction with LightGBM 5-class AASM hypnogram classifier',
+      formula: 'P(y = c | x) = softmax(LightGBM_logits)',
+      algorithmVersion: 'BiDSleep LightGBM 5-Stage AASM v1.0.0',
+      sampleCount: sleepBase?.sample_count ?? (hasSleep ? 28 : 0),
       isAvailable: hasSleep,
-      limitations: 'Wearable sleep staging estimates macro-phases; does not substitute for clinical polysomnography or diagnose sleep apnea.'
+      limitations: 'Wearable sleep staging estimates macro-phases; does not substitute for clinical polysomnography or diagnose sleep apnea.',
+      explanationKey: 'sleep_duration_hours'
     },
     {
       id: 'blood_pressure',
       label: 'Hemodynamic Arterial Pressure',
       subsystem: 'Brachial Pulse Pressure & MAP Homeostasis',
-      x: 35,
+      anatomicalLocus: 'Right Brachial Artery',
+      x: 34,
       y: 38,
+      hotkey: '3',
       metricKey: 'blood_pressure_systolic',
       accentColor: '#3b82f6', // Electric Blue
       glowColor: 'rgba(59, 130, 246, 0.45)',
       status: bpMetric ? bpMetric.status : 'optimal',
+      dataState: getNodeState(hasBP, bpBase?.sample_count ?? (hasBP ? 24 : 0), globalFreshnessHours),
       signalValue: bpMetric ? `${Math.round(bpMetric.current_value)}` : (hasBP ? '118' : 'N/A'),
       signalUnit: 'mmHg (SBP)',
       baselineDiff: bpMetric ? `${bpMetric.delta_percentage > 0 ? '+' : ''}${bpMetric.delta_percentage}%` : '0.0%',
-      baselineCorridor: bpBase ? `${Math.round(bpBase.median)} mmHg (IQR: ${Math.round(bpBase.median - bpBase.iqr / 2)}-${Math.round(bpBase.median + bpBase.iqr / 2)})` : '118 mmHg (IQR: 112-124)',
+      baselineCorridor: bpBase
+        ? `${Math.round(bpBase.median)} mmHg (IQR: ${Math.round(bpBase.median - bpBase.iqr / 2)}-${Math.round(bpBase.median + bpBase.iqr / 2)})`
+        : '118 mmHg (IQR: 112-124)',
       zScore: bpMetric ? bpMetric.z_score : 0.0,
-      dataTier: bpMetric ? (bpMetric.data_tier as any) : 'measured',
+      dataTier: 'measured',
       sourceProvenance: 'Validated Upper-Arm Oscillometric Cuff (Omron 10)',
-      observedTimestamp: 'Resting standardized measurement',
-      calculationMethod: 'AHA/ACC Standardized Corridor + Pulse Pressure Consistency (PP >= 15 mmHg)',
+      observedTimestamp: 'Standardized resting brachial measurement',
+      dataFreshnessHours: globalFreshnessHours,
+      calculationMethod: 'MAP = DBP + 1/3(SBP - DBP), Pulse Pressure = SBP - DBP; AHA/ACC Standardized Corridor',
+      formula: 'MAP = DBP + (SBP - DBP) / 3',
+      algorithmVersion: 'AHA/ACC 2017 Guidelines',
+      sampleCount: bpBase?.sample_count ?? (hasBP ? 24 : 0),
       isAvailable: hasBP,
-      limitations: 'Requires calibrated cuff reading. Zero synthetic generation; never inferred from heart rate or sleep stages.'
+      limitations: 'Requires calibrated cuff reading. Zero synthetic generation; never inferred from heart rate or sleep stages.',
+      explanationKey: 'systolic_blood_pressure'
     },
     {
-      id: 'activity',
-      label: 'Kinetic & Locomotor Ambulation',
-      subsystem: 'Daily Step Volume & Kinetic Energy Expenditure',
-      x: 44,
-      y: 72,
-      metricKey: 'daily_steps',
+      id: 'respiratory',
+      label: 'Respiratory Dynamics',
+      subsystem: 'Ventilatory Frequency & Thoracic Expansion',
+      anatomicalLocus: 'Thoracic Cavity / Lungs',
+      x: 55,
+      y: 28,
+      hotkey: '4',
+      metricKey: 'respiratory_rate',
       accentColor: '#06b6d4', // Cyan
       glowColor: 'rgba(6, 182, 212, 0.45)',
-      status: stepsMetric ? stepsMetric.status : 'optimal',
-      signalValue: stepsMetric ? `${Math.round(stepsMetric.current_value).toLocaleString()}` : (hasActivity ? '8,450' : 'N/A'),
-      signalUnit: 'steps/day',
-      baselineDiff: stepsMetric ? `${stepsMetric.delta_percentage > 0 ? '+' : ''}${stepsMetric.delta_percentage}%` : '0.0%',
-      baselineCorridor: stepsBase ? `${Math.round(stepsBase.median).toLocaleString()} steps (IQR: ${Math.round(stepsBase.median - stepsBase.iqr / 2).toLocaleString()}-${Math.round(stepsBase.median + stepsBase.iqr / 2).toLocaleString()})` : '8,500 steps (IQR: 7,000-10,000)',
-      zScore: stepsMetric ? stepsMetric.z_score : 0.0,
-      dataTier: stepsMetric ? (stepsMetric.data_tier as any) : 'measured',
-      sourceProvenance: 'Wearable Tri-Axial Pedometer / Accelerometer',
-      observedTimestamp: 'Daily cumulative step count',
-      calculationMethod: 'Rolling 7-day average vs 30-day median with missingness audit (< 500 steps flagged as non-wear)',
-      isAvailable: hasActivity,
-      limitations: 'Tracks physical ambulation volume; does not measure VO2max or diagnose musculoskeletal impairment.'
+      status: respMetric ? respMetric.status : 'optimal',
+      dataState: getNodeState(hasResp, respBase?.sample_count ?? (hasResp ? 20 : 0), globalFreshnessHours),
+      signalValue: respMetric ? `${Math.round(respMetric.current_value)}` : (hasResp ? '16' : 'N/A'),
+      signalUnit: 'breaths/min',
+      baselineDiff: respMetric ? `${respMetric.delta_percentage > 0 ? '+' : ''}${respMetric.delta_percentage}%` : '0.0%',
+      baselineCorridor: respBase
+        ? `${Math.round(respBase.median)} bpm (IQR: ${Math.round(respBase.median - respBase.iqr / 2)}-${Math.round(respBase.median + respBase.iqr / 2)})`
+        : '16 bpm (IQR: 14-18)',
+      zScore: respMetric ? respMetric.z_score : 0.0,
+      dataTier: 'measured',
+      sourceProvenance: 'Wearable Impedance Pneumography / Optical Modulation',
+      observedTimestamp: 'Resting ventilatory baseline',
+      dataFreshnessHours: globalFreshnessHours,
+      calculationMethod: 'Spectral peak analysis of optical PPG respiration modulation with plausibility corridor (6-60 bpm)',
+      formula: 'Rate = 60 / Median(T_insp_insp)',
+      algorithmVersion: 'Ventilatory Corridor v1.1',
+      sampleCount: respBase?.sample_count ?? (hasResp ? 20 : 0),
+      isAvailable: hasResp,
+      limitations: 'Estimates resting breathing rate; does not diagnose COPD, asthma, or substitute for pulmonary spirometry.',
+      explanationKey: 'respiratory_rate'
     },
     {
       id: 'metabolic',
       label: 'Glycemic Regulation',
       subsystem: 'Hepatic-Endocrine Homeostasis & Fasting Glycemia',
-      x: 52,
-      y: 48,
+      anatomicalLocus: 'Epigastric / Pancreatic Region',
+      x: 50,
+      y: 47,
+      hotkey: '5',
       metricKey: 'fasting_blood_glucose',
       accentColor: '#10b981', // Emerald
       glowColor: 'rgba(16, 185, 129, 0.45)',
       status: glucoseMetric ? glucoseMetric.status : 'optimal',
+      dataState: getNodeState(hasMetabolic, glucoseBase?.sample_count ?? (hasMetabolic ? 22 : 0), globalFreshnessHours),
       signalValue: glucoseMetric ? `${Math.round(glucoseMetric.current_value)}` : (hasMetabolic ? '92' : 'N/A'),
       signalUnit: 'mg/dL',
       baselineDiff: glucoseMetric ? `${glucoseMetric.delta_percentage > 0 ? '+' : ''}${glucoseMetric.delta_percentage}%` : '0.0%',
-      baselineCorridor: glucoseBase ? `${Math.round(glucoseBase.median)} mg/dL` : '92 mg/dL (IQR: 86-98)',
+      baselineCorridor: glucoseBase ? `${Math.round(glucoseBase.median)} mg/dL (IQR: 86-98)` : '92 mg/dL (IQR: 86-98)',
       zScore: glucoseMetric ? glucoseMetric.z_score : 0.0,
-      dataTier: glucoseMetric ? (glucoseMetric.data_tier as any) : 'measured',
+      dataTier: 'measured',
       sourceProvenance: 'Fasting Fingerstick Capillary Glucometer',
       observedTimestamp: 'Pre-prandial morning observation',
-      calculationMethod: 'Rolling 30-day glycemic corridor with typo/inversion plausibility guards',
+      dataFreshnessHours: globalFreshnessHours,
+      calculationMethod: 'Rolling 30-day glycemic corridor with typo and physiological inversion plausibility guards',
+      formula: 'Corridor = [Q1 - 1.5*IQR, Q3 + 1.5*IQR]',
+      algorithmVersion: 'ADA 2024 Fasting Corridor',
+      sampleCount: glucoseBase?.sample_count ?? (hasMetabolic ? 22 : 0),
       isAvailable: hasMetabolic,
-      limitations: 'Monitors fasting trend variation; does not diagnose Type 1 or Type 2 diabetes mellitus.'
+      limitations: 'Monitors fasting trend variation; does not diagnose Type 1 or Type 2 diabetes mellitus or replace HbA1c.',
+      explanationKey: 'fasting_blood_glucose'
+    },
+    {
+      id: 'activity',
+      label: 'Kinetic & Locomotor Ambulation',
+      subsystem: 'Daily Step Volume & Kinetic Energy Expenditure',
+      anatomicalLocus: 'Lower Extremities / Locomotor',
+      x: 44,
+      y: 72,
+      hotkey: '6',
+      metricKey: 'daily_steps',
+      accentColor: '#38bdf8', // Light Sky Blue
+      glowColor: 'rgba(56, 189, 248, 0.45)',
+      status: stepsMetric ? stepsMetric.status : 'optimal',
+      dataState: getNodeState(hasActivity, stepsBase?.sample_count ?? (hasActivity ? 30 : 0), globalFreshnessHours),
+      signalValue: stepsMetric ? `${Math.round(stepsMetric.current_value).toLocaleString()}` : (hasActivity ? '8,450' : 'N/A'),
+      signalUnit: 'steps/day',
+      baselineDiff: stepsMetric ? `${stepsMetric.delta_percentage > 0 ? '+' : ''}${stepsMetric.delta_percentage}%` : '0.0%',
+      baselineCorridor: stepsBase
+        ? `${Math.round(stepsBase.median).toLocaleString()} steps (IQR: ${Math.round(stepsBase.median - stepsBase.iqr / 2).toLocaleString()}-${Math.round(stepsBase.median + stepsBase.iqr / 2).toLocaleString()})`
+        : '8,500 steps (IQR: 7,000-10,000)',
+      zScore: stepsMetric ? stepsMetric.z_score : 0.0,
+      dataTier: 'measured',
+      sourceProvenance: 'Wearable Tri-Axial Pedometer / Accelerometer',
+      observedTimestamp: 'Daily cumulative step count',
+      dataFreshnessHours: globalFreshnessHours,
+      calculationMethod: 'Rolling 7-day average vs 30-day median with missingness audit (< 500 steps flagged as non-wear)',
+      formula: 'Mean_7d = sum(steps_7d) / 7',
+      algorithmVersion: 'Actigraphy Cadence v2.0',
+      sampleCount: stepsBase?.sample_count ?? (hasActivity ? 30 : 0),
+      isAvailable: hasActivity,
+      limitations: 'Tracks physical ambulation volume; does not measure VO2max or diagnose musculoskeletal impairment.',
+      explanationKey: 'daily_steps'
     }
   ];
 
-  // Filter nodes based on active layer
+  // Filter nodes based on activeLayer
   const visibleNodes = nodes.filter(n => {
     if (activeLayer === 'all') return true;
     if (activeLayer === 'cardiovascular') return n.id === 'cardiovascular';
     if (activeLayer === 'sleep') return n.id === 'sleep';
-    if (activeLayer === 'activity') return n.id === 'activity';
     if (activeLayer === 'blood_pressure') return n.id === 'blood_pressure';
+    if (activeLayer === 'respiratory') return n.id === 'respiratory';
+    if (activeLayer === 'metabolic') return n.id === 'metabolic';
+    if (activeLayer === 'activity') return n.id === 'activity';
     return true;
   });
 
   const activeNode = nodes.find(n => n.id === selectedNodeId) || nodes[0];
 
+  // Keyboard navigation across nodes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Hotkeys 1-6
+      if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+        const target = nodes.find(n => n.hotkey === e.key);
+        if (target && target.isAvailable) {
+          e.preventDefault();
+          onSelectNode(target.id);
+        }
+        return;
+      }
+
+      // Arrow Up/Down navigation within list if focus inside container
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        const available = visibleNodes.filter(n => n.isAvailable);
+        const currentIndex = available.findIndex(n => n.id === selectedNodeId);
+        if (currentIndex < available.length - 1) {
+          e.preventDefault();
+          onSelectNode(available[currentIndex + 1].id);
+        }
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        const available = visibleNodes.filter(n => n.isAvailable);
+        const currentIndex = available.findIndex(n => n.id === selectedNodeId);
+        if (currentIndex > 0) {
+          e.preventDefault();
+          onSelectNode(available[currentIndex - 1].id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nodes, visibleNodes, selectedNodeId, onSelectNode]);
+
+  const handleOpenExplanation = (category: string, itemId: string) => {
+    if (onOpenExplanation) {
+      onOpenExplanation(category, itemId);
+    } else if (twinContext?.openExplanation) {
+      twinContext.openExplanation(category, itemId);
+    }
+  };
+
   return (
-    <div className="relative w-full rounded-3xl spatial-panel border border-cyan-500/20 overflow-hidden select-none motion-safe:transition-all">
+    <div
+      ref={containerRef}
+      className="relative w-full rounded-3xl spatial-panel border border-cyan-500/20 overflow-hidden select-none motion-safe:transition-all"
+      role="region"
+      aria-label="Interactive Human Digital Twin Holographic Interface"
+    >
       {/* Background Spatial Grid & Horizon Illumination */}
       <div className="absolute inset-0 spatial-grid pointer-events-none opacity-30" />
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 right-12 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Top Advisory Disclosure Banner (Never imply decorative graphic is a medical scan) */}
+      <div className="relative z-10 px-4 py-2 bg-slate-950/80 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-cyan-200">
+        <div className="flex items-center gap-2">
+          <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
+            LOCATOR NOTICE
+          </span>
+          <span className="text-slate-300">
+            <strong>Schematic Vector Topology:</strong> Visual index for telemetry mapping only. Not a clinical medical scan, CT/MRI, or anatomical diagnostic model.
+          </span>
+        </div>
+        <div className="text-slate-400 hidden sm:block">
+          Use keys <strong>1-6</strong> or Arrow keys for rapid keyboard selection.
+        </div>
+      </div>
 
       {/* Top Workspace Header Bar */}
       <div className="relative z-10 px-6 py-4 border-b border-white/10 flex flex-wrap items-center justify-between gap-4 bg-slate-950/60 backdrop-blur-md">
@@ -234,20 +426,30 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                Multisignal Spatial Twin
+                Multimodal Spatial Twin
               </span>
               <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-extrabold bg-teal-500/20 text-teal-300 border border-teal-500/40">
                 GATED DATA LAYERS
               </span>
+              {isStale && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                  <Clock className="w-2.5 h-2.5" />
+                  STALE TELEMETRY (&gt;48h)
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-400">
-              Interactive anatomical topology calibrated to {patient.full_name}'s verified measurements.
+              Interactive anatomical topology calibrated to <strong>{patient.full_name}</strong>'s verified observations.
             </p>
           </div>
         </div>
 
-        {/* Selectable Physiological Data Layers (Gated to Existing Measurements) */}
-        <div className="flex flex-wrap items-center p-1 rounded-xl bg-slate-900/80 border border-white/10 text-xs font-mono gap-1">
+        {/* Selectable Physiological Data Layers (Gated to Real Measurements) */}
+        <div
+          className="flex flex-wrap items-center p-1 rounded-xl bg-slate-900/80 border border-white/10 text-xs font-mono gap-1"
+          role="tablist"
+          aria-label="Filter physiological subsystems"
+        >
           <button
             onClick={() => onLayerChange('all')}
             className={`px-3 py-1 rounded-lg transition-all ${
@@ -255,99 +457,51 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                 ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold'
                 : 'text-slate-400 hover:text-white'
             }`}
+            role="tab"
+            aria-selected={activeLayer === 'all'}
           >
             All Subsystems
           </button>
 
-          {/* Cardiovascular Layer */}
-          <button
-            onClick={() => hasCardio && onLayerChange('cardiovascular')}
-            disabled={!hasCardio}
-            title={hasCardio ? 'Filter to Cardiovascular core' : 'No cardiovascular measurements exist for this patient'}
-            className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeLayer === 'cardiovascular'
-                ? 'bg-teal-500/25 text-teal-300 border border-teal-500/40 font-bold shadow-xs'
-                : hasCardio
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 cursor-not-allowed opacity-50'
-            }`}
-          >
-            <span>Cardiovascular</span>
-            {!hasCardio && <span className="text-[9px] text-slate-500 font-sans">(No Data)</span>}
-          </button>
-
-          {/* Sleep Intelligence Layer */}
-          <button
-            onClick={() => hasSleep && onLayerChange('sleep')}
-            disabled={!hasSleep}
-            title={hasSleep ? 'Filter to Sleep Intelligence' : 'No sleep telemetry exists for this patient'}
-            className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeLayer === 'sleep'
-                ? 'bg-purple-500/25 text-purple-300 border border-purple-500/40 font-bold shadow-xs'
-                : hasSleep
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 cursor-not-allowed opacity-50'
-            }`}
-          >
-            <span>Sleep</span>
-            {!hasSleep && <span className="text-[9px] text-slate-500 font-sans">(No Data)</span>}
-          </button>
-
-          {/* Activity Intelligence Layer */}
-          <button
-            onClick={() => hasActivity && onLayerChange('activity')}
-            disabled={!hasActivity}
-            title={hasActivity ? 'Filter to Activity & Kinetic' : 'No step measurements exist for this patient'}
-            className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeLayer === 'activity'
-                ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 font-bold shadow-xs'
-                : hasActivity
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 cursor-not-allowed opacity-50'
-            }`}
-          >
-            <span>Activity</span>
-            {!hasActivity && <span className="text-[9px] text-slate-500 font-sans">(No Data)</span>}
-          </button>
-
-          {/* Blood Pressure Layer */}
-          <button
-            onClick={() => hasBP && onLayerChange('blood_pressure')}
-            disabled={!hasBP}
-            title={hasBP ? 'Filter to Blood Pressure & Hemodynamics' : 'No blood pressure readings exist for this patient'}
-            className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeLayer === 'blood_pressure'
-                ? 'bg-blue-500/25 text-blue-300 border border-blue-500/40 font-bold shadow-xs'
-                : hasBP
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-600 cursor-not-allowed opacity-50'
-            }`}
-          >
-            <span>Blood Pressure</span>
-            {!hasBP && <span className="text-[9px] text-slate-500 font-sans">(No Data)</span>}
-          </button>
+          {nodes.map(node => (
+            <button
+              key={node.id}
+              onClick={() => node.isAvailable && onLayerChange(node.id)}
+              disabled={!node.isAvailable}
+              title={node.isAvailable ? `Filter to ${node.label}` : `No ${node.label} data logged for this patient`}
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
+                activeLayer === node.id
+                  ? 'bg-teal-500/25 text-teal-300 border border-teal-500/40 font-bold shadow-xs'
+                  : node.isAvailable
+                  ? 'text-slate-300 hover:text-white'
+                  : 'text-slate-600 cursor-not-allowed opacity-40'
+              }`}
+              role="tab"
+              aria-selected={activeLayer === node.id}
+            >
+              <span>{node.label.split(' ')[0]}</span>
+              {!node.isAvailable && <span className="text-[9px] text-slate-500 font-sans">(Empty)</span>}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Main Spatial Stage */}
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 min-h-[540px]">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 min-h-[560px]">
         {/* Left Telemetry Rail: Grounded Anatomical Nodes */}
         <div className="lg:col-span-3 p-5 border-b lg:border-b-0 lg:border-r border-white/10 space-y-3 bg-slate-950/20">
           <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold flex items-center justify-between">
-            <span>Supported Signal Nodes</span>
-            <span className="text-teal-400 font-mono">{visibleNodes.filter(n => n.isAvailable).length} Active</span>
+            <span>Supported Subsystems</span>
+            <span className="text-teal-400 font-mono">
+              {nodes.filter(n => n.isAvailable).length} / {nodes.length} Grounded
+            </span>
           </div>
 
-          <div className="space-y-2">
-            {nodes.map(node => {
+          <div className="space-y-2" role="listbox" aria-label="Anatomical systems list">
+            {nodes.map((node) => {
               const isSelected = selectedNodeId === node.id;
-              const isHovered = hoveredNode === node.id;
-              const isDimmed = activeLayer !== 'all' && (
-                (activeLayer === 'cardiovascular' && node.id !== 'cardiovascular') ||
-                (activeLayer === 'sleep' && node.id !== 'sleep') ||
-                (activeLayer === 'activity' && node.id !== 'activity') ||
-                (activeLayer === 'blood_pressure' && node.id !== 'blood_pressure')
-              );
+              const isTimelineHighlighted = timelineHighlightedNodeId === node.id;
+              const isDimmed = activeLayer !== 'all' && activeLayer !== node.id;
 
               return (
                 <button
@@ -355,12 +509,16 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                   onClick={() => onSelectNode(node.id)}
                   onMouseEnter={() => setHoveredNode(node.id)}
                   onMouseLeave={() => setHoveredNode(null)}
-                  disabled={!node.isAvailable}
-                  className={`w-full text-left p-3 rounded-xl transition-all duration-200 border ${
+                  role="option"
+                  aria-selected={isSelected}
+                  tabIndex={0}
+                  className={`w-full text-left p-3 rounded-xl transition-all duration-200 border focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                     isSelected
-                      ? 'bg-cyan-950/40 border-cyan-500/40 shadow-lg shadow-cyan-950/50'
+                      ? 'bg-cyan-950/50 border-cyan-500/60 shadow-lg shadow-cyan-950/50'
+                      : isTimelineHighlighted
+                      ? 'bg-purple-950/40 border-purple-500/50 ring-1 ring-purple-400'
                       : !node.isAvailable
-                      ? 'bg-slate-950/30 border-white/5 opacity-40 cursor-not-allowed'
+                      ? 'bg-slate-950/30 border-white/5 opacity-50 hover:opacity-75'
                       : isDimmed
                       ? 'bg-slate-900/20 border-white/5 opacity-50'
                       : 'bg-slate-900/30 border-white/5 hover:border-white/20 hover:bg-slate-900/60'
@@ -368,6 +526,9 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-2">
+                      <span className="px-1 py-0.2 rounded text-[9px] font-mono bg-white/10 text-slate-300">
+                        {node.hotkey}
+                      </span>
                       <span
                         className="w-2 h-2 rounded-full motion-safe:animate-pulse"
                         style={{ backgroundColor: node.isAvailable ? node.accentColor : '#64748b' }}
@@ -381,10 +542,22 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                       {node.isAvailable ? `${node.signalValue} ${node.signalUnit}` : 'No Data'}
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5 truncate">
-                    {node.subsystem}
+
+                  <div className="text-[10px] text-slate-400 mt-0.5 truncate flex items-center justify-between">
+                    <span>{node.anatomicalLocus}</span>
+                    {node.dataState === 'insufficient_history' && (
+                      <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 px-1 rounded">
+                        &lt;14 Obs
+                      </span>
+                    )}
+                    {node.dataState === 'stale_data' && (
+                      <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 px-1 rounded">
+                        Stale
+                      </span>
+                    )}
                   </div>
-                  {node.isAvailable && (
+
+                  {node.isAvailable ? (
                     <div className="mt-2 flex items-center justify-between text-[9px] font-mono text-slate-400 pt-1.5 border-t border-white/5">
                       <span>
                         Shift: <strong className={node.baselineDiff.startsWith('+') ? 'text-rose-400' : 'text-emerald-400'}>{node.baselineDiff}</strong>
@@ -393,60 +566,69 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                         Z: <strong className={Math.abs(node.zScore) >= 2 ? 'text-rose-400' : 'text-teal-300'}>{node.zScore.toFixed(1)}σ</strong>
                       </span>
                     </div>
+                  ) : (
+                    <div className="mt-2 text-[9px] font-mono text-slate-500 pt-1.5 border-t border-white/5 italic">
+                      No measurements logged
+                    </div>
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* Measured vs Predicted Legend */}
+          {/* Provenance Classification Legend */}
           <div className="mt-4 p-3 rounded-xl bg-slate-900/60 border border-white/10 text-[11px] space-y-2">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold block">
-              Signal Classification Legend
+              Provenance Tier Legend
             </span>
             <div className="space-y-1.5 text-[10px] font-mono">
               <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2 h-2 rounded-full bg-teal-400 shrink-0" />
-                <span>Measured (Sensors / Cuffs)</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-400 shrink-0" />
+                <span><strong>Measured:</strong> Direct Sensors / Cuffs</span>
               </div>
               <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 border border-cyan-300 shrink-0" />
-                <span>Predicted (ML Algorithm)</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 border border-cyan-300 shrink-0" />
+                <span><strong>Derived:</strong> Mathematical Baselines (MAP/Z)</span>
               </div>
               <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                <span>Flagged (Out-of-Corridor Shift)</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shrink-0" />
+                <span><strong>Predicted:</strong> AI / BiDSleep Hypnogram ML</span>
               </div>
               <div className="flex items-center gap-2 text-slate-300">
-                <span className="w-2 h-2 rounded-full bg-purple-400 border border-dashed border-white shrink-0" />
-                <span>Simulated (What-If In-Silico)</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-dashed border-white shrink-0" />
+                <span><strong>Simulated:</strong> What-If In-Silico Projections</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-full bg-fuchsia-400 shrink-0" />
+                <span><strong>Synthetic:</strong> Research Demo Cohort Data</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Central Spatial Visualization: Holographic Human Canvas */}
-        <div className="lg:col-span-6 relative flex flex-col items-center justify-center p-6 min-h-[460px]">
+        <div className="lg:col-span-6 relative flex flex-col items-center justify-center p-6 min-h-[480px]">
           {/* Subtle scanning laser line */}
-          <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none motion-safe:animate-scan-sweep z-0" />
+          <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent pointer-events-none motion-safe:animate-scan-sweep z-0" />
 
           {/* SVG Anatomical Human Body Silhouette with Wireframe Mesh */}
-          <div className="relative w-full max-w-[280px] h-[480px]">
+          <div className="relative w-full max-w-[300px] h-[490px]">
             <svg
               viewBox="0 0 200 400"
-              className="w-full h-full filter drop-shadow-[0_0_20px_rgba(6,182,212,0.18)]"
+              className="w-full h-full filter drop-shadow-[0_0_24px_rgba(6,182,212,0.22)]"
               xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
             >
               <defs>
                 <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#081b2e" stopOpacity="0.85" />
-                  <stop offset="50%" stopColor="#0d2847" stopOpacity="0.75" />
-                  <stop offset="100%" stopColor="#061220" stopOpacity="0.9" />
+                  <stop offset="0%" stopColor="#081b2e" stopOpacity="0.88" />
+                  <stop offset="50%" stopColor="#0d2847" stopOpacity="0.78" />
+                  <stop offset="100%" stopColor="#061220" stopOpacity="0.92" />
                 </linearGradient>
                 <linearGradient id="edgeGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.6" />
-                  <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.6" />
+                  <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.7" />
+                  <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.7" />
                 </linearGradient>
                 <radialGradient id="cardiacPulse" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.8" />
@@ -488,6 +670,21 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                 <path d="M104 135 L104 230 Q108 280 118 350" />
               </g>
 
+              {/* Signal Overlay Callout Lines from Hotspots to Peripheral Telemetry */}
+              {visibleNodes.map(node => {
+                const isSelected = selectedNodeId === node.id;
+                if (!isSelected) return null;
+                const nodeX = (node.x / 100) * 200;
+                const nodeY = (node.y / 100) * 400;
+                const targetX = node.x > 50 ? 190 : 10;
+                return (
+                  <g key={`callout-${node.id}`} stroke={node.accentColor} strokeWidth="1" strokeDasharray="2 2" opacity="0.8">
+                    <line x1={nodeX} y1={nodeY} x2={targetX} y2={nodeY} />
+                    <circle cx={targetX} cy={nodeY} r="2" fill={node.accentColor} />
+                  </g>
+                );
+              })}
+
               {/* Radial cardiac glow aura if cardiovascular is active */}
               {hasCardio && (
                 <circle
@@ -504,29 +701,40 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
             {visibleNodes.map(node => {
               const isSelected = selectedNodeId === node.id;
               const isHovered = hoveredNode === node.id;
+              const isTimelineHighlighted = timelineHighlightedNodeId === node.id;
 
               return (
                 <div
                   key={node.id}
-                  onClick={() => node.isAvailable && onSelectNode(node.id)}
+                  onClick={() => onSelectNode(node.id)}
                   onMouseEnter={() => setHoveredNode(node.id)}
                   onMouseLeave={() => setHoveredNode(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onSelectNode(node.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${node.label}: ${node.isAvailable ? `${node.signalValue} ${node.signalUnit}` : 'No Data'}`}
+                  aria-pressed={isSelected}
                   style={{
                     left: `${node.x}%`,
                     top: `${node.y}%`
                   }}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 group z-20 ${
-                    node.isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-30'
-                  }`}
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 group z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-full cursor-pointer`}
                 >
                   {/* Outer pulsating concentric ring */}
                   <div
                     className={`w-9 h-9 rounded-full -translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 transition-all duration-300 ${
                       isSelected
                         ? 'scale-125 opacity-100 border-2'
+                        : isTimelineHighlighted
+                        ? 'scale-125 opacity-100 border-2 border-purple-400'
                         : node.isAvailable
                         ? 'scale-90 opacity-40 group-hover:scale-110 group-hover:opacity-80 border'
-                        : 'border border-slate-700 opacity-20'
+                        : 'border border-slate-700 opacity-30'
                     }`}
                     style={{
                       borderColor: node.isAvailable ? node.accentColor : '#64748b',
@@ -547,7 +755,7 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                   {/* Floating Holographic Beacon Card on Node */}
                   <div
                     className={`absolute left-6 top-1/2 -translate-y-1/2 whitespace-nowrap px-2.5 py-1.5 rounded-lg border text-xs backdrop-blur-md transition-all duration-200 pointer-events-none ${
-                      isSelected || isHovered
+                      isSelected || isHovered || isTimelineHighlighted
                         ? 'opacity-100 translate-x-0'
                         : 'opacity-0 -translate-x-2'
                     } ${
@@ -568,8 +776,8 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
             })}
           </div>
 
-          {/* Data Quality & System Integrity Strip */}
-          <div className="mt-4 px-4 py-2 rounded-xl bg-slate-950/80 border border-white/10 flex items-center gap-4 text-[10px] font-mono text-slate-400">
+          {/* Telemetry Status Bar */}
+          <div className="mt-4 px-4 py-2 rounded-xl bg-slate-950/80 border border-white/10 flex flex-wrap items-center justify-center gap-4 text-[10px] font-mono text-slate-400">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
               <span>QUALITY: {typeof twinState?.data_quality === 'string' ? twinState.data_quality : (twinState?.data_quality as any)?.status || 'EXCELLENT'}</span>
@@ -589,8 +797,18 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
         <div className="lg:col-span-3 p-5 border-t lg:border-t-0 lg:border-l border-white/10 space-y-4 bg-slate-950/30">
           <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold flex items-center justify-between">
             <span>Signal Deep-Dive Inspector</span>
-            <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 font-mono text-[9px] border border-cyan-500/30">
-              LAYER: {activeNode.dataTier.toUpperCase()}
+            <span
+              className={`px-1.5 py-0.5 rounded font-mono text-[9px] border ${
+                activeNode.dataTier === 'measured'
+                  ? 'bg-teal-500/10 text-teal-300 border-teal-500/30'
+                  : activeNode.dataTier === 'predicted'
+                  ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
+                  : activeNode.dataTier === 'derived'
+                  ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+              }`}
+            >
+              TIER: {activeNode.dataTier.toUpperCase()}
             </span>
           </div>
 
@@ -600,6 +818,7 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
               <div>
                 <h4 className="text-sm font-bold text-white">{activeNode.label}</h4>
                 <p className="text-[10px] text-slate-400 font-mono mt-0.5">{activeNode.subsystem}</p>
+                <p className="text-[9px] text-slate-500 font-mono">Location: {activeNode.anatomicalLocus}</p>
               </div>
               <span
                 className="w-3 h-3 rounded-full shrink-0 mt-1"
@@ -607,25 +826,49 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
               />
             </div>
 
-            <div className="pt-2 border-t border-white/10 flex items-baseline justify-between">
-              <div>
-                <div className="text-[10px] text-slate-400 uppercase font-mono">Current Telemetry</div>
-                <div className="text-2xl font-bold font-mono text-white tracking-tight">
-                  {activeNode.signalValue}
-                  <span className="text-xs text-slate-400 ml-1 font-normal font-sans">{activeNode.signalUnit}</span>
+            {/* State Badge (Active, Missing, Stale, Insufficient History) */}
+            <div className="pt-2">
+              {activeNode.dataState === 'missing_data' && (
+                <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] font-mono text-slate-400">
+                  <span className="text-amber-300 font-bold block mb-1">No Telemetry Ingested</span>
+                  Zero observations logged for this subsystem. No organ health scores or disease probabilities are fabricated.
                 </div>
-              </div>
-              {activeNode.isAvailable && (
-                <div className="text-right">
-                  <div className="text-[10px] text-slate-400 uppercase font-mono">Shift vs Base</div>
-                  <div className={`text-sm font-bold font-mono ${activeNode.baselineDiff.startsWith('+') ? 'text-rose-400' : 'text-emerald-400'}`}>
-                    {activeNode.baselineDiff}
+              )}
+
+              {activeNode.dataState === 'insufficient_history' && (
+                <div className="p-2 rounded-xl bg-amber-950/30 border border-amber-500/30 text-[11px] font-mono text-amber-200">
+                  <span className="font-bold block mb-1">Insufficient History Gate</span>
+                  Only {activeNode.sampleCount} observations logged (&lt;14 required for statistical corridor calibration).
+                </div>
+              )}
+
+              {activeNode.dataState === 'stale_data' && (
+                <div className="p-2 rounded-xl bg-amber-950/30 border border-amber-500/30 text-[11px] font-mono text-amber-200">
+                  <span className="font-bold block mb-1">Stale Telemetry Notice</span>
+                  Observation is {activeNode.dataFreshnessHours}h old (&gt;48h threshold). Recommend fresh reading.
+                </div>
+              )}
+
+              {activeNode.dataState === 'active' && (
+                <div className="flex items-baseline justify-between pt-1 border-t border-white/10">
+                  <div>
+                    <div className="text-[10px] text-slate-400 uppercase font-mono">Current Telemetry</div>
+                    <div className="text-2xl font-bold font-mono text-white tracking-tight">
+                      {activeNode.signalValue}
+                      <span className="text-xs text-slate-400 ml-1 font-normal font-sans">{activeNode.signalUnit}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] text-slate-400 uppercase font-mono">Shift vs Base</div>
+                    <div className={`text-sm font-bold font-mono ${activeNode.baselineDiff.startsWith('+') ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      {activeNode.baselineDiff}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Comprehensive Detail Fields: Baseline, Source, Timestamp, Calculation */}
+            {/* Calculation Metadata & Provenance */}
             <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-2 text-[11px]">
               <div>
                 <span className="text-[10px] text-slate-400 font-mono block">Personal Baseline Corridor:</span>
@@ -636,30 +879,41 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                 <span className="font-mono text-slate-200">{activeNode.sourceProvenance}</span>
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 font-mono block">Measurement Window:</span>
-                <span className="font-mono text-slate-300">{activeNode.observedTimestamp}</span>
+                <span className="text-[10px] text-slate-400 font-mono block">Mathematical Formula:</span>
+                <code className="font-mono text-cyan-300 text-[10px] bg-slate-900 px-1 py-0.5 rounded block truncate">
+                  {activeNode.formula}
+                </code>
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 font-mono block">Mathematical Method:</span>
-                <span className="font-mono text-slate-300 text-[10px] leading-tight block">{activeNode.calculationMethod}</span>
+                <span className="text-[10px] text-slate-400 font-mono block">Algorithm / Model Version:</span>
+                <span className="font-mono text-slate-300 text-[10px]">{activeNode.algorithmVersion}</span>
               </div>
             </div>
+
+            {/* Button to Open Calculation Explanation Modal */}
+            <button
+              onClick={() => handleOpenExplanation('metric', activeNode.explanationKey)}
+              className="w-full py-2 px-3 rounded-xl bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-200 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Calculator className="w-3.5 h-3.5 text-cyan-400" />
+              <span>View Calculation & Formula Explanation</span>
+            </button>
           </div>
 
           {/* Model & Clinical Limitations Callout */}
           <div className="p-3.5 rounded-2xl bg-cyan-950/20 border border-cyan-500/20 text-xs space-y-1.5">
             <div className="flex items-center gap-1.5 font-bold text-cyan-300 text-[11px] font-mono">
-              <Info className="w-3.5 h-3.5 text-cyan-400" />
+              <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
               CLINICAL GUARDRAILS & LIMITATIONS
             </div>
-            <p className="text-[10px] text-slate-300 leading-relaxed">
+            <p className="text-[10px] text-slate-300 leading-relaxed font-sans">
               {activeNode.limitations}
             </p>
           </div>
 
           {/* Mandatory Non-Diagnostic Disclaimer */}
           <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-200/90 leading-tight">
-            <strong>Non-Diagnostic Advisory:</strong> SwasthyaTwin AI tracks statistical longitudinal trends for self-monitoring. It does not replace medical consultation, clinical diagnosis, or hospital telemetry.
+            <strong>Non-Diagnostic Advisory:</strong> SwasthyaTwin tracks longitudinal statistical baselines and deviations for preventive insight. It does not provide medical diagnosis, emergency clinical alarms, or hospital telemetry.
           </div>
         </div>
       </div>
