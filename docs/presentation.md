@@ -1,6 +1,9 @@
 # SwasthyaTwin AI — Final Hackathon Presentation Deck & Judge Walkthrough
 
 **Event:** Happiest Health Digital Twin Challenge 2026  
+**Team Name:** `24cb012`  
+**Team Leader:** Gangeswara S  
+**Team Members:** Bharanika D, Jaswant karun S A, Baviya Varshini V  
 **Format:** 6–8 Minute Presentation + 3-Minute Live Interactive Demonstration  
 **Theme:** *Understand today. Prepare for tomorrow.*  
 **Live URL:** `http://localhost:5173/` | **Interactive API:** `http://localhost:8000/docs`  

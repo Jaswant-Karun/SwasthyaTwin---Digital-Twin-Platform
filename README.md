@@ -1,6 +1,6 @@
 # SwasthyaTwin AI — Personalized Multisignal Health Intelligence & Digital Twin
 
-**Happiest Health Digital Twin Challenge 2026 — Final Round Submission**
+**Happiest Health Digital Twin Challenge 2026 — Team Name: 24cb012**
 
 [![Pytest](https://img.shields.io/badge/Backend_Testing-227_Pytest_PASSED-0A9EDC.svg?style=flat&logo=pytest)](https://pytest.org)
 [![Vitest](https://img.shields.io/badge/Frontend_Testing-55_Vitest_PASSED-FCC624.svg?style=flat&logo=vitest)](https://vitest.dev)
@@ -25,6 +25,8 @@
 ---
 
 ## 👥 Team Details
+
+- **Team Name:** `24cb012`
 
 ### Team Leader
 - **Gangeswara S** — Team Leader
@@ -506,18 +508,25 @@ SwasthyaTwin/
 
 ## ✅ Unstop Submission Checklist
 
-- [x] **Project Title Included:** SwasthyaTwin AI — Personalized Multisignal Health Intelligence & Digital Twin.
-- [x] **Team Details Included:** Gangeswara S (Team Leader), Bharanika D, Jaswant karun S A, Baviya Varshini V.
-- [ ] **College / Incubator Information:** Placeholders provided; `[TODO: Team to supply official institution name, department, course, city, and state]`.
-- [x] **Problem Statement Included:** Detailed explanation of population norm bias, fragmented telemetry, black-box scores, and personalized baselines.
-- [x] **Healthcare Use Case Included:** Clear classification of measured, derived, predicted, simulated, and synthetic data tiers.
-- [x] **Key Features Included:** 10 verified, implemented features documented with primary code locations.
-- [x] **Technical Stack Included:** Verified from actual package and configuration files (React 19, FastAPI, MongoDB, scikit-learn).
-- [x] **AI/ML Model & Framework Details Included:** PhysioNet BiDSleep v1.0.1 link, ODC-By v1.0 license, 12 causal features, Random Forest architecture, zero-leakage split, and real evaluation metrics.
-- [ ] **15–20 Minute Unlisted YouTube Demo Uploaded & Linked:** Placeholder provided; `[TODO: Team to record, upload unlisted demo video, and add YouTube URL]`.
-- [ ] **Open-Source License Details Documented:** Placeholders provided; `[TODO: Team to select and commit root LICENSE file after verifying ownership and dataset compatibility]`.
-- [x] **Architecture Diagram Available in PDF Format:** Created and linked at [docs/architecture-diagram.pdf](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/architecture-diagram.pdf).
-- [x] **Project Presentation Available in PDF Format:** Created and linked at [docs/project-presentation.pdf](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/project-presentation.pdf).
-- [x] **README Installation Instructions Verified:** Clean setup, seeding, and execution commands verified.
-- [x] **No Secrets or Prohibited Raw Datasets Committed:** Git repository confirmed clean of `.env` files and unmasked credentials.
-- [x] **Final Build & Test Results Recorded:** All 282 automated tests verified passing (227 Pytest + 55 Vitest); production build compiles in 2.08s.
+> [!NOTE]
+> All 12 items listed below are mandatory items from the official Unstop submission form:
+
+- [x] **Team details:** Team Name: `24cb012` | Team Leader: Gangeswara S | Team Members: Bharanika D, Jaswant karun S A, Baviya Varshini V.
+- [ ] **College/Incubator information:** Editable placeholders provided; `[TODO: Team to supply official college/institution name, department, course, incubator, city, and state]`.
+- [x] **Project Title:** SwasthyaTwin AI — Personalized Multisignal Health Intelligence & Digital Twin.
+- [x] **Problem Statement:** Detailed explanation of population norm bias, fragmented biometric telemetry, black-box scores, and personalized baselines.
+- [x] **Healthcare Use Case:** 5-tier data provenance (`MEASURED`, `DERIVED`, `PREDICTED`, `SIMULATED`, `SYNTHETIC`) and clinical safety boundaries.
+- [x] **Technical Stack:** Verified from repository (React 19, TypeScript, Vite, Tailwind CSS, Recharts, FastAPI, Pydantic v2, MongoDB 7.0, scikit-learn).
+- [x] **AI/ML Model or Framework Details:** PhysioNet BiDSleep v1.0.1 link, ODC-By v1.0 license, 12 causal features, Random Forest, zero-leakage split, and real evaluation metrics.
+- [ ] **15-20 minute Demo Video is uploaded as an Unlisted YouTube video and the link is added to the README:** Placeholder provided; `[TODO: Team to upload 15–20 min unlisted demo video and insert YouTube URL]`.
+- [ ] **Open-source License Details:** Editable placeholder provided; `[TODO: Team to select and commit root LICENSE file after verifying ownership and dataset compatibility]`.
+- [x] **Architecture Diagram in PDF/PPT format:** Standalone vector export generated and linked at [docs/architecture-diagram.pdf](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/architecture-diagram.pdf) (Mermaid spec in [docs/architecture-diagram.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/architecture-diagram.md)).
+- [x] **Presentation in PDF/PPT format covering project details and outcomes:** 8-slide executive presentation generated and linked at [docs/project-presentation.pdf](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/project-presentation.pdf) (Slide outline in [docs/presentation.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/presentation.md)).
+- [x] **All files and links are publicly accessible without additional permissions:** All source code, documentation, test reports, and PDF assets are contained directly in the public repository without requiring external access requests.
+
+---
+
+### Verification Summary
+- **Total Automated Tests:** 282 of 282 PASSED (227 Pytest + 55 Vitest)
+- **Production Build:** Clean compile in 2.08s (0 TypeScript errors)
+- **Security Check:** Zero credentials, `.env` files, or raw patient records committed
