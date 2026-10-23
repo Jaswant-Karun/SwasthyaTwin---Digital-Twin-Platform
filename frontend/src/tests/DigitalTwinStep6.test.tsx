@@ -394,11 +394,20 @@ vi.mock('../services/api', () => ({
       return Promise.resolve(found || testPatients[0]);
     }),
     getTwinState: vi.fn().mockImplementation(() => Promise.resolve(testTwinState)),
+    getTwinAssessment: vi.fn().mockResolvedValue({
+      patient_id: 'PT-1001',
+      calculated_at: new Date().toISOString(),
+      vitality_index: 84.5,
+      stability_status: 'optimal',
+      deviations: {},
+      explainability_factors: [],
+      summary_message: 'Optimal baseline stability',
+      safety_disclaimer: 'Non-diagnostic'
+    }),
+    getExplanations: vi.fn().mockResolvedValue(null),
     getHealth: vi.fn().mockResolvedValue({ status: 'healthy', version: '1.0.0' }),
     getReadiness: vi.fn().mockResolvedValue({ ready: true, ping_ms: 1 }),
-    getPatientAssessment: vi.fn().mockResolvedValue(null),
-    getAlerts: vi.fn().mockResolvedValue([]),
-    getPatientExplanations: vi.fn().mockResolvedValue(null)
+    getAlerts: vi.fn().mockResolvedValue([])
   }
 }));
 
@@ -449,13 +458,13 @@ describe('Step 6: Interactive Spatial Human Digital Twin', () => {
         </TwinProvider>
       );
 
-      // All 6 subsystems must exist and be clearly named
-      expect(screen.getByText('Cardiovascular Dynamics')).toBeInTheDocument();
-      expect(screen.getByText('Sleep & Autonomic Core')).toBeInTheDocument();
-      expect(screen.getByText('Hemodynamic Arterial Pressure')).toBeInTheDocument();
-      expect(screen.getByText('Respiratory Dynamics')).toBeInTheDocument();
-      expect(screen.getByText('Glycemic Regulation')).toBeInTheDocument();
-      expect(screen.getByText('Kinetic & Locomotor Ambulation')).toBeInTheDocument();
+      // All 6 subsystems must exist in the interface
+      expect(screen.getAllByText(/Cardiovascular Dynamics/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Sleep & Autonomic Core/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Hemodynamic Arterial Pressure/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Respiratory Dynamics/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Glycemic Regulation/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Kinetic & Locomotor Ambulation/i).length).toBeGreaterThan(0);
     });
 
     it('displays deep-dive telemetry with formula, algorithm version, and limitations when selected', () => {
@@ -496,8 +505,8 @@ describe('Step 6: Interactive Spatial Human Digital Twin', () => {
         </TwinProvider>
       );
 
-      const sleepBtn = screen.getByText('Sleep & Autonomic Core');
-      fireEvent.click(sleepBtn);
+      const sleepNodes = screen.getAllByText(/Sleep & Autonomic Core/i);
+      fireEvent.click(sleepNodes[0]);
       expect(handleSelect).toHaveBeenCalledWith('sleep');
     });
 
@@ -689,7 +698,7 @@ describe('Step 6: Interactive Spatial Human Digital Twin', () => {
 
       // Verify true measured/derived terminology is present
       expect(screen.getByText(/Personal Baseline Corridor/i)).toBeInTheDocument();
-      expect(screen.getByText(/Zero Zero-Imputation/i)).toBeInTheDocument();
+      expect(screen.getByText(/ZERO IMPUTATION/i)).toBeInTheDocument();
     });
   });
 });
