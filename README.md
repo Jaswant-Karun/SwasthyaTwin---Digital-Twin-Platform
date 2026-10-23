@@ -5,7 +5,8 @@
 [![React](https://img.shields.io/badge/Frontend-React_19_TypeScript-61DAFB.svg?style=flat&logo=react)](https://react.dev)
 [![TailwindCSS](https://img.shields.io/badge/Styling-Tailwind_CSS-38B2AC.svg?style=flat&logo=tailwind-css)](https://tailwindcss.com)
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB_7.0-47A248.svg?style=flat&logo=mongodb)](https://www.mongodb.com)
-[![Pytest](https://img.shields.io/badge/Testing-185_Pytest_%26_50_Vitest-0A9EDC.svg?style=flat)](https://pytest.org)
+[![Pytest](https://img.shields.io/badge/Testing-227_Pytest_%26_55_Vitest_(282_Passed)-0A9EDC.svg?style=flat)](https://pytest.org)
+[![Build](https://img.shields.io/badge/Production_Build-Passed_in_2.08s-10b981.svg?style=flat)](https://vitejs.dev)
 [![PhysioNet](https://img.shields.io/badge/Research_Data-PhysioNet_BiDSleep_31_Subjects-8A2BE2.svg?style=flat)](https://physionet.org)
 
 ---
@@ -185,7 +186,7 @@ This spins up:
 
 ## 🧪 Testing & Quality Assurance
 
-### Backend & ML Pytest Suite (215 Tests)
+### Backend & ML Pytest Suite (227 Tests)
 ```powershell
 # From repository root:
 $env:PYTHONPATH="backend;.backend"
@@ -196,25 +197,24 @@ cd backend
 $env:PYTHONPATH="."
 .\venv\Scripts\pytest tests -q
 ```
-- **Total Tests**: **215 passed** (185 backend unit/integration + 30 ML pipeline tests; 0 failures)
-- **Coverage**: Database persistence, schema validation, personal baseline calculations, robust nMAD anomaly engine, BiDSleep ML pipeline, causal sequence inference, forecasting holdouts, What-If simulator, HMAC security, multi-signal timeline, and data quality guards.
+- **Total Tests**: **227 passed** (197 backend unit/integration/acceptance + 30 ML pipeline tests; 0 failures) in 153.21s
+- **Coverage**: Full multi-layer database persistence, schema validation, 12-point acceptance user journeys (`test_final_acceptance_e2e.py`), personal baseline corridors, robust nMAD anomaly engine, BiDSleep ML pipeline, causal sequence inference, forecasting holdouts, What-If simulator, HMAC security, multi-signal timeline, and data quality guards.
 
-### Frontend Vitest Suite (50 Tests)
+### Frontend Vitest Suite (55 Tests)
 ```powershell
 cd frontend
-npx vitest run
+npm test -- --run
 ```
-- **Total Tests**: **50 passed** across 12 test suites in ~34s (0 failures)
-- **Coverage**: Spatial Hologram Twin, timeline interactions, forecasting cards, simulation comparisons, accessibility semantics, and state error guards.
+- **Total Tests**: **55 passed** across 13 test suites in ~30s (0 failures)
+- **Coverage**: Spatial Hologram Twin, timeline interactions, forecasting cards, simulation comparisons, accessibility semantics, end-to-end acceptance user journeys (`FinalAcceptanceE2E.test.tsx`), keyboard navigation (1-6, arrows, escape), and state error guards.
 
 ### Static Typing & Production Build
 ```powershell
 cd frontend
-npx tsc --noEmit
 npm run build
 ```
 - **TypeScript**: 0 diagnostic errors
-- **Production Bundle**: Built successfully (`dist/assets/index-BONiE7ch.js` 1,176 kB │ gzip 299 kB)
+- **Production Bundle**: Built successfully in **2.08s** with optimized vendor code-splitting (`vendor-react`: 207 kB, `vendor-charts`: 384 kB, `vendor-icons`: 22 kB; 0 warnings)
 
 ---
 
@@ -275,14 +275,18 @@ python -c "from app.database.connection import get_db; from app.database.seed im
 ---
 
 ## 📑 Submission Documentation Directory
-
-- **Technical Architecture**: [docs/architecture.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/architecture.md)
-- **3-Minute Demo Walkthrough Script**: [docs/demo-script.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/demo-script.md)
-- **PhysioNet BiDSleep Model Card**: [docs/model-card.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/model-card.md)
+ 
+- **Technical Architecture Specification**: [docs/architecture.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/architecture.md)
 - **Data Provenance & Grounding Audit**: [docs/data-provenance.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/data-provenance.md)
-- **Security & Privacy Architecture**: [docs/security-and-privacy.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/security-and-privacy.md)
+- **PhysioNet BiDSleep Model Card**: [docs/model-card.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/model-card.md)
+- **ML Reproducibility & Leakage Audit**: [docs/final-ml-evidence.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/final-ml-evidence.md)
+- **Final End-to-End Acceptance Test Report (282 Tests)**: [docs/final-test-report.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/final-test-report.md)
+- **3-Minute Live Demo Script**: [docs/demo-script.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/demo-script.md)
 - **Known Limitations & Clinical Boundaries**: [docs/known-limitations.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/known-limitations.md)
-- **Final Release Verification Checklist**: [docs/release-checklist.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/release-checklist.md)
+- **Final-Round Gap Audit & Completion Report**: [docs/final-round-gap-audit.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/final-round-gap-audit.md)
+- **Executive Presentation Deck Outline**: [docs/presentation.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/presentation.md)
+- **Security & Privacy Architecture**: [docs/security-and-privacy.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/security-and-privacy.md)
+- **Release Verification Checklist**: [docs/release-checklist.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/release-checklist.md)
 
 ---
 

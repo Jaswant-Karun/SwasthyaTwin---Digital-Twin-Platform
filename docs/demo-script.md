@@ -124,4 +124,4 @@ sequenceDiagram
 - **Spoken**:
   > *"To conclude: SwasthyaTwin is built on privacy-by-design. We enforce constant-time HMAC API authentication, patient-level query isolation, and automatic audit scrubbing of credentials.
   >
-  > We make no clinical diagnostic claims: SwasthyaTwin is a research prototype for preventive wellness and self-baseline intelligence. It is not an FDA-cleared diagnostic device. All code, datasets, and 235 passing tests are documented openly in our repository. Thank you!"*
+  > We make no clinical diagnostic claims: SwasthyaTwin is a research prototype for preventive wellness and self-baseline intelligence. It is not an FDA-cleared diagnostic device. All code, datasets, and 282 passing tests (227 Pytest + 55 Vitest) are documented openly in our repository. Thank you!"*
