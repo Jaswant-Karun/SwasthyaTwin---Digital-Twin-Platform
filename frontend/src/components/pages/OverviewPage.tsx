@@ -32,31 +32,40 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate, selected
   return (
     <div className="space-y-6">
       {/* 1. Welcome Header & Patient Summary */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
             Patient Health Overview
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Personalized longitudinal biometric surveillance for <strong className="text-slate-800">{currentPatient?.full_name}</strong>.
+          <p className="text-xs text-slate-400 mt-0.5">
+            Personalized longitudinal biometric surveillance for <strong className="text-teal-300">{currentPatient?.full_name}</strong>.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => onNavigate('digital-twin')}
+            className="flex items-center gap-1.5 bg-gradient-to-r from-teal-500/20 to-cyan-500/20 hover:from-teal-500/30 hover:to-cyan-500/30 text-cyan-200 px-3.5 py-1.5 rounded-xl border border-cyan-500/40 text-xs font-bold shadow-lg shadow-cyan-950/40 transition-all"
+            title="Launch Autonomous Spatial Human Digital Twin"
+          >
+            <Activity className="w-4 h-4 text-cyan-400" />
+            <span>Launch Spatial Twin</span>
+          </button>
+
+          <button
             onClick={() => onNavigate('methodology')}
-            className="flex items-center gap-1.5 bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-800 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-teal-300 text-xs font-semibold shadow-2xs transition-all"
+            className="flex items-center gap-1.5 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl border border-white/10 text-xs font-semibold transition-all"
             title="Inspect calculation methodology and formulas"
           >
-            <BookOpen className="w-3.5 h-3.5 text-teal-600" />
+            <BookOpen className="w-3.5 h-3.5 text-teal-400" />
             <span>Methodology</span>
           </button>
 
           {currentPatient && (
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs shadow-2xs">
-              <Stethoscope className="w-4 h-4 text-teal-600" />
-              <span className="text-slate-600">
-                Physician: <strong className="text-slate-900">{currentPatient.primary_physician || 'Preventive Medicine'}</strong>
+            <div className="hidden sm:flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-white/10 text-xs text-slate-300">
+              <Stethoscope className="w-4 h-4 text-teal-400" />
+              <span>
+                Physician: <strong className="text-white">{currentPatient.primary_physician || 'Preventive Medicine'}</strong>
               </span>
             </div>
           )}

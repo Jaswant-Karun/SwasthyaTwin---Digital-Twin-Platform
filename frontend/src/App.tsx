@@ -25,7 +25,7 @@ import { AlertCircle, X, Film } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const [showIntro, setShowIntro] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTab] = useState<string>('digital-twin');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const { errorMessage, refreshData, selectedRangeDays, setSelectedRangeDays } = useTwin();
 

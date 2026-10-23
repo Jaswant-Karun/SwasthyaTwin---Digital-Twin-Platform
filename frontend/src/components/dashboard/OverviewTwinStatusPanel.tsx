@@ -48,9 +48,9 @@ export const OverviewTwinStatusPanel: React.FC<{ onNavigate: (tab: string) => vo
           <span>•</span>
           <button
             onClick={() => onNavigate('digital-twin')}
-            className="text-teal-700 hover:text-teal-800 font-semibold inline-flex items-center gap-1 text-xs"
+            className="px-3 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 font-bold inline-flex items-center gap-1.5 text-xs transition-all shadow-2xs"
           >
-            Full Twin Profile <ArrowRight className="w-3 h-3" />
+            Explore Holographic Twin <ArrowRight className="w-3 h-3 text-teal-600" />
           </button>
         </div>
       </div>
