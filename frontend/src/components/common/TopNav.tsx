@@ -181,18 +181,18 @@ export const TopNav: React.FC<TopNavProps> = ({
         <button
           onClick={refreshData}
           disabled={isLoading}
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+          className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
           title="Refresh Telemetry"
           aria-label="Refresh Telemetry"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-teal-600' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-teal-400' : ''}`} />
         </button>
 
         {/* Notifications Control */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors relative"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors relative"
             title="Notifications"
             aria-label="Notifications"
           >
@@ -206,26 +206,26 @@ export const TopNav: React.FC<TopNavProps> = ({
 
           {/* Notifications Dropdown Drawer */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg p-3 z-50 text-xs space-y-2">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="font-bold text-slate-900">Active Health Alerts</span>
-                <span className="text-[10px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-semibold">
+            <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl p-3 z-50 text-xs space-y-2 backdrop-blur-xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span className="font-bold text-white">Active Health Alerts</span>
+                <span className="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-semibold">
                   {unreadAlerts.length} Pending
                 </span>
               </div>
               {unreadAlerts.length === 0 ? (
-                <p className="text-slate-500 py-3 text-center">No unacknowledged alerts</p>
+                <p className="text-slate-400 py-3 text-center">No unacknowledged alerts</p>
               ) : (
-                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
+                <div className="max-h-56 overflow-y-auto divide-y divide-white/5">
                   {unreadAlerts.map(a => (
-                    <div key={a._id} className="py-2 hover:bg-slate-50 rounded px-1 transition-colors">
+                    <div key={a._id} className="py-2 hover:bg-slate-800/50 rounded-lg px-2 transition-colors">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-900 truncate">{a.title}</span>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="font-semibold text-slate-200 truncate">{a.title}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">
                           {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <p className="text-slate-500 text-[11px] truncate mt-0.5">{a.description}</p>
+                      <p className="text-slate-400 text-[11px] truncate mt-0.5">{a.description}</p>
                     </div>
                   ))}
                 </div>
@@ -235,7 +235,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                   setShowNotifications(false);
                   setActiveTab('alerts');
                 }}
-                className="w-full text-center py-1.5 text-xs text-teal-600 hover:text-teal-700 font-semibold block border-t border-slate-100"
+                className="w-full text-center py-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-semibold block border-t border-white/10 font-mono transition-colors"
               >
                 Go to Alert Center →
               </button>
@@ -244,15 +244,15 @@ export const TopNav: React.FC<TopNavProps> = ({
         </div>
 
         {/* Database & Real Connection Indicator */}
-        <div className={`hidden xl:flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border font-mono transition-colors ${
+        <div className={`hidden xl:flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-xl border font-mono transition-colors ${
           dbReadiness?.ready
-            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
             : isOfflineDemo
-            ? 'bg-amber-50 text-amber-800 border-amber-200'
-            : 'bg-rose-50 text-rose-800 border-rose-200 animate-pulse'
+            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+            : 'bg-rose-500/15 text-rose-300 border-rose-500/30 animate-pulse'
         }`}>
           <Database className={`w-3.5 h-3.5 ${
-            dbReadiness?.ready ? 'text-emerald-600' : isOfflineDemo ? 'text-amber-600' : 'text-rose-600'
+            dbReadiness?.ready ? 'text-emerald-400' : isOfflineDemo ? 'text-amber-400' : 'text-rose-400'
           }`} />
           <span className="text-[10px] font-semibold">
             {dbReadiness?.ready
@@ -264,13 +264,13 @@ export const TopNav: React.FC<TopNavProps> = ({
         </div>
 
         {/* User Profile Avatar */}
-        <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs border border-teal-200">
+        <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+          <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-mono font-bold text-xs border border-teal-500/30 shadow-xs">
             AS
           </div>
           <div className="hidden lg:block text-left">
-            <span className="block text-xs font-semibold text-slate-800 leading-tight">Dr. Ananya Sen</span>
-            <span className="block text-[10px] text-slate-500 leading-tight">Clinical Lead</span>
+            <span className="block text-xs font-semibold text-slate-200 leading-tight">Dr. Ananya Sen</span>
+            <span className="block text-[10px] text-slate-400 font-mono leading-tight">Clinical Lead</span>
           </div>
         </div>
       </div>
