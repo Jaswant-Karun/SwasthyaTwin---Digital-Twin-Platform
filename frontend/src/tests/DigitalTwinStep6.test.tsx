@@ -5,12 +5,250 @@ import { SpatialHumanTwin } from '../components/spatial/SpatialHumanTwin';
 import { SpatialTimelineInspector } from '../components/spatial/SpatialTimelineInspector';
 import { DigitalTwinPage } from '../components/pages/DigitalTwinPage';
 import { TwinProvider } from '../context/TwinContext';
-import { Patient, DigitalTwinState } from '../types';
-import { MOCK_PATIENTS, MOCK_TWIN_STATE } from '../services/mockData';
 import { api } from '../services/api';
 
-// Mock API calls to return reliable data
+const { testPatients, testTwinState } = vi.hoisted(() => {
+  const patient1 = {
+    patient_id: 'PT-1001',
+    full_name: 'Aarav Mehta',
+    age: 38,
+    biological_sex: 'male' as const,
+    baseline_window_days: 30,
+    chronic_conditions: ['Work-Related Autonomic Fatigue'],
+    primary_physician: 'Dr. Ananya Sen, MD',
+    lifestyle_profile: {
+      baseline_sleep_hours: 7.5,
+      baseline_daily_steps: 7500,
+      activity_level: 'moderate'
+    },
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-03-01T00:00:00Z',
+    active_alerts_count: 1,
+    total_observations_count: 720,
+    latest_vitality_index: 84.5,
+    stability_status: 'optimal' as const
+  };
+
+  const patient2 = {
+    patient_id: 'PT-1002',
+    full_name: 'Priya Sharma',
+    age: 54,
+    biological_sex: 'female' as const,
+    baseline_window_days: 30,
+    chronic_conditions: ['Essential Hypertension'],
+    primary_physician: 'Dr. Rajesh Kulkarni, MD',
+    lifestyle_profile: {
+      baseline_sleep_hours: 6.8,
+      baseline_daily_steps: 4200,
+      activity_level: 'light'
+    },
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-03-01T00:00:00Z',
+    active_alerts_count: 0,
+    total_observations_count: 500,
+    latest_vitality_index: 92.0,
+    stability_status: 'optimal' as const
+  };
+
+  const twinStateData = {
+    patient_id: 'PT-1001',
+    snapshot_time: new Date().toISOString(),
+    baseline_window_days: 30,
+    overall_vitality: 84.5,
+    stability_status: 'optimal' as const,
+    active_alert_count: 1,
+    data_freshness_hours: 2.0,
+    is_data_stale: false,
+    metrics: {
+      heart_rate: {
+        metric_type: 'heart_rate',
+        unit: 'bpm',
+        current_value: 68.0,
+        baseline_mean: 68.0,
+        baseline_std: 3.5,
+        delta_absolute: 0.0,
+        delta_percentage: 0.0,
+        z_score: 0.0,
+        status: 'optimal' as const,
+        direction: 'normal' as const,
+        data_tier: 'measured' as const
+      },
+      sleep_duration_hours: {
+        metric_type: 'sleep_duration_hours',
+        unit: 'hrs',
+        current_value: 7.5,
+        baseline_mean: 7.5,
+        baseline_std: 0.5,
+        delta_absolute: 0.0,
+        delta_percentage: 0.0,
+        z_score: 0.0,
+        status: 'optimal' as const,
+        direction: 'normal' as const,
+        data_tier: 'measured' as const
+      },
+      blood_pressure_systolic: {
+        metric_type: 'blood_pressure_systolic',
+        unit: 'mmHg',
+        current_value: 118.0,
+        baseline_mean: 118.0,
+        baseline_std: 4.0,
+        delta_absolute: 0.0,
+        delta_percentage: 0.0,
+        z_score: 0.0,
+        status: 'optimal' as const,
+        direction: 'normal' as const,
+        data_tier: 'measured' as const
+      },
+      daily_steps: {
+        metric_type: 'daily_steps',
+        unit: 'steps',
+        current_value: 8450.0,
+        baseline_mean: 8500.0,
+        baseline_std: 1000.0,
+        delta_absolute: -50.0,
+        delta_percentage: -0.6,
+        z_score: -0.05,
+        status: 'optimal' as const,
+        direction: 'normal' as const,
+        data_tier: 'measured' as const
+      },
+      fasting_blood_glucose: {
+        metric_type: 'fasting_blood_glucose',
+        unit: 'mg/dL',
+        current_value: 92.0,
+        baseline_mean: 92.0,
+        baseline_std: 5.0,
+        delta_absolute: 0.0,
+        delta_percentage: 0.0,
+        z_score: 0.0,
+        status: 'optimal' as const,
+        direction: 'normal' as const,
+        data_tier: 'measured' as const
+      },
+      respiratory_rate: {
+        metric_type: 'respiratory_rate',
+        unit: 'breaths/min',
+        current_value: 16.0,
+        baseline_mean: 16.0,
+        baseline_std: 1.5,
+        delta_absolute: 0.0,
+        delta_percentage: 0.0,
+        z_score: 0.0,
+        status: 'optimal' as const,
+        direction: 'normal' as const,
+        data_tier: 'measured' as const
+      }
+    },
+    baselines: {
+      heart_rate: {
+        metric_type: 'heart_rate',
+        unit: 'bpm',
+        mean: 68.0,
+        std_dev: 3.5,
+        median: 68.0,
+        iqr: 8.0,
+        q1: 64.0,
+        q3: 72.0,
+        min_val: 58.0,
+        max_val: 78.0,
+        sample_count: 30,
+        window_days: 30,
+        window_start: '2026-02-01T00:00:00Z',
+        window_end: '2026-03-01T00:00:00Z'
+      },
+      sleep_duration_hours: {
+        metric_type: 'sleep_duration_hours',
+        unit: 'hrs',
+        mean: 7.5,
+        std_dev: 0.5,
+        median: 7.5,
+        iqr: 1.0,
+        q1: 7.0,
+        q3: 8.0,
+        min_val: 6.5,
+        max_val: 8.5,
+        sample_count: 28,
+        window_days: 30,
+        window_start: '2026-02-01T00:00:00Z',
+        window_end: '2026-03-01T00:00:00Z'
+      },
+      blood_pressure_systolic: {
+        metric_type: 'blood_pressure_systolic',
+        unit: 'mmHg',
+        mean: 118.0,
+        std_dev: 4.0,
+        median: 118.0,
+        iqr: 12.0,
+        q1: 112.0,
+        q3: 124.0,
+        min_val: 108.0,
+        max_val: 128.0,
+        sample_count: 24,
+        window_days: 30,
+        window_start: '2026-02-01T00:00:00Z',
+        window_end: '2026-03-01T00:00:00Z'
+      },
+      daily_steps: {
+        metric_type: 'daily_steps',
+        unit: 'steps',
+        mean: 8500.0,
+        std_dev: 1000.0,
+        median: 8500.0,
+        iqr: 3000.0,
+        q1: 7000.0,
+        q3: 10000.0,
+        min_val: 5500.0,
+        max_val: 12000.0,
+        sample_count: 30,
+        window_days: 30,
+        window_start: '2026-02-01T00:00:00Z',
+        window_end: '2026-03-01T00:00:00Z'
+      },
+      fasting_blood_glucose: {
+        metric_type: 'fasting_blood_glucose',
+        unit: 'mg/dL',
+        mean: 92.0,
+        std_dev: 5.0,
+        median: 92.0,
+        iqr: 12.0,
+        q1: 86.0,
+        q3: 98.0,
+        min_val: 80.0,
+        max_val: 104.0,
+        sample_count: 22,
+        window_days: 30,
+        window_start: '2026-02-01T00:00:00Z',
+        window_end: '2026-03-01T00:00:00Z'
+      },
+      respiratory_rate: {
+        metric_type: 'respiratory_rate',
+        unit: 'breaths/min',
+        mean: 16.0,
+        std_dev: 1.5,
+        median: 16.0,
+        iqr: 4.0,
+        q1: 14.0,
+        q3: 18.0,
+        min_val: 12.0,
+        max_val: 20.0,
+        sample_count: 20,
+        window_days: 30,
+        window_start: '2026-02-01T00:00:00Z',
+        window_end: '2026-03-01T00:00:00Z'
+      }
+    }
+  };
+
+  return {
+    testPatients: [patient1, patient2],
+    testTwinState: twinStateData
+  };
+});
+
+// Mock API
 vi.mock('../services/api', () => ({
+  setOfflineDemoMode: vi.fn(),
+  isOfflineDemoMode: vi.fn().mockReturnValue(false),
   api: {
     getActiveLayers: vi.fn().mockResolvedValue({
       layers: {
@@ -150,12 +388,12 @@ vi.mock('../services/api', () => ({
         }
       ]
     }),
-    getPatients: vi.fn().mockResolvedValue(MOCK_PATIENTS),
+    getPatients: vi.fn().mockImplementation(() => Promise.resolve(testPatients)),
     getPatient: vi.fn().mockImplementation((id: string) => {
-      const found = MOCK_PATIENTS.find(p => p.patient_id === id);
-      return Promise.resolve(found || MOCK_PATIENTS[0]);
+      const found = testPatients.find(p => p.patient_id === id);
+      return Promise.resolve(found || testPatients[0]);
     }),
-    getTwinState: vi.fn().mockResolvedValue(MOCK_TWIN_STATE),
+    getTwinState: vi.fn().mockImplementation(() => Promise.resolve(testTwinState)),
     getHealth: vi.fn().mockResolvedValue({ status: 'healthy', version: '1.0.0' }),
     getReadiness: vi.fn().mockResolvedValue({ ready: true, ping_ms: 1 }),
     getPatientAssessment: vi.fn().mockResolvedValue(null),
@@ -165,8 +403,8 @@ vi.mock('../services/api', () => ({
 }));
 
 describe('Step 6: Interactive Spatial Human Digital Twin', () => {
-  const patient = MOCK_PATIENTS[0]; // Aarav Mehta PT-1001
-  const twinState = MOCK_TWIN_STATE;
+  const patient = testPatients[0]; // Aarav Mehta PT-1001
+  const twinState = testTwinState;
 
   beforeEach(() => {
     vi.clearAllMocks();
