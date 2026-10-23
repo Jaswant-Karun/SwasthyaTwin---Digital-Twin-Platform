@@ -15,25 +15,10 @@ class ModelEvaluationMetrics(BaseModel):
     model_name: str
     mae: float
     rmse: float
-    baseline_persistence_mae: float
-    baseline_persistence_rmse: float
-    baseline_rolling_mae: float
-    baseline_rolling_rmse: float
-    best_baseline_mae: float
+    baseline_mae: float
+    baseline_rmse: float
     evaluation_window_days: int
     improvement_vs_persistence_pct: float
-    improvement_vs_best_baseline_pct: float
-    acceptance_status: str  # 'ready', 'experimental', 'insufficient_history'
-    acceptance_justification: str
-
-    # Backward compatibility properties
-    @property
-    def baseline_mae(self) -> float:
-        return self.baseline_persistence_mae
-
-    @property
-    def baseline_rmse(self) -> float:
-        return self.baseline_persistence_rmse
 
 class MetricPredictionResult(BaseModel):
     metric_type: str
@@ -41,11 +26,8 @@ class MetricPredictionResult(BaseModel):
     target_horizon_days: int
     model_version: str
     training_data_provenance: str
-    forecast_status: str  # 'ready' or 'experimental'
     prediction_trajectory: List[PredictionPoint]
     evaluation_metrics: ModelEvaluationMetrics
-    uncertainty_quantified: bool = True
-    uncertainty_methodology: str
     disclaimer: str
 
 def train_and_forecast_metric(
@@ -55,9 +37,7 @@ def train_and_forecast_metric(
     horizon_days: int = 7
 ) -> Optional[MetricPredictionResult]:
     """
-    Computes time-series trend forecasting with temporal leakage prevention,
-    rigorous dual baseline comparison (Persistence vs Rolling Average),
-    and strictly evaluated holdout metrics.
+    Computes time-series trend forecasting with temporal leakage prevention and held-out validation.
 
     METHODOLOGY & PREVENTING TEMPORAL LEAKAGE:
     1. Chronological sorting: Observations are strictly ordered by observation timestamp.
@@ -65,14 +45,12 @@ def train_and_forecast_metric(
        - Held-out test window: The most recent 7 days of historical observations.
        - Training history: All observations strictly before the held-out window.
        Zero future data leaks into the model fit or baseline calculation.
-    3. Dual Baseline Comparison:
-       - Baseline A: Simple Persistence (y_{t+h} = y_t) - last observation before evaluation window.
-       - Baseline B: 7-day Rolling Historical Average (y_{t+h} = mean(y_{t-6..t})).
-    4. Model: Autoregressive exponential smoothing with local linear trend slope.
-    5. Evaluation & Acceptance Criterion:
-       Held-out MAE and RMSE are computed on actual observations in the evaluation window.
-       If model MAE does not beat the best baseline by >= 0%, the forecast is flagged
-       as 'experimental' with transparent justification rather than presented as an unqualified success.
+    3. Baseline Comparison:
+       - Simple Persistence Baseline: Forecast = last value before evaluation window.
+       - Model: Autoregressive exponential smoothing with local linear trend slope.
+    4. Evaluation Metrics:
+       Held-out MAE and RMSE are computed on the actual observations in the evaluation window
+       and compared directly against the Simple Persistence Baseline.
     """
     if len(observations) < 14:
         return None
@@ -94,23 +72,15 @@ def train_and_forecast_metric(
     train_vals = vals[:-eval_len]
     test_vals = vals[-eval_len:]
 
-    # --- 1. Evaluate Dual Baselines on Held-out Window ---
-    # Baseline A: Simple persistence (last value of training data)
+    # --- 1. Evaluate on Held-out Window ---
+    # Baseline: Simple persistence (last value of training data)
     persistence_pred = train_vals[-1]
-    p_errors = test_vals - persistence_pred
-    baseline_p_mae = float(np.mean(np.abs(p_errors)))
-    baseline_p_rmse = float(np.sqrt(np.mean(p_errors ** 2)))
+    baseline_errors = test_vals - persistence_pred
+    baseline_mae = float(np.mean(np.abs(baseline_errors)))
+    baseline_rmse = float(np.sqrt(np.mean(baseline_errors ** 2)))
 
-    # Baseline B: 7-day Rolling Historical Average
-    roll_window = min(7, len(train_vals))
-    rolling_pred = float(np.mean(train_vals[-roll_window:]))
-    r_errors = test_vals - rolling_pred
-    baseline_r_mae = float(np.mean(np.abs(r_errors)))
-    baseline_r_rmse = float(np.sqrt(np.mean(r_errors ** 2)))
-
-    best_baseline_mae = min(baseline_p_mae, baseline_r_mae)
-
-    # --- 2. Fit Model Strictly on Training Slice ---
+    # Autoregressive / Exponential smoothing with trend slope
+    # Fit linear slope over recent train window (last 14 points)
     recent_train = train_vals[-14:] if len(train_vals) >= 14 else train_vals
     x = np.arange(len(recent_train))
     slope, intercept = np.polyfit(x, recent_train, 1)
@@ -124,48 +94,22 @@ def train_and_forecast_metric(
     model_mae = float(np.mean(np.abs(model_errors)))
     model_rmse = float(np.sqrt(np.mean(model_errors ** 2)))
 
-    # Calculate improvements
-    imp_vs_persistence = 0.0
-    if baseline_p_mae > 0:
-        imp_vs_persistence = round(((baseline_p_mae - model_mae) / baseline_p_mae) * 100.0, 1)
-
-    imp_vs_best = 0.0
-    if best_baseline_mae > 0:
-        imp_vs_best = round(((best_baseline_mae - model_mae) / best_baseline_mae) * 100.0, 1)
-
-    # Acceptance Gating:
-    # If the model does not beat simple persistence or rolling average on the held-out window,
-    # status is 'experimental' with explicit clinical warning.
-    if imp_vs_best >= 0.0 or imp_vs_persistence >= 0.0:
-        acceptance_status = "ready"
-        acceptance_justification = (
-            f"Model outperforms or matches historical baselines on held-out {eval_len}-day validation window "
-            f"(Model MAE: {round(model_mae, 2)} vs Persistence MAE: {round(baseline_p_mae, 2)}, Rolling MAE: {round(baseline_r_mae, 2)})."
-        )
-    else:
-        acceptance_status = "experimental"
-        acceptance_justification = (
-            f"Experimental status: Historical baseline persistence (MAE: {round(baseline_p_mae, 2)}) or rolling avg (MAE: {round(baseline_r_mae, 2)}) "
-            f"outperformed trend model (MAE: {round(model_mae, 2)}). Forecast provided for observational analysis only."
-        )
+    # Calculate improvement vs persistence
+    improvement_pct = 0.0
+    if baseline_mae > 0:
+        improvement_pct = round(((baseline_mae - model_mae) / baseline_mae) * 100.0, 1)
 
     eval_metrics = ModelEvaluationMetrics(
         model_name="Autoregressive Exponential Trend Model",
         mae=round(model_mae, 2),
         rmse=round(model_rmse, 2),
-        baseline_persistence_mae=round(baseline_p_mae, 2),
-        baseline_persistence_rmse=round(baseline_p_rmse, 2),
-        baseline_rolling_mae=round(baseline_r_mae, 2),
-        baseline_rolling_rmse=round(baseline_r_rmse, 2),
-        best_baseline_mae=round(best_baseline_mae, 2),
+        baseline_mae=round(baseline_mae, 2),
+        baseline_rmse=round(baseline_rmse, 2),
         evaluation_window_days=eval_len,
-        improvement_vs_persistence_pct=imp_vs_persistence,
-        improvement_vs_best_baseline_pct=imp_vs_best,
-        acceptance_status=acceptance_status,
-        acceptance_justification=acceptance_justification
+        improvement_vs_persistence_pct=improvement_pct
     )
 
-    # --- 3. Generate Future Forecast (Horizon days) ---
+    # --- 2. Generate Future Forecast (Horizon days) ---
     # Now use full series to forecast forward from current time
     full_recent = vals[-14:] if len(vals) >= 14 else vals
     full_x = np.arange(len(full_recent))
@@ -177,7 +121,7 @@ def train_and_forecast_metric(
     if last_time.tzinfo is None:
         last_time = last_time.replace(tzinfo=timezone.utc)
 
-    # Historical standard deviation of residuals for 95% confidence interval
+    # Historical standard deviation of residuals for confidence band
     residual_std = max(0.5, float(np.std(vals - np.mean(vals)) * 0.4))
 
     trajectories: List[PredictionPoint] = []
@@ -187,14 +131,14 @@ def train_and_forecast_metric(
         dampening = math.exp(-day / 8.0)
         pred_val = last_val + full_slope * day * dampening
 
-        # Expanding confidence interval over horizon (t-distribution approximation at 95% CI)
+        # Expanding confidence interval over horizon
         ci_spread = residual_std * (1.0 + (day / horizon_days) * 0.75) * 1.96
 
         trajectories.append(PredictionPoint(
             day=day,
             date=target_date,
             predicted_value=round(pred_val, 1),
-            confidence_lower=round(max(0.0 if "step" in metric_type or "hour" in metric_type else -100.0, pred_val - ci_spread), 1),
+            confidence_lower=round(pred_val - ci_spread, 1),
             confidence_upper=round(pred_val + ci_spread, 1)
         ))
 
@@ -202,19 +146,13 @@ def train_and_forecast_metric(
         metric_type=metric_type,
         unit=unit,
         target_horizon_days=horizon_days,
-        model_version="v2.2-autoregressive-trend",
+        model_version="v1.2-autoregressive-trend",
         training_data_provenance=f"Personal longitudinal observations ({len(vals)} historical readings)",
-        forecast_status=acceptance_status,
         prediction_trajectory=trajectories,
         evaluation_metrics=eval_metrics,
-        uncertainty_quantified=True,
-        uncertainty_methodology=(
-            "Expanding 95% Prediction Interval derived from historical empirical residual variance (sigma_res) "
-            "compounded with forecast horizon decay: CI = y_hat +/- 1.96 * sigma_res * (1 + 0.75 * (h / H))."
-        ),
         disclaimer=(
-            "Heuristic personal time-series projection with dual baseline comparison. "
-            "Evaluated strictly via held-out chronological split. Not a clinical prognosis or disease diagnosis."
+            "Heuristic time-series predictive model based on personal historical trajectory. "
+            "Evaluated on held-out temporal validation window. Not a certified clinical diagnostic prognosis."
         )
     )
 
