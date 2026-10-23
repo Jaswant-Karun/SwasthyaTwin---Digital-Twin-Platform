@@ -227,6 +227,7 @@ def run_twin_simulation(
         "baseline_scenario": baseline_scenario,
         "hypothetical_scenario": hypothetical_scenario,
         "projected_outcomes": outcomes,
+        "trajectories": [t.model_dump() for t in trajectories],
         "model_assumptions": assumptions,
         "limitations": limitations,
         "disclaimer": limitations,
