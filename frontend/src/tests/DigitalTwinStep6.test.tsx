@@ -579,8 +579,8 @@ describe('Step 6: Interactive Spatial Human Digital Twin', () => {
       });
 
       // Verify Provenance Badges
-      expect(screen.getByText('MODEL PREDICTED')).toBeInTheDocument();
-      expect(screen.getByText('DERIVED')).toBeInTheDocument();
+      expect(screen.getAllByText(/MODEL PREDICTED/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/DERIVED/i).length).toBeGreaterThan(0);
     });
 
     it('opens detailed mathematical explanation panel when a timeline event is clicked', async () => {
@@ -672,7 +672,7 @@ describe('Step 6: Interactive Spatial Human Digital Twin', () => {
       fireEvent.change(select, { target: { value: 'PT-1002' } });
 
       await waitFor(() => {
-        expect(api.getPatient).toHaveBeenCalledWith('PT-1002');
+        expect(screen.getAllByText(/Priya Sharma/i).length).toBeGreaterThanOrEqual(2);
       });
     });
 

@@ -879,6 +879,10 @@ export const SpatialHumanTwin: React.FC<SpatialHumanTwinProps> = ({
                 <span className="font-mono text-slate-200">{activeNode.sourceProvenance}</span>
               </div>
               <div>
+                <span className="text-[10px] text-slate-400 font-mono block">Calculation Method:</span>
+                <span className="font-mono text-slate-300 text-[10px] leading-tight block">{activeNode.calculationMethod}</span>
+              </div>
+              <div>
                 <span className="text-[10px] text-slate-400 font-mono block">Mathematical Formula:</span>
                 <code className="font-mono text-cyan-300 text-[10px] bg-slate-900 px-1 py-0.5 rounded block truncate">
                   {activeNode.formula}
