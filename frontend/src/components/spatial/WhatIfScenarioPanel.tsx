@@ -63,8 +63,8 @@ export const WhatIfScenarioPanel: React.FC<WhatIfScenarioPanelProps> = ({
 
   // Contradiction detection in inputs
   useEffect(() => {
-    if (params.delta_sleep_hours <= -3.0 && params.delta_daily_steps >= 10000) {
-      setValidationWarning('Severe sleep loss (-3h) combined with high step volume (+10k) exceeds biological adaptive capacity.');
+    if (params.delta_sleep_hours <= -2.5 && params.delta_daily_steps >= 6000) {
+      setValidationWarning('Severe sleep loss (-2.5h) combined with high step volume (+6k) exceeds biological adaptive capacity.');
     } else {
       setValidationWarning(null);
     }

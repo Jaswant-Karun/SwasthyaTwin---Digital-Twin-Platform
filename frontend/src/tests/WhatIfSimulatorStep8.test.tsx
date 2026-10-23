@@ -65,17 +65,17 @@ describe('Interactive What-If Simulator Workspace (Step 8)', () => {
       </TwinContext.Provider>
     );
 
-    // Set sleep slider to -3.0 hrs
+    // Set sleep slider to -2.5 hrs
     const sleepSlider = screen.getByLabelText(/Hypothetical sleep duration adjustment in hours per night/i);
-    fireEvent.change(sleepSlider, { target: { value: '-3.0' } });
+    fireEvent.change(sleepSlider, { target: { value: '-2.5' } });
 
-    // Set steps slider to +12,000 steps (contradictory)
+    // Set steps slider to +7,000 steps (contradictory)
     const stepsSlider = screen.getByLabelText(/Hypothetical daily step count adjustment/i);
-    fireEvent.change(stepsSlider, { target: { value: '11000' } });
+    fireEvent.change(stepsSlider, { target: { value: '7000' } });
 
     // Contradiction alert should appear
     await waitFor(() => {
-      expect(screen.getByText(/Severe sleep loss \(-3h\) combined with high step volume/i)).toBeInTheDocument();
+      expect(screen.getByText(/Severe sleep loss \(-2.5h\) combined with high step volume/i)).toBeInTheDocument();
     });
 
     // Run button must be disabled
