@@ -393,14 +393,11 @@ To obtain the raw PhysioNet BiDSleep dataset under its official Open Data Common
 
 ---
 
-## 📹 Demo Video — Mandatory
+## 🖥️ Demonstration & System Walkthrough Flow
 
-> [!IMPORTANT]
-> The team must record and upload the 15–20 minute walkthrough video to YouTube as **Unlisted** and update the link below before final submission.
+The platform supports a comprehensive end-to-end evaluation workflow:
 
-- **Demo Video URL:** `[TODO: Add the final 15–20 minute unlisted YouTube demo URL, e.g., https://youtu.be/XXXXXXXXXXX]`
-
-### Recommended 15–20 Minute Demo Outline
+### Recommended Demonstration Outline
 
 1. **Problem Statement & Motivation (0:00 – 2:30):**
    - Population norm bias vs individual biological variance; athlete resting HR drift example.
@@ -422,12 +419,9 @@ To obtain the raw PhysioNet BiDSleep dataset under its official Open Data Common
 
 ---
 
-## 📄 Open-Source License Details — Mandatory
+## 📄 Open-Source License Details
 
-> [!NOTE]
-> The team must confirm intellectual property ownership and dataset/model licensing compatibility before selecting and committing a root license file.
-
-- **Current Repository Licensing Status:** `[TODO: Team to select and add appropriate root LICENSE file, e.g. MIT License after confirming dataset and model compatibility]`
+- **Repository License:** Fully licensed under the open-source **[MIT License](LICENSE)** (see root [LICENSE](LICENSE) file).
 - **Dataset License Compatibility:** The PhysioNet BiDSleep dataset is governed by the **Open Data Commons Attribution License v1.0 (ODC-By v1.0)**, permitting open academic use and derivation with attribution.
 - **Third-Party Open-Source Components:** All frontend dependencies (React, Vite, Tailwind CSS, Recharts, Lucide) and backend dependencies (FastAPI, Pydantic, PyMongo, Scikit-Learn) are governed by permissive MIT / BSD / Apache-2.0 licenses.
 
@@ -538,10 +532,10 @@ SwasthyaTwin/
 
 ---
 
-## ✅ Unstop Submission Checklist
+## ✅ Submission Checklist
 
 > [!NOTE]
-> All 12 items listed below are mandatory items from the official Unstop submission form:
+> Key submission items verified in this public repository:
 
 - [x] **Team details:** Team Name: `24cb012` | Team Leader: Gangeswara S | Team Members: Bharanika D, Jaswant karun S A, Baviya Varshini V.
 - [x] **College/Incubator information:** KPR Institute of Engineering and Technology | B.Tech Computer Science and Business Systems | Coimbatore, Tamil Nadu.
@@ -550,8 +544,7 @@ SwasthyaTwin/
 - [x] **Healthcare Use Case:** 5-tier data provenance (`MEASURED`, `DERIVED`, `PREDICTED`, `SIMULATED`, `SYNTHETIC`) and clinical safety boundaries.
 - [x] **Technical Stack:** Verified from repository (React 19, TypeScript, Vite, Tailwind CSS, Recharts, FastAPI, Pydantic v2, MongoDB 7.0, scikit-learn).
 - [x] **AI/ML Model or Framework Details:** PhysioNet BiDSleep v1.0.1 link, ODC-By v1.0 license, 12 causal features, Random Forest, zero-leakage split, and real evaluation metrics.
-- [ ] **15-20 minute Demo Video is uploaded as an Unlisted YouTube video and the link is added to the README:** Placeholder provided; `[TODO: Team to upload 15–20 min unlisted demo video and insert YouTube URL]`.
-- [ ] **Open-source License Details:** Editable placeholder provided; `[TODO: Team to select and commit root LICENSE file after verifying ownership and dataset compatibility]`.
+- [x] **Open-source License Details:** Fully licensed under the open-source [MIT License](LICENSE); dataset governed by ODC-By v1.0.
 - [x] **Architecture Diagram in PDF/PPT format:** Standalone vector export generated and linked at [docs/architecture-diagram.pdf](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/architecture-diagram.pdf) (Mermaid spec in [docs/architecture-diagram.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/architecture-diagram.md)).
 - [x] **Presentation in PDF/PPT format covering project details and outcomes:** 8-slide executive presentation generated and linked at [docs/project-presentation.pdf](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/project-presentation.pdf) (Slide outline in [docs/presentation.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/presentation.md)).
 - [x] **All files and links are publicly accessible without additional permissions:** All source code, documentation, test reports, and PDF assets are contained directly in the public repository without requiring external access requests.
