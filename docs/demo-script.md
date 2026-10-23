@@ -1,169 +1,127 @@
 # SwasthyaTwin AI — 3-Minute Live Demonstration Script & Judge Walkthrough
 
 **Target Duration:** 3 minutes (180 seconds)  
-**Presenters:** Full-Stack & Clinical AI Systems Team  
-**Live Frontend Canvas:** `http://localhost:5173/`  
-**FastAPI Swagger Documentation:** `http://localhost:8000/docs`  
-**Evaluation Artifact Manifest:** `backend/data/models/sleep_staging/model_manifest.json`  
+**Live Frontend:** `http://localhost:5173/`  
+**API Documentation:** `http://localhost:8000/docs`  
+**Evaluation Manifest:** `backend/app/ml/artifacts/model_manifest.json`  
 
 ---
 
-## High-Level Architecture Overview
+## The 8-Step Judge-Facing Demonstration Flow
 
-| Component | Technology | Real-world Purpose |
-| :--- | :--- | :--- |
-| **Spatial Digital Twin** | React 18, SVG Vector Canvas, Recharts | Dynamic multi-layer anatomical visualization of physiological signals |
-| **Validated Ingestion** | FastAPI, Pydantic v2, Tukey Clamping | Canonical unit conversion, plausibility guards, and duplicate rejection |
-| **Persistence Layer** | MongoDB 7.x (Replica/Standalone) | Timezone-aware audit logs, personal baselines, and telemetry records |
-| **Authentic ML Pipeline** | Scikit-learn, PhysioNet Sleep-Accel | Group-aware 3-class sleep staging (Wake, NREM, REM) from wearable PPG |
-| **Counterfactual Engine**| Exponential Saturation Kinetics | In-silico lifestyle perturbation simulations with strict data separation |
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Judge as Hackathon Judge
+    actor Presenter as Presenter
+    participant UI as React Frontend (:5173)
+    participant API as FastAPI Backend (:8000)
+    participant DB as MongoDB (:27017)
+    participant ML as PhysioNet BiDSleep Model
 
----
-
-## 3-Minute Step-by-Step Judge Walkthrough
-
-### Part 1: Patient Selection & Provenance Verification (0:00 – 0:30)
-*Addresses User Journey Steps 1 & 2*
-
-- **Action:** Open `http://localhost:5173/`. Point out the TopNav and Demo Banner.
-- **On Screen:** 
-  - Top banner displays `SYNTHETIC DEMO ENVIRONMENT` with active MongoDB connection ping (`MongoDB: Connected (0.8ms)`).
-  - Patient switcher in TopNav shows clear provenance tags: `🔬 [Demo] Aarav Mehta (PT-1001)` vs `👤 [User] Live Clinical User`.
-  - In Digital Twin Profile, the patient context strip displays: `PATIENT ID: PT-1001`, `BASELINE CORRIDOR: 30 Days Rolling`, `PROVENANCE INTEGRITY: Zero Zero-Imputation`, and `🔬 RESEARCH DEMO COHORT`.
-- **Spoken Walkthrough:**
-  > *"Welcome judges. This is **SwasthyaTwin AI**, a clinical digital twin platform for early biological drift detection and preventive intervention.
-  >
-  > Notice the top bar: our MongoDB connection indicator runs a live latency probe rather than displaying a static status. In the patient dropdown, we clearly separate synthetic demonstration cohorts from live user records.
-  >
-  > We are inspecting **Aarav Mehta (`PT-1001`)**. Every observation on screen displays its canonical unit, source provenance, validation status, and personal baseline envelope."*
-
----
-
-### Part 2: Biometric Ingestion, Persistence & Baseline Recalculation (0:30 – 1:00)
-*Addresses User Journey Steps 3, 4 & 5*
-
-- **Action:** In the left sidebar, click **Add Observation** (`/add-observation`). 
-  1. Select **Manual Entry**.
-  2. Test Invalid Input: Enter `heart_rate = 999 bpm`. Notice the instant validation guard catches the impossible value: *"Value 999.0 bpm is physiologically impossible for heart rate (valid human limits: 30.0 - 240.0 bpm)"*.
-  3. Enter valid observation: `heart_rate = 74 bpm`, unit `bpm`, source `Manual Ingestion`. Click **Commit Observation to Digital Twin**.
-  4. Press **F5 (Browser Refresh)**.
-- **On Screen:**
-  - Success badge: *"Observation committed to MongoDB with status: VALID"*.
-  - After page refresh, the observation persists at the top of the chronological timeline with full audit metadata.
-  - In the **Digital Twin Profile**, Aarav's baseline envelope ($\mu \pm 1.5\sigma$) updates dynamically, calculated strictly on eligible non-simulated observations.
-- **Spoken Walkthrough:**
-  > *"Data integrity is non-negotiable. If a user enters an impossible typo like 999 bpm or systolic less than diastolic, our multi-variate plausibility guard rejects it immediately.
-  >
-  > When we log a valid measurement of 74 bpm, it is converted to canonical units and written to MongoDB. Refreshing the browser proves zero data loss. His personal baseline corridor is updated strictly from eligible measured observations—never from simulated data."*
-
----
-
-### Part 3: Prediction Safeguards & Handover Comparison (1:00 – 1:40)
-*Addresses User Journey Steps 6, 7 & 8*
-
-- **Action:** Click **Digital Twin** in the sidebar, switch to the **Telemetry Timeline** tab.
-- **On Screen:**
-  - The chart displays Aarav's longitudinal resting heart rate with the shaded $\mu \pm 1.5\sigma$ personal corridor.
-  - A vertical cyan dashed marker denotes **NOW (Handover)** between observed telemetry and future predictions.
-  - Hover over the handover date: The custom tooltip renders both **Observed** and **Predicted** values, displaying:
-    - `Observed: 74.0 bpm`
-    - `Predicted: 74.0 bpm`
-    - `Δ (Error vs Actual): 0.0 bpm`
-  - In the Prediction Safeguards panel, click **Run Model Prediction**:
-    - Returns model version `v1.0.0`, algorithm `Random_Forest`, target unit `sleep_stage_3class`, uncertainty confidence `84.2%`, and scientific limitations (*"Trained on 30s wearable PPG epochs; not a diagnostic substitute for EEG polysomnography"*).
-    - If required telemetry is missing or stale, the system halts with `status: insufficient_features` rather than silently zero-imputing.
-- **Spoken Walkthrough:**
-  > *"When requesting machine learning predictions, SwasthyaTwin enforces strict safeguards: zero-imputation is banned, and stale telemetry is flagged. 
-  >
-  > Here on the timeline, notice the handover line. When actual future observations arrive, the digital twin places them directly against the model's projected trajectory and computes the empirical prediction error in real time."*
-
----
-
-### Part 4: Counterfactual What-If Intervention Simulation (1:40 – 2:15)
-*Addresses User Journey Step 9*
-
-- **Action:** In the Digital Twin view, click the **What-If Lab** tab (or navigate to **What-if Simulator** in sidebar).
-  1. Move the **Sleep Extension** slider to `+1.5 hrs/night`.
-  2. Move the **Daily Steps** slider to `+3,000 steps/day`.
-  3. Click **Run Scenario Simulation**.
-- **On Screen:**
-  - Projected 30-day biological adaptation trajectory appears.
-  - Projected resting heart rate drops asymptotically by `-3.2 bpm` and Vitality improves by `+7.4 pts`.
-  - Amber badges explicitly mark all curves as **Simulated Output**.
-  - A prominent scientific disclosure card explains: *"Illustrative scenario calculation based on exponential saturation kinetics ($R(t) = R_0 + \Delta R (1 - e^{-t/\tau})$). Changing lifestyle habits does not guarantee a clinical outcome without medical supervision."*
-  - Verification: Querying the database proves that zero simulated records contaminated Aarav's real observation history.
-- **Spoken Walkthrough:**
-  > *"In our What-If Lab, patients can explore counterfactual lifestyle modifications. What if Aarav increases nightly sleep by 1.5 hours and walks 3,000 more steps?
-  >
-  > Within milliseconds, our backend simulation engine models his autonomic adaptation using verified exponential kinetics. Notice our clinical safety standard: simulated data is colored amber, tagged with model assumptions, and completely isolated from measured observations."*
-
----
-
-### Part 5: Model Evaluation & Authentic Research Metrics (2:15 – 2:45)
-*Addresses User Journey Step 10*
-
-- **Action:** Click **Model Evaluation** in the sidebar (`/model-evaluation`).
-- **On Screen:**
-  - Live data loaded directly from `backend/data/models/sleep_staging/model_manifest.json` via `GET /api/v1/ml/sleep-stage/evaluation`:
-    - **Dataset Provenance:** PhysioNet Sleep-Accel (31 participants, 26,773 30-second epochs).
-    - **Leakage Guard:** Group-aware participant partitioning (25 train subjects, 6 held-out test subjects: `3997827`, `4018081`, `5498603`, `6220552`, `8258170`, `8692923`).
-    - **Scaler Integrity:** StandardScaler fit exclusively on the training split.
-    - **Measured Test Metrics (Held-Out Test Cohort):**
-      - **Random Forest Balanced Accuracy:** `59.11%` (vs. Majority Baseline `33.33%`, a **+25.78 percentage point** genuine gain).
-      - **Random Forest Macro F1:** `54.22%` (vs. Majority Baseline `27.32%`, a **+26.90 percentage point** gain).
-      - **Random Forest Overall Accuracy:** `62.17%` (Cohen's $\kappa = 0.28$).
-    - **5-Fold GroupKFold Cross-Validation:** Balanced Accuracy `59.11% ± 4.97%`.
-    - **Interactive Epoch Inference:** Click the **Wake**, **NREM**, or **REM** presets to test real-time inference with full class probabilities.
-- **Spoken Walkthrough:**
-  > *"Judges, look at the Model Evaluation page. Not a single number here is hardcoded. Everything is queried live from our saved training manifest.
-  >
-  > We trained on 26,773 authentic epochs from the PhysioNet Sleep-Accel study. To prevent data leakage, 6 subjects were held out completely. 
-  >
-  > While a naive majority baseline achieves 69.4% accuracy simply by guessing NREM, its balanced accuracy is only 33.3%—pure chance. Our Random Forest model achieves **59.11% Balanced Accuracy** and **54.22% Macro F1**, demonstrating genuine learned physiological signal from wearable photoplethysmography."*
-
----
-
-### Part 6: Resettable Demo State & Test Suite Evidence (2:45 – 3:00)
-*Addresses Demo Experience & Test Requirements*
-
-- **Action:** 
-  1. Click **Reset Cohort** in the Demo Banner.
-  2. Confirm the safety dialog: *"Yes, Reset"*.
-- **On Screen:**
-  - Demo patients (`PT-1001` through `PT-1005`) are reset to their pristine deterministic baseline state.
-  - Real user records (like `PT-USER-001` created in Part 1) remain untouched in the database.
-- **Spoken Conclusion:**
-  > *"Finally, judges can test the demo safely using 'Reset Cohort'. Our backend reset endpoint requires explicit confirmation and strictly filters on `demo_data: true`, guaranteeing that real patient records are never deleted.
-  >
-  > Backed by **122 backend tests**, **22 frontend tests**, zero-imputation bans, and strict patient isolation, SwasthyaTwin delivers a trustworthy digital twin experience for preventive healthcare. Thank you!"*
-
----
-
-## Verifiable Test Evidence Summary
-
-| Test Suite | File Location | Tests Passed | Key Capabilities Verified |
-| :--- | :--- | :--- | :--- |
-| **End-to-End Integration** | `backend/tests/test_e2e_integration.py` | **10 / 10** | Complete 10-step user journey, persistence, safeguards, demo reset |
-| **Data Quality & Ingestion**| `backend/tests/test_data_quality_and_ingestion.py` | **21 / 21** | Unit conversion (mmol/L, kPa), plausibility checks, conflict prompts |
-| **Authentic ML Pipeline** | `backend/tests/test_authentic_ml_pipeline.py` | **16 / 16** | PhysioNet dataset schema, group-aware split, scaler fitting, GroupKFold CV |
-| **Full Backend Suite** | `backend/tests/` | **122 / 122** | MongoDB CRUD, calculations, alerts, simulations, audit history |
-| **Frontend Component Suite** | `frontend/src/tests/` | **22 / 22** | Spatial UI, navigation, observation forms, CSV preview, safeguards |
-
-### Commands to Reproduce Locally
-
-```bash
-# 1. Run all End-to-End Integration Tests
-cd backend
-$env:PYTHONPATH="."
-.\venv\Scripts\pytest.exe tests/test_e2e_integration.py -v
-
-# 2. Run the Full Backend Test Suite
-.\venv\Scripts\pytest.exe -v
-
-# 3. Run Frontend Tests
-cd ../frontend
-npm test -- --run
-
-# 4. Verify Production Frontend Build
-npm run build
+    Presenter->>Judge: 1. Introduce Problem (Generic Norms vs Personal Baselines)
+    Presenter->>UI: 2. Open Fictional Patient (PT-1001 Aarav Mehta)
+    Presenter->>UI: 3. Explore Measured Signals & Hologram Spatial Timeline
+    Presenter->>API: 4. Add Valid Observation (74 bpm) -> DB Persist Check
+    Presenter->>UI: 5. Open Heart-Rate Drift Flag -> Show Exact Z-Score Formula
+    Presenter->>ML: 6. Run BiDSleep 3-Class Inference -> Show Held-Out Metrics
+    Presenter->>UI: 7. Run What-If Scenario (+1.5h Sleep) -> Show Isolated Curve
+    Presenter->>Judge: 8. Privacy Safeguards, Zero-Imputation & Non-Diagnostic Limits
 ```
+
+---
+
+### Step 1: Introduce the Problem & Intended Users (0:00 – 0:20)
+- **On Screen**: Digital Twin Overview Dashboard (`http://localhost:5173/`).
+- **Spoken**:
+  > *"Judges, current healthcare dashboards benchmark everyone against generic population averages—like 60 to 100 bpm. But an endurance athlete's normal baseline might be 46 bpm, while a senior's normal might be 78 bpm. Population thresholds trigger false alarms for athletes and miss early biological drift in at-risk patients.
+  >
+  > **SwasthyaTwin** solves this by establishing a personal digital twin anchored to the individual's own longitudinal rolling baseline corridors. Our intended users are proactive individuals and preventive clinicians seeking early drift detection before acute illness develops."*
+
+---
+
+### Step 2: Open a Fictional Patient's Digital Twin (0:20 – 0:40)
+- **Action**: In the TopNav dropdown, show the patient selector. Select `🔬 Aarav Mehta (PT-1001)`.
+- **On Screen**:
+  - Top demo banner displays `SYNTHETIC DEMO ENVIRONMENT` with live MongoDB latency ping (`0.8ms`).
+  - Patient header displays `Aarav Mehta`, 38 y/o tech worker, baseline corridor: `30 Days Rolling`, `Provenance: Synthetic Research Demo`.
+- **Spoken**:
+  > *"We clearly separate synthetic demonstration cohorts from live clinical records. Aarav Mehta is a synthetic archetype experiencing progressive stress and sleep disruption. Notice his baseline corridor: computed over 30 days of continuous wear."*
+
+---
+
+### Step 3: Explore Measured Signals & Health Timeline (0:40 – 1:00)
+- **Action**: 
+  1. Click on the **Spatial Human Twin** silhouette (e.g. click the Heart / Cardiovascular node).
+  2. Inspect the telemetry panel displaying Resting Heart Rate (84.0 bpm), Heart Rate Variability (34.0 ms), and Blood Pressure.
+  3. Scroll down to the **Multi-Signal Timeline** showing temporal events tagged with provenance badges: `MEASURED`, `MODEL PREDICTED`, `DERIVED`.
+- **Spoken**:
+  > *"Our spatial digital twin is grounded solely in supported physiological telemetry. Selecting the cardiovascular node displays his current measured signals, personal baseline mean, and sample standard deviations.
+  >
+  > Below, the multi-signal timeline displays every nocturnal transition and recovery event with explicit provenance tiers—we never blend measured sensor readings with simulated numbers."*
+
+---
+
+### Step 4: Add a New Valid Observation & Show Persisted Result (1:00 – 1:25)
+- **Action**:
+  1. Navigate to **Add Observation** (`/add-observation`).
+  2. Show validation guard: Enter `heart_rate = 999 bpm`. Notice the immediate error: *"Value 999.0 bpm is physiologically impossible for heart rate (valid limits: 25.0 - 260.0 bpm)"*.
+  3. Enter valid measurement: `heart_rate = 74.0 bpm`, unit `bpm`, source `wearable_continuous`. Click **Log Observation**.
+  4. Press **F5 (Browser Refresh)** to prove persistence.
+- **On Screen**:
+  - Success alert: *"Observation persisted to MongoDB"*.
+  - After refresh, observation `obs_...` appears at the head of the chronological timeline and his personal baseline updates reactively.
+- **Spoken**:
+  > *"Data integrity is non-negotiable. Typos and impossible values are rejected instantly by our Pydantic validation guard. When we commit a valid 74 bpm reading, it is written to MongoDB. Refreshing the browser confirms it persists with full audit metadata and updates his rolling corridor."*
+
+---
+
+### Step 5: Open a Heart-Rate Flag & Explain the Actual Calculation (1:25 – 1:45)
+- **Action**:
+  1. Click on the **Resting Heart Rate Metric Card** or click the **"How is this calculated?"** button.
+  2. The **Explanation Modal** opens with mathematical transparency.
+- **On Screen**:
+  - Formula: $Z = \frac{x - \mu_{\text{baseline}}}{\sigma_{\text{baseline}}}$.
+  - Actual values: Current $= 84.0\text{ bpm}$, Baseline $\mu = 68.0\text{ bpm}$, $\sigma = 4.0\text{ bpm}$.
+  - Exact derivation: $Z = \frac{84.0 - 68.0}{4.0} = +4.00\sigma$ (Significant Elevation).
+  - Formula for the **Vitality Stability Index (0–100)** showing exact point deductions.
+- **Spoken**:
+  > *"Zero black boxes. Clicking any metric opens the exact mathematical formula. You can see Aarav's baseline mean is 68 bpm with a standard deviation of 4. His current 84 bpm gives a Z-score of +4.0 standard deviations—a significant personal deviation that explains his reduced Vitality Index."*
+
+---
+
+### Step 6: Sleep-Stage Inference & Genuine Model Evaluation (1:45 – 2:10)
+- **Action**: Navigate to **ML Studio** or **Sleep Research** tab (`/sleep-research`).
+- **On Screen**:
+  - BiDSleep Sleep Stage Classifier overview.
+  - Held-out test evaluation table: **Macro F1: 28.22%**, **Balanced Accuracy: 34.70%** (outperforming the 20.00% majority baseline by $+14.70\%$).
+  - 3-class prediction (`Wake`, `NREM`, `REM`) on wearable PPG dynamics.
+- **Spoken**:
+  > *"For autonomic rest modeling, we implemented an authentic ML pipeline trained on the open PhysioNet Bimodal Sleep dataset of 31 human participants.
+  >
+  > We enforced a participant-disjoint split—zero training data leakage into the test set. On the held-out test cohort, the model achieves a Macro F1 of 28.2% and Balanced Accuracy of 34.7%, providing non-invasive sleep staging from consumer optical smartwatches without laboratory EEG electrodes."*
+
+---
+
+### Step 7: Demonstrate One Supported What-If Scenario (2:10 – 2:35)
+- **Action**: Navigate to **What-If Simulator** (`/simulator`).
+  1. Select scenario: **Sleep Extension Intervention**.
+  2. Adjust slider: Set sleep extension to `+1.5 hours/night` for 14 days.
+  3. Click **Run Counterfactual Simulation**.
+- **On Screen**:
+  - Side-by-side comparison: Current Measured History vs. Hypothetical Scenario vs. Delta.
+  - Interactive trajectory chart showing projected resting HR drop from 84 bpm to 76 bpm with 90% confidence uncertainty bands.
+  - Schema badge: `Data Tier: SIMULATED (Isolated from db.observations)`.
+- **Spoken**:
+  > *"In our What-If simulation workspace, users can explore lifestyle interventions before making commitments. Simulating a 1.5-hour sleep extension projects a 4.5 bpm recovery in resting heart rate over 14 days using exponential saturation kinetics.
+  >
+  > Crucially, this projection is saved strictly to an isolated simulation collection. It never mutates or contaminates the patient's real medical history."*
+
+---
+
+### Step 8: Privacy Safeguards, Methodology & Limitations (2:35 – 3:00)
+- **On Screen**: Navigate to **Methodology & Limitations** (`/methodology`).
+- **Spoken**:
+  > *"To conclude: SwasthyaTwin is built on privacy-by-design. We enforce constant-time HMAC API authentication, patient-level query isolation, and automatic audit scrubbing of credentials.
+  >
+  > We make no clinical diagnostic claims: SwasthyaTwin is a research prototype for preventive wellness and self-baseline intelligence. It is not an FDA-cleared diagnostic device. All code, datasets, and 235 passing tests are documented openly in our repository. Thank you!"*
