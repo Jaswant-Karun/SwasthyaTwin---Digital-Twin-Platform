@@ -314,7 +314,10 @@ def forecast_metric_with_safeguards(
     for o in observations:
         v = o.get("value")
         if v is not None and clean_type in HARD_LIMITS:
-            min_h, max_h, u = HARD_LIMITS[clean_type]
+            limit_info = HARD_LIMITS[clean_type]
+            min_h = limit_info["min"]
+            max_h = limit_info["max"]
+            u = limit_info.get("unit", unit)
             if float(v) < min_h or float(v) > max_h:
                 return {
                     "status": "input_quality_rejection",
