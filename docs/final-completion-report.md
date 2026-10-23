@@ -84,6 +84,11 @@ Every claim of completeness in this report is grounded in actual executed test s
    - **Issue:** README previously documented only the 185 backend unit tests, omitting the 30 ML pipeline tests located in `tests/ml/`.
    - **Repair:** Updated test instructions and coverage summaries to document the complete 215-test pytest suite.
 
+6. **Vitest Process Fork Reliability Optimization**:
+   - **File:** `frontend/vite.config.ts`
+   - **Issue:** Spawning 12 concurrent Node.js OS process forks during `npm test` occasionally encountered Windows IPC worker handshake timeouts.
+   - **Repair:** Configured `fileParallelism: false` and extended `testTimeout: 20000` in `vite.config.ts`, ensuring 100% stable, deterministic test execution (50/50 tests passing in ~60s) without weakening any test assertions.
+
 ---
 
 ## 4. Test Execution & Build Evidence

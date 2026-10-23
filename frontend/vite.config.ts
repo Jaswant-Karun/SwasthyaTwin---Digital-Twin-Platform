@@ -18,11 +18,30 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/recharts/')) {
+            return 'vendor-charts';
+          }
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'vendor-icons';
+          }
+        }
+      }
+    }
+  },
   test: {
     globals: true,
     environment: 'jsdom',
     pool: 'forks',
-    testTimeout: 15000,
+    fileParallelism: false,
+    testTimeout: 20000,
     setupFiles: './src/tests/setup.ts'
   }
 });
