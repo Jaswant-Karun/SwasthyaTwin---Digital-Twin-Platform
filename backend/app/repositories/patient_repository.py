@@ -1,3 +1,4 @@
+import re
 import logging
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple, Dict, Any
@@ -37,10 +38,11 @@ class PatientRepository:
         """List patients with pagination, search, and demo/live mode filtering, sorted by updated_at desc."""
         try:
             query: Dict[str, Any] = {}
-            if search:
+            if search and search.strip():
+                safe_search = re.escape(search.strip())
                 query["$or"] = [
-                    {"patient_id": {"$regex": search, "$options": "i"}},
-                    {"display_name": {"$regex": search, "$options": "i"}}
+                    {"patient_id": {"$regex": safe_search, "$options": "i"}},
+                    {"display_name": {"$regex": safe_search, "$options": "i"}}
                 ]
 
             if demo_data is True:
