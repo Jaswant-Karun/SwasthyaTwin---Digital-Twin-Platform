@@ -4,345 +4,284 @@
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/Frontend-React_19_TypeScript-61DAFB.svg?style=flat&logo=react)](https://react.dev)
 [![TailwindCSS](https://img.shields.io/badge/Styling-Tailwind_CSS-38B2AC.svg?style=flat&logo=tailwind-css)](https://tailwindcss.com)
-[![MongoDB](https://img.shields.io/badge/Database-MongoDB_8.3-47A248.svg?style=flat&logo=mongodb)](https://www.mongodb.com)
-[![Pytest](https://img.shields.io/badge/Testing-69_Pytest_%26_16_Vitest-0A9EDC.svg?style=flat)](https://pytest.org)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB_7.0-47A248.svg?style=flat&logo=mongodb)](https://www.mongodb.com)
+[![Pytest](https://img.shields.io/badge/Testing-185_Pytest_%26_50_Vitest-0A9EDC.svg?style=flat)](https://pytest.org)
+[![PhysioNet](https://img.shields.io/badge/Research_Data-PhysioNet_BiDSleep_31_Subjects-8A2BE2.svg?style=flat)](https://physionet.org)
 
 ---
 
 ## ⚠️ Healthcare Safety & Research Prototype Notice
-> **CLINICAL DISCLAIMER:** SwasthyaTwin is an experimental proof-of-concept research platform built for personal longitudinal biometric deviation tracking and *in silico* counterfactual What-If lifestyle simulation.
+> [!WARNING]
+> **CLINICAL & REGULATORY DISCLAIMER:** SwasthyaTwin is an experimental proof-of-concept research platform built for personal longitudinal biometric deviation tracking, physiological sleep-stage inference, and *in silico* counterfactual What-If lifestyle simulation.
+> - **It is NOT an FDA, EMA, or CDSCO-cleared medical device.**
 > - **It does NOT provide clinical diagnoses or prescriptive medical advice.**
 > - **It does NOT predict medical emergencies or acute cardiac events.**
-> - **It does NOT replace licensed physicians or certified clinicians.**
-> - All demonstration records in this distribution are synthetic cohorts generated mathematically.
+> - **It does NOT compute ungrounded disease probabilities or replace certified clinicians.**
+> - All demonstration records in this repository are synthetic cohorts generated mathematically.
 > - Any acute, worsening, or emergency symptoms require immediate professional clinical care.
 
 ---
 
-## 📸 Screenshots of the Running Application
+## 🌟 What SwasthyaTwin Solves
 
-| Overview Dashboard | Transparent Calculation Modal |
-|---|---|
-| ![Overview](docs/screenshots/overview.png) | ![Calculation Modal](docs/screenshots/calculation_modal.png) |
-| *Personalized health vitality overview, self-baseline deviations, and live longitudinal corridor charts.* | *Dynamic modal displaying the mathematical formula, patient baseline, actual data, and Z-score derivation.* |
+1. **Self-Baseline Comparison Over Generic Population Norms**:
+   Traditional dashboards flag abnormalities against generalized population ranges (e.g., 60–100 bpm). However, an endurance athlete normally rests at 46 bpm, while an elderly individual rests at 76 bpm. SwasthyaTwin prioritizes the patient's **own longitudinal rolling window** ($\mu \pm 1.8\sigma$ over 14–30 days) as the benchmark, detecting subtle individual drift long before population thresholds are breached.
 
-| Patient Cohort Management | User Observation Ingestion Pipeline |
-|---|---|
-| ![Patients](docs/screenshots/patients.png) | ![Add Observation](docs/screenshots/add_observation.png) |
-| *Privacy-centric patient onboarding with pseudonymization, consent confirmation, and MongoDB persistence.* | *Single biometric logger with immediate pipeline recalculation, baseline shifts, and deviation badges.* |
+2. **Interactive Spatial Human Digital Twin**:
+   A futuristic dark-canvas holographic anatomical locator where each body subsystem (Cardiovascular, Autonomic, Metabolic, Respiratory, Musculoskeletal, Thermoregulatory) links exclusively to real, supported physiological telemetry.
 
-| Digital Twin Organ Subsystems | Health Trends & Tolerance Corridors |
-|---|---|
-| ![Digital Twin](docs/screenshots/digital_twin.png) | ![Health Trends](docs/screenshots/health_trends.png) |
-| *Multi-subsystem status (Cardiovascular, Autonomic, Metabolic, Respiratory) with interactive inspect buttons.* | *Continuous timeseries with personalized $\mu \pm 1.5\sigma$ tolerance envelopes and multi-timeframe filters.* |
+3. **Authentic ML Sleep Staging (PhysioNet BiDSleep)**:
+   A fully reproducible machine learning pipeline trained on 31 authentic human participants from PhysioNet, inferring 3-class sleep stages (`Wake`, `NREM`, `REM`) from consumer optical PPG dynamics with **zero participant leakage** and **zero future-data leakage**.
 
-| In Silico What-If Simulator | Patient Audit Timeline |
-|---|---|
-| ![Simulator](docs/screenshots/simulator.png) | ![Timeline](docs/screenshots/timeline.png) |
-| *Interactive lifestyle intervention levers with forecasted multi-day recovery curves and 90% confidence bands.* | *Chronological audit trail of measured, user-reported, and imported biometric records with full provenance.* |
+4. **Personal Trend Forecasting on Supported Targets**:
+   Evaluated against chronological holdouts (latest 7 days, no temporal shuffling) and compared against Persistence and Rolling 7-day baselines. Strictly excludes acute vitals (blood pressure, blood glucose) to prevent ungrounded predictions.
 
-| Explainable Alert Center | Database & System Settings |
-|---|---|
-| ![Alerts](docs/screenshots/alerts.png) | ![Settings](docs/screenshots/settings.png) |
-| *Severity-classified rule triggers, root-cause deviations, and clinical note acknowledgement workflow.* | *Verified MongoDB database status, latency health checks, and configurable rolling baseline parameters.* |
+5. **In Silico What-If Intervention Simulator**:
+   Interactive scenario workspace allowing users to adjust lifestyle levers (sleep extension, daily activity targets) to model multi-day recovery curves. Counterfactual simulations write strictly to `db.simulations` and **never contaminate** historical observations.
+
+6. **Mathematical Transparency ("How is this calculated?")**:
+   Clicking any metric, alert, or indicator opens an accessible dialog displaying the exact mathematical formula, personal parameters, and worked calculation.
 
 ---
 
-## 🌟 Key Features
-
-1. **Self-Baseline Comparison (Anti-Population Norm Architecture)**
-   - Benchmarks every patient against their **own longitudinal rolling window** (e.g. 14–30 days), rather than static population averages.
-   - Standardized Z-Score deviation indicators ($\sigma$) identify subtle individual drift long before population thresholds are crossed.
-
-2. **Transparent Autonomic Vitality Index ($0-100$)**
-   - 100% explainable deduction formula: starts at 100 and applies mathematically bounded deductions proportional to biometric Z-scores.
-   - Zero black-box neural networks; every deduction factor is visible and audit-traceable.
-
-3. **In Silico What-If Intervention Simulator**
-   - Interactive levers for sleep extension, daily step increments, stress reduction, and dietary sodium moderation.
-   - Generates forecasted multi-day adaptation curves with **90% confidence uncertainty envelopes** using validated physiological decay kinetics.
-   - Simulations are strictly isolated and never contaminate measured clinical baselines.
-
-4. **10-Step User-Input-to-Digital-Twin Update Pipeline**
-   - Immediate ingestion, validation, and recalculation upon user input.
-   - Re-evaluates rolling baseline, computes absolute and relative deviations, updates the Vitality Index, generates deduplicated alerts, and refreshes the frontend reactively.
-
-5. **Universal "How is this calculated?" Explanations**
-   - Every metric, baseline, trend indicator, alert, and simulation output features a calculation inspector.
-   - Provides actual displayed patient numbers, historical sample sizes, mathematical formulas, and limitation warnings.
-
-6. **Multi-Modal Data Ingestion**
-   - Single observation input with validation bounds.
-   - Daily lifestyle journal logger.
-   - Wearable CSV batch import with pre-flight schema and anomaly validation.
-
----
-
-## 🏗️ System Architecture
+## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                   React 19 + TypeScript Frontend                 │
-│   (Vite • Tailwind CSS • Lucide Icons • Recharts • TwinContext)  │
-└─────────────────────────────────┬────────────────────────────────┘
-                                  │ HTTP / JSON REST
-                                  ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    FastAPI Backend (Python 3.13)                 │
-│  ┌──────────────────────┐  ┌──────────────────────────────────┐  │
-│  │  API Validation      │  │  Analytics & Simulation Engines  │  │
-│  │  - Patient Schemas   │  │  - Baseline Engine (Winsorized)  │  │
-│  │  - Observation Bounds│  │  - Deviation Analyzer (Z-Scores) │  │
-│  │  - CSV Import Schema │  │  - Vitality Index Calculator     │  │
-│  │  - Timezone Normaliz.│  │  - In Silico What-If Simulator   │  │
-│  └──────────┬───────────┘  └──────────────────┬───────────────┘  │
-│             │                                 │                  │
-│             ▼                                 ▼                  │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │                  Repository & Service Layer                │  │
-│  └──────────────────────────────┬─────────────────────────────┘  │
-└─────────────────────────────────┼────────────────────────────────┘
-                                  │ PyMongo Driver
-                                  ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                   MongoDB Database (Port 27017)                  │
-│   Collections: patients • observations • alerts • audit_logs     │
-│   - Compound Indexes on (patient_id, measurement_type, observed) │
-│   - In-memory mongomock fallback for zero-dependency offline use │
-└──────────────────────────────────────────────────────────────────┘
+                                  +---------------------------------------+
+                                  |         SwasthyaTwin Web App          |
+                                  |     (React 19 + TypeScript + Vite)    |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      | REST / JSON
+                                                      v
+                                  +---------------------------------------+
+                                  |         FastAPI Backend Engine        |
+                                  |  - API Router (/api/v1/ and /api/)    |
+                                  |  - HMAC Bearer / X-API-Key Security   |
+                                  |  - Patient Isolation & Route Guards   |
+                                  |  - Pydantic v2 Contract Validation    |
+                                  +---------+-------------------+---------+
+                                            |                   |
+                     +----------------------+                   +--------------------+
+                     v                                                               v
+      +-----------------------------+                               +---------------------------------+
+      |    Analytics & ML Engines   |                               |   Data Access Services          |
+      | - Personal Baseline Math    |                               | - Patient Service               |
+      | - Z-Score Anomaly Engine    |                               | - Observation Service           |
+      | - PhysioNet Sleep Staging   |                               | - Health Assessment Service     |
+      | - Trend Holdout Forecaster  |                               | - What-If Simulation Service    |
+      | - What-If Kinetics Model    |                               | - Scrubbed Audit Repository     |
+      +-----------------------------+                               +----------------+----------------+
+                                                                                     |
+                                                                                     v
+                                                                    +---------------------------------+
+                                                                    |        MongoDB Database         |
+                                                                    | Collections:                    |
+                                                                    | - patients                      |
+                                                                    | - observations                  |
+                                                                    | - health_assessments            |
+                                                                    | - simulations                   |
+                                                                    | - alerts                        |
+                                                                    | - audit_events                  |
+                                                                    +---------------------------------+
 ```
 
 ---
 
-## 🗄️ MongoDB Setup
+## 📋 Prerequisites
 
-SwasthyaTwin connects to MongoDB using the official `pymongo` driver.
-
-### 1. Local MongoDB Installation
-- MongoDB Community Server 7.0+ or 8.0+ running on `localhost:27017`.
-- **Database Name**: `swasthyatwin` (automatically created on first write).
-
-### 2. Automated Indexes
-Upon startup, the application verifies and builds compound indexes via `backend/app/database/indexes.py`:
-- `patients`: unique index on `patient_id`.
-- `observations`: compound index on `(patient_id, measurement_type, observed_at)` and `(patient_id, data_kind)`.
-- `alerts`: compound index on `(patient_id, metric_type, is_acknowledged, timestamp)`.
-- `audit_logs`: index on `(patient_id, timestamp)`.
-
-### 3. Graceful In-Memory Fallback
-If MongoDB is not running locally, SwasthyaTwin automatically activates an in-memory `mongomock` instance and notifies the user with a banner. All features remain fully functional without external database prerequisites.
+- **Python**: Version `3.11` or `3.12+` (Tested on Python `3.13.5`)
+- **Node.js**: Version `18.x` or `20.x+` (npm `9.x` or `10.x+`)
+- **MongoDB**: Version `6.0+` or `7.0+` running on `mongodb://localhost:27017`
+  *(Note: If local MongoDB is offline, an in-memory `mongomock` fallback allows offline hackathon demonstration without crashes)*
 
 ---
 
-## ⚙️ Environment Configuration
+## 🚀 Quickstart & Clean Installation
 
-### Backend (`backend/.env`)
-```ini
-# Application Environment
-APP_ENV=development
-LOG_LEVEL=INFO
-
-# MongoDB Connection
-MONGODB_URI=mongodb://localhost:27017
-MONGODB_DATABASE=swasthyatwin
-
-# Digital Twin Analytics Parameters
-DEFAULT_BASELINE_DAYS=30
-MIN_OBSERVATIONS_FOR_BASELINE=3
-OUTLIER_WINSORIZATION_PERCENTILE=0.05
-Z_SCORE_ANOMALY_THRESHOLD=2.0
-```
-
-### Frontend (`frontend/.env`)
-```ini
-# FastAPI Backend URL
-VITE_API_BASE_URL=http://localhost:8000
-```
-
----
-
-## 🚀 Installation and Startup Commands
-
-### 1. Prerequisites
-- Python 3.10+ (tested on Python 3.13)
-- Node.js 18+ & npm
-- (Optional) MongoDB running locally on port 27017
-
-### 2. Backend Setup
+### 1. Clone & Setup Environment Files
 ```bash
-# Clone the repository
 git clone https://github.com/Jaswant-Karun/SwasthyaTwin---Digital-Twin-Platform.git
 cd SwasthyaTwin
 
-# Set up virtual environment
-python -m venv backend/venv
-
-# Activate virtual environment
-# Windows (PowerShell):
-.\backend\venv\Scripts\Activate.ps1
-# macOS / Linux:
-# source backend/venv/bin/activate
-
-# Install dependencies
-pip install -r backend/requirements.txt
-
-# Start FastAPI server
-python -m uvicorn app.main:app --app-dir backend --reload --port 8000
+# Copy environment configuration template
+cp .env.example .env
+cp backend/.env.example backend/.env
 ```
-- API Base: `http://localhost:8000`
-- Swagger UI Docs: `http://localhost:8000/docs`
-- Health Readiness Probe: `http://localhost:8000/health/ready`
+
+### 2. Backend Setup
+```bash
+cd backend
+
+# Create and activate virtual environment
+python -m venv venv
+
+# Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+# Linux/macOS:
+source venv/bin/activate
+
+# Install dependencies from pinned requirements
+pip install -r requirements.txt
+
+# Seed the 5 synthetic demonstration patients
+python -m app.database.seed
+
+# Start FastAPI development server
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+Backend API will be live at:
+- **API Root**: `http://127.0.0.1:8000`
+- **Interactive Swagger Docs**: `http://127.0.0.1:8000/docs`
+- **Health Check**: `http://127.0.0.1:8000/health`
 
 ### 3. Frontend Setup
+In a new terminal:
 ```bash
-# In a new terminal:
 cd frontend
 
-# Install npm dependencies
-npm install
+# Install exact dependencies from lockfile
+npm ci
 
-# Start Vite development server
+# Start Vite client development server
 npm run dev
 ```
-- Web Application: `http://localhost:5173`
+Frontend Web Application will be live at:
+- **Application URL**: `http://localhost:5173`
 
-### 4. Running with Docker Compose
+---
+
+## 🐳 Docker Compose (Optional)
+
+If Docker and Docker Compose are installed:
 ```bash
 docker compose up --build
 ```
-Starts FastAPI on port 8000, Vite on port 5173, and MongoDB on port 27017.
+This spins up:
+- MongoDB 7.0 on port `27017`
+- FastAPI backend on port `8000`
+- Nginx frontend on port `5173` (mapped from container port 80)
 
 ---
 
-## 🧑‍⚕️ How to Create a Patient
+## ⚙️ Environment Variables Reference
 
-1. Navigate to the **"Patients"** tab in the sidebar.
-2. Fill in the onboarding form:
-   - **Display Name / Pseudonym**: e.g., *"Devan Nair"* or *"Alpha-01"*.
-   - **Age & Biological Sex**: Used for physiological range normalization.
-   - **Baseline Rolling Window**: Configurable between 7 and 90 days (default: 30 days).
-   - **Non-sensitive Notes**: General health notes (privacy warning ensures no PII is entered).
-   - **Consent Confirmation**: Mandatory authorization checkbox.
-3. Click **"Create & Onboard Patient"**.
-4. The backend validates inputs, assigns a unique `PT-XXXX` identifier, persists the profile in MongoDB, and selects the new patient across the entire application.
-
----
-
-## 📈 How to Add Observations
-
-SwasthyaTwin provides three distinct ingestion paths:
-
-### 1. Single Observation Form
-- Choose a metric (`heart_rate`, `systolic_bp`, `diastolic_bp`, `hrv_rmssd`, `respiratory_rate`, `spo2`, `glucose`, `sleep_duration`, `daily_steps`).
-- Enter the measured value and select supported units (e.g., `bpm`, `mmHg`, `ms`, `hours`, `steps`).
-- Set observed timestamp (rejects timestamps more than 5 minutes in the future).
-- Click **"Save Observation & Update Twin"**.
-- View the **Digital Twin Pipeline Update Card** with recalculated baseline, deviation, and Z-scores.
-
-### 2. Daily Lifestyle Log
-- Record daily sleep hours, step count, and subjective stress level ($1-10$) in one form.
-
-### 3. Wearable CSV Import
-- Upload CSV telemetry exports containing `measurement_type`, `value`, `unit`, and `observed_at`.
-- Click **"Validate CSV File"** to run automated pre-flight checks (duplicate detection, range validation).
-- Click **"Import Valid Records"** to batch-ingest.
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `APP_ENV` | `development` | Deployment tier: `development`, `staging`, `production` |
+| `HOST` | `127.0.0.1` | Backend binding host |
+| `PORT` | `8000` | Backend listening port |
+| `DEMO_MODE` | `true` | Allows open demonstration access with synthetic cohorts |
+| `MONGODB_URI` | `mongodb://localhost:27017` | MongoDB connection string (passwords masked in logs) |
+| `MONGODB_DATABASE` | `swasthyatwin` | Target database instance |
+| `ALLOW_IN_MEMORY_FALLBACK` | `true` | Permits in-memory `mongomock` if MongoDB is unreachable |
+| `API_SECRET_KEY` | *(empty)* | Optional secret key; when set, requires `X-API-Key` or Bearer header |
+| `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Allowed web origins |
+| `DEFAULT_BASELINE_DAYS` | `30` | Default longitudinal rolling corridor window |
+| `MIN_OBSERVATIONS_FOR_BASELINE` | `3` | Minimum valid records required before computing $Z$-scores |
+| `DEVIATION_SIGMA_THRESHOLD` | `1.8` | Standard deviation threshold triggering anomaly warnings |
 
 ---
 
-## 🧮 How Baseline Calculations Work
+## 🧪 Testing & Quality Assurance
 
-1. **Temporal Filtering**:
-   Only historical observations within the patient's rolling window (e.g. past 30 days) up to the current timestamp ($t \le \text{now}$) are included. Future observations are rejected.
-2. **Simulation Exclusion**:
-   Observations with `data_kind: "simulated"` are strictly filtered out to prevent counterfactual experiments from contaminating personal baselines.
-3. **Minimum Sample Threshold ($N \ge 3$)**:
-   - For $N = 1$ or $N = 2$, baselines are marked `is_sufficient: false` (provisional). Alerts and deviations remain conservative.
-   - Once $N \ge 3$, personal baseline distributions (Mean, Median, StdDev, IQR) are locked.
-4. **Outlier Winsorization**:
-   Extreme measurement artifacts (top/bottom 5%) are capped to prevent sensor noise from distorting baselines.
-5. **Standardized Deviation ($Z$-Score)**:
-   $$Z = \frac{x_{\text{new}} - \mu_{\text{baseline}}}{\sigma_{\text{baseline}}}$$
-6. **Bounded Metric Rules**:
-   Metrics measured in percentage points (e.g., SpO2) or baselines of 0 exclude relative percentage deviations to avoid division-by-zero or clinically misleading percentages.
+SwasthyaTwin maintains a 100% passing automated test suite:
+
+### Backend Pytest Suite (185 Tests)
+```powershell
+cd backend
+$env:PYTHONPATH="."
+.\venv\Scripts\pytest tests
+```
+- **Total Tests**: 185 passed in ~70s
+- **Coverage**: Database CRUD, ML sleep pipeline, forecasting holdouts, What-If simulator, HMAC security, multi-signal timeline, and data quality guards.
+
+### Frontend Vitest Suite (50 Tests)
+```powershell
+cd frontend
+npx vitest run
+```
+- **Total Tests**: 50 passed across 12 test suites in ~14s
+- **Coverage**: Spatial Hologram Twin, timeline interactions, forecasting cards, simulation comparisons, accessibility semantics, and state error guards.
+
+### Static Typing & Production Build
+```powershell
+cd frontend
+npx tsc --noEmit
+npm run build
+```
+- **TypeScript**: 0 diagnostic errors
+- **Production Bundle**: Built in 2.75s (`dist/assets/index-BONiE7ch.js` 1,176 kB │ gzip 299 kB)
 
 ---
 
-## 🧪 Demo-Data vs. Live-Data Behavior
+## 🔬 Machine Learning Pipeline & Dataset Setup
 
-| Feature | Synthetic Demonstration Cohort | Live User Data |
-|---|---|---|
-| **Provenance Tag** | `demo_data: true`, `is_synthetic: true` | `demo_data: false`, `is_synthetic: false` |
-| **Data Tier** | `synthetic_demo` | `measured` or `user_entered` |
-| **Storage** | Persisted in MongoDB with demo flags | Persisted in MongoDB with audit trails |
-| **Reset Behavior** | Safely wiped and regenerated via `--reset` | **Never touched or modified** by reset scripts |
-| **Initial Cohorts** | 5 pre-configured clinical profiles (`PT-1001` to `PT-1005`) | User-created profiles (`PT-XXXX`) |
+### Dataset Provenance
+- **Dataset**: PhysioNet Bimodal Sleep Dataset (BiDSleep v1.0.1)
+- **Subjects**: 31 authentic human participants
+- **License**: Open Data Commons Attribution License v1.0 (ODC-By v1.0)
+- **Signal**: Optical PPG pulse rate recordings aligned with polysomnography ground truth
 
-### CLI Management
-```bash
-# Seed 5 synthetic demo cohorts (deterministic seed 42)
-python backend/scripts/seed_demo.py
-
-# Safely reset demo data (preserves real patient profiles)
-python backend/scripts/seed_demo.py --reset
-
-# Live telemetry injection test
-python backend/scripts/seed_demo.py --live-inject --patient PT-1001 --metric heart_rate --value 84.5
+### Model Training & Artifact Generation
+To retrain the sleep-stage model from raw PhysioNet files:
+```powershell
+cd backend
+python -m app.ml.trainer
 ```
+Serialized production artifacts are generated in `backend/app/ml/artifacts/`:
+1. `best_model.joblib`: Trained class-weighted Random Forest classifier
+2. `scaler.joblib`: Preprocessing standard scaler fitted on training participants
+3. `model_manifest.json`: Evaluated metrics, confusion matrix, and feature schema
+
+> [!NOTE]
+> If model artifacts are deleted or absent, the API returns an honest `503 Service Unavailable` status (`Sleep Stage ML model artifact is unavailable`) rather than fabricating fake predictions.
 
 ---
 
-## 🔬 Test Results & Verification Evidence
+## 🎭 Demonstration Mode & Seed Management
 
-All test suites were executed on the active codebase with verified passing results:
+SwasthyaTwin includes 5 deterministic synthetic archetypes (`PT-1001` through `PT-1005`):
+- `PT-1001` Aarav Mehta: High-stress tech worker with resting heart rate drift
+- `PT-1002` Priya Sharma: Metabolic profile with sedentary daily steps
+- `PT-1003` Marcus Vance: Endurance athlete with resting bradycardia (48 bpm normal)
+- `PT-1004` Elena Rostova: Senior with narrow blood pressure corridor
+- `PT-1005` David Kim: Shift worker with circadian sleep disruption
 
-### 1. Backend Pytest Suite
-```
-collected 69 items
-tests/test_analytics_engine.py ..........                                [ 14%]
-tests/test_anomaly.py ..                                                 [ 17%]
-tests/test_api.py ..                                                     [ 20%]
-tests/test_baseline.py ...                                               [ 24%]
-tests/test_calculation_engine.py .........                               [ 37%]
-tests/test_explanations.py .....                                         [ 44%]
-tests/test_functional_audit.py ......                                    [ 53%]
-tests/test_mongo_data_layer.py ...............                           [ 75%]
-tests/test_patient_onboarding.py ...........                             [ 91%]
-tests/test_simulations.py .                                              [ 92%]
-tests/test_user_input_pipeline.py .....                                  [100%]
-======================= 69 passed, 6 warnings in 10.96s =======================
-```
+### Demonstration CLI Commands
+```powershell
+# Seed demo patients into MongoDB (deterministic random seed 42)
+python -c "from app.database.connection import get_db; from app.database.seed import seed_synthetic_patients; seed_synthetic_patients(get_db(), force=True)"
 
-### 2. Frontend Vitest Suite
-```
-Test Files  6 passed (6)
-     Tests  16 passed (16)
-  Duration  5.17s
-```
-
-### 3. Production Build & Typecheck
-```
-$ tsc && vite build
-✓ 2528 modules transformed.
-dist/index.html                   0.91 kB │ gzip:   0.54 kB
-dist/assets/index-Bkx2EzCq.css   42.43 kB │ gzip:   8.06 kB
-dist/assets/index-XHioNArg.js   852.93 kB │ gzip: 234.35 kB
-✓ built in 1.94s
+# Inject a live acute telemetry observation (recalculates baseline dynamically)
+python -c "from app.database.connection import get_db; from app.database.seed import inject_live_observation; inject_live_observation(get_db(), 'PT-1001', 'heart_rate', 84.0)"
 ```
 
 ---
 
-## ⚠️ Known Limitations & Boundaries
+## 🛠️ Troubleshooting
 
-1. **Non-Diagnostic Research Prototype**:
-   All formulas and simulations are mathematical approximations of physiological adaptation curves and should not be used in critical care decisions.
-2. **Cardiovascular & Autonomic Focus**:
-   Current simulation models primarily model cardiovascular and autonomic responses (Heart Rate, Systolic BP, HRV RMSSD). Metabolic and respiratory models are currently rule-based.
-3. **No Continuous Streaming Hardware Protocol**:
-   Telemetry is ingested via REST API polling, single logging, and CSV batch uploads. Direct Bluetooth Low Energy (BLE) or MQTT device streaming requires external gateway ingestion.
-4. **Single-Node Database Configuration**:
-   The default setup targets a single MongoDB instance or container; distributed sharding and multi-region replica sets require enterprise deployment configurations.
+| Symptom | Cause | Solution |
+| :--- | :--- | :--- |
+| **"MongoDB connection failed"** | Local MongoDB daemon is not running on port 27017 | Start MongoDB (`net start MongoDB` on Windows, or `brew services start mongodb-community`), or keep `ALLOW_IN_MEMORY_FALLBACK=true` in `.env` for in-memory mock execution. |
+| **"Sleep Stage ML model artifact is unavailable" (503)** | Model artifacts were deleted or not generated | Run `python -m app.ml.trainer` in `backend/` to regenerate artifacts, or verify `backend/app/ml/artifacts/` exists. |
+| **"Invalid unit 'xyz' for measurement_type" (422)** | Client passed a non-canonical unit | Review `VALID_UNITS` in [observation.py](file:///c:/Users/jaswant%20karun/SwasthyaTwin/backend/app/models/observation.py). Heart rate accepts `bpm`, sleep accepts `hours`, steps accepts `steps`. |
+| **Vitest JSDOM ResizeObserver Warning** | Recharts responsive container rendered in JSDOM | Mock is configured in `frontend/src/tests/setup.ts`; warnings in stderr are expected in virtual headless DOMs and do not fail tests. |
+| **401 Unauthorized in API calls** | `API_SECRET_KEY` was configured in `.env` | Include header `X-API-Key: <your-key>` or `Authorization: Bearer <your-key>` in HTTP requests. |
+
+---
+
+## 📑 Submission Documentation Directory
+
+- **Technical Architecture**: [docs/architecture.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/architecture.md)
+- **3-Minute Demo Walkthrough Script**: [docs/demo-script.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/demo-script.md)
+- **PhysioNet BiDSleep Model Card**: [docs/model-card.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/model-card.md)
+- **Data Provenance & Grounding Audit**: [docs/data-provenance.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/data-provenance.md)
+- **Security & Privacy Architecture**: [docs/security-and-privacy.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/security-and-privacy.md)
+- **Known Limitations & Clinical Boundaries**: [docs/known-limitations.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/known-limitations.md)
+- **Final Release Verification Checklist**: [docs/release-checklist.md](file:///c:/Users/jaswant%20karun/SwasthyaTwin/docs/release-checklist.md)
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License for academic, hackathon, and open-source research purposes.
+This project is licensed under the MIT License for open-source research and hackathon evaluation.
