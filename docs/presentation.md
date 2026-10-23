@@ -4,6 +4,8 @@
 **Team Name:** `24cb012`  
 **Team Leader:** Gangeswara S  
 **Team Members:** Bharanika D, Jaswant karun S A, Baviya Varshini V  
+**Institution:** KPR Institute of Engineering and Technology, Coimbatore, Tamil Nadu  
+**Department & Course:** B.Tech Computer Science and Business Systems  
 **Format:** 6–8 Minute Presentation + 3-Minute Live Interactive Demonstration  
 **Theme:** *Understand today. Prepare for tomorrow.*  
 **Live URL:** `http://localhost:5173/` | **Interactive API:** `http://localhost:8000/docs`  

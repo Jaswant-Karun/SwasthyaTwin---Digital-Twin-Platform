@@ -110,7 +110,8 @@ def create_presentation_pdf():
                 "Team Name: 24cb012",
                 "Team Leader: Gangeswara S",
                 "Team Members: Bharanika D, Jaswant karun S A, Baviya Varshini V",
-                "Affiliation: [TODO: Add College / Institution Name & Department]",
+                "Institution: KPR Institute of Engineering and Technology, Coimbatore, Tamil Nadu",
+                "Department: B.Tech Computer Science and Business Systems",
                 "Vision: Understand today. Prepare for tomorrow.",
                 "Clinical Status: Proof-of-Concept Research Prototype (Non-Diagnostic Software)"
             ],

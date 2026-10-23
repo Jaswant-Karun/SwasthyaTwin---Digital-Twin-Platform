@@ -44,13 +44,9 @@
 
 ## 🏛️ College / Incubator Information
 
-> [!NOTE]
-> The team must supply official institutional details before final Unstop form confirmation.
-
-- **College / Institution Name:** `[TODO: Add College or Institution Name, e.g., Your Engineering College / University]`
-- **Department & Course:** `[TODO: Add Department & Degree, e.g., Department of Computer Science & Engineering, B.Tech]`
-- **Incubator Name (if applicable):** `[TODO: Add Incubator / Innovation Center Name, if applicable]`
-- **City & State:** `[TODO: Add City, State, e.g., Chennai, Tamil Nadu, India]`
+- **College / Institution Name:** KPR Institute of Engineering and Technology
+- **Department & Course:** B.Tech Computer Science and Business Systems
+- **City & State:** Coimbatore, Tamil Nadu
 
 ---
 
@@ -548,7 +544,7 @@ SwasthyaTwin/
 > All 12 items listed below are mandatory items from the official Unstop submission form:
 
 - [x] **Team details:** Team Name: `24cb012` | Team Leader: Gangeswara S | Team Members: Bharanika D, Jaswant karun S A, Baviya Varshini V.
-- [ ] **College/Incubator information:** Editable placeholders provided; `[TODO: Team to supply official college/institution name, department, course, incubator, city, and state]`.
+- [x] **College/Incubator information:** KPR Institute of Engineering and Technology | B.Tech Computer Science and Business Systems | Coimbatore, Tamil Nadu.
 - [x] **Project Title:** SwasthyaTwin AI — Personalized Multisignal Health Intelligence & Digital Twin.
 - [x] **Problem Statement:** Detailed explanation of population norm bias, fragmented biometric telemetry, black-box scores, and personalized baselines.
 - [x] **Healthcare Use Case:** 5-tier data provenance (`MEASURED`, `DERIVED`, `PREDICTED`, `SIMULATED`, `SYNTHETIC`) and clinical safety boundaries.
