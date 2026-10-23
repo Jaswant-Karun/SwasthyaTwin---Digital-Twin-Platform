@@ -536,10 +536,10 @@ export const WhatIfScenarioPanel: React.FC<WhatIfScenarioPanelProps> = ({
             </div>
             <ul className="list-disc list-inside space-y-1 text-slate-400 leading-relaxed text-[10px]">
               <li>
-                <strong>Physiological Kinetics:</strong> Autonomic tone and blood pressure adaptations are computed using literature time constants: $\tau_{\text{sleep}} \approx 4.0\text{d}$, $\tau_{\text{activity}} \approx 12.0\text{d}$, $\tau_{\text{sodium}} \approx 7.0\text{d}$.
+                <strong>Physiological Kinetics:</strong> Autonomic tone and blood pressure adaptations are computed using literature time constants: tau_sleep ~ 4.0 days, tau_activity ~ 12.0 days, tau_sodium ~ 7.0 days.
               </li>
               <li>
-                <strong>Predictive Uncertainty:</strong> Estimated 95% confidence bounds expand over time ($CI \propto \sqrt{1 + t/T}$) to $\pm 2.5\text{ bpm}$ on heart rate and $\pm 3.8\text{ mmHg}$ on systolic blood pressure.
+                <strong>Predictive Uncertainty:</strong> Estimated 95% confidence bounds expand over time with an expanding horizon spread to +/- 2.5 bpm on heart rate and +/- 3.8 mmHg on systolic blood pressure.
               </li>
               <li>
                 <strong>Scientific Limitations:</strong> Counterfactual projections do not demonstrate causal inevitability. Individual pharmacogenetics and underlying medical conditions alter actual response.
