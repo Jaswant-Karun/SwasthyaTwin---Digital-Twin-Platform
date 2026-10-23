@@ -128,7 +128,7 @@ class SleepInferenceService:
             legacy_manifest_path = Path(__file__).resolve().parent.parent.parent / "data" / "models" / "sleep_staging" / "model_manifest.json"
             if legacy_manifest_path.exists():
                 with open(legacy_manifest_path, "r", encoding="utf-8") as lf:
-                    legacy_manifest = json.load(lf)
+                    legacy_manifest = sanitize_public_paths(json.load(lf))
 
                 # Merge seamlessly
                 merged = {**legacy_manifest, **bidsleep_clean}
