@@ -227,8 +227,17 @@ def run_twin_simulation(
         "baseline_scenario": baseline_scenario,
         "hypothetical_scenario": hypothetical_scenario,
         "projected_outcomes": outcomes,
-        "trajectories": [t.model_dump() for t in trajectories],
         "model_assumptions": assumptions,
         "limitations": limitations,
-        "disclaimer": limitations
+        "disclaimer": limitations,
+        "data_tier": "simulated",
+        "model_version": "v2.1.0",
+        "output_classifications": {
+            "resting_hr": "deterministic_calculation",
+            "systolic_bp": "deterministic_calculation",
+            "hrv_rmssd": "deterministic_calculation",
+            "vitality_index": "hybrid_calculation",
+            "ml_risk_tier": "model_prediction",
+            "lifestyle_adherence": "illustrative_assumption"
+        }
     }
